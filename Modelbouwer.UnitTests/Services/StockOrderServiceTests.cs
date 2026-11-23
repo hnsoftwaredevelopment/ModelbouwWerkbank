@@ -34,12 +34,9 @@ public class StockOrderServiceTests
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.DeleteOrderAsync ), 2 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.DeleteOrderWithLinesAsync ), 3 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.InsertOrderLineAsync ), 2 );
-		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.InsertOrderLineWithStockCorrectionAsync ), 3 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.UpdateOrderLineAsync ), 2 );
-		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.UpdateOrderLineWithStockCorrectionAsync ), 3 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.RegisterReceiptAsync ), 4 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.DeleteOrderLineAsync ), 2 );
-		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.DeleteOrderLineWithStockCorrectionAsync ), 3 );
 	}
 
 	[TestMethod]
@@ -222,28 +219,18 @@ public class StockOrderServiceTests
 	}
 
 	[TestMethod]
-	public async Task UpdateOrderLineWithStockCorrectionAsync_UsesTransactionalDataService()
+	public void StockOrderService_DoesNotWriteStockCorrectionsForOrderLines()
 	{
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			Amount = 6,
-			OpenAmount = 4,
-			Price = 15,
-			RealRowTotal = 90
-		};
+		// KAN-100: an order must not change the inventory. Only a receipt (AmountReceived) does.
+		var root = AppContext.BaseDirectory;
+		while ( root != null && !File.Exists( Path.Combine( root, "ModelbouwWerkbank.slnx" ) ) )
+			root = Directory.GetParent( root )?.FullName;
 
-		_mockDataService
-			.Setup( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ) )
-			.Returns( Task.CompletedTask );
+		var source = File.ReadAllText( Path.Combine( root!, "Modelbouwer", "Services", "StockOrderService.cs" ) );
 
-		await _service.UpdateOrderLineWithStockCorrectionAsync( line, 1d );
-
-		_mockDataService.Verify( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ), Times.Once );
+		Assert.IsFalse( source.Contains( "StocklogFieldNameAmountCorrection", StringComparison.Ordinal ),
+			"StockOrderService must not write AmountCorrection to the stocklog." );
 	}
-
 	[TestMethod]
 	public async Task UpdateOrderLineAsync_PassesZeroOpenAmount()
 	{

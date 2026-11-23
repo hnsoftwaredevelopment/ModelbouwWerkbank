@@ -141,21 +141,6 @@ WHERE {DBNames.OrderLineFieldNameId} = @{DBNames.OrderLineFieldNameId};";
 DELETE FROM {DBNames.Database}.{DBNames.OrderLineTable}
 WHERE {DBNames.OrderLineFieldNameId} = @{DBNames.OrderLineFieldNameId};";
 
-	public string InsertStocklogCorrectionQuery = $@"
-INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
-	{DBNames.StocklogFieldNameProductId},
-	{DBNames.StocklogFieldNameSupplyOrderId},
-	{DBNames.StocklogFieldNameSupplyOrderlineId},
-	{DBNames.StocklogFieldNameAmountCorrection},
-	{DBNames.StocklogFieldNameLogDate}
-) VALUES (
-	@{DBNames.StocklogFieldNameProductId},
-	@{DBNames.StocklogFieldNameSupplyOrderId},
-	@{DBNames.StocklogFieldNameSupplyOrderlineId},
-	@{DBNames.StocklogFieldNameAmountCorrection},
-	{DBNames.SqlCurrentDate}
-);";
-
 	public string InsertStocklogReceiptQuery = $@"
 INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	{DBNames.StocklogFieldNameProductId},
@@ -260,7 +245,7 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 				line.SupplyOrderId = ( int ) orderId;
 				uint lineId = await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderLineQuery, BuildOrderLineParameters( line, includeId: false ), cancellationToken );
 				line.Id = ( int ) lineId;
-				await InsertStocklogCorrectionAsync( connection, transaction, line.ProductId, ( int ) orderId, ( int ) lineId, line.Amount, cancellationToken );
+				// No stocklog entry here: an order does not change the inventory, only a receipt does (KAN-100).
 			}
 
 			return ( int ) orderId;
@@ -310,8 +295,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 						{ $"@{DBNames.OrderLineFieldNameId}", line.Id }
 					}, cancellationToken );
 				}
-
-				await InsertStocklogCorrectionAsync( connection, transaction, line.ProductId, orderId, line.Id, -line.Amount, cancellationToken );
 			}
 
 			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderQuery, new Dictionary<string, object>
@@ -332,22 +315,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return ( int ) newId;
 	}
 
-	public Task<int> InsertOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection )
-	{
-		return InsertOrderLineWithStockCorrectionAsync( line, stockCorrection, CancellationToken.None );
-	}
-
-	public Task<int> InsertOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection, CancellationToken cancellationToken )
-	{
-		return _dataService.ExecuteInTransactionAsync<int>( async ( connection, transaction ) =>
-		{
-			uint lineId = await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderLineQuery, BuildOrderLineParameters( line, includeId: false ), cancellationToken );
-			line.Id = ( int ) lineId;
-			await InsertStocklogCorrectionAsync( connection, transaction, line.ProductId, line.SupplyOrderId, ( int ) lineId, stockCorrection, cancellationToken );
-			return ( int ) lineId;
-		}, cancellationToken );
-	}
-
 	public Task UpdateOrderLineAsync( StockOrderLineModel line )
 	{
 		return UpdateOrderLineAsync( line, CancellationToken.None );
@@ -356,20 +323,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	public Task UpdateOrderLineAsync( StockOrderLineModel line, CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteScalarAsync<uint>( UpdateOrderLineQuery, BuildOrderLineParameters( line, includeId: true ), cancellationToken );
-	}
-
-	public Task UpdateOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection )
-	{
-		return UpdateOrderLineWithStockCorrectionAsync( line, stockCorrection, CancellationToken.None );
-	}
-
-	public Task UpdateOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection, CancellationToken cancellationToken )
-	{
-		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
-		{
-			await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateOrderLineQuery, BuildOrderLineParameters( line, includeId: true ), cancellationToken );
-			await InsertStocklogCorrectionAsync( connection, transaction, line.ProductId, line.SupplyOrderId, line.Id, stockCorrection, cancellationToken );
-		}, cancellationToken );
 	}
 
 	public Task RegisterReceiptAsync( StockOrderLineModel line, double receivedAmount, DateTime? deliveryDate )
@@ -396,23 +349,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return _dataService.ExecuteScalarAsync<uint>( DeleteOrderLineQuery, new Dictionary<string, object>
 		{
 			{ $"@{DBNames.OrderLineFieldNameId}", lineId }
-		}, cancellationToken );
-	}
-
-	public Task DeleteOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection )
-	{
-		return DeleteOrderLineWithStockCorrectionAsync( line, stockCorrection, CancellationToken.None );
-	}
-
-	public Task DeleteOrderLineWithStockCorrectionAsync( StockOrderLineModel line, double stockCorrection, CancellationToken cancellationToken )
-	{
-		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
-		{
-			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderLineQuery, new Dictionary<string, object>
-			{
-				{ $"@{DBNames.OrderLineFieldNameId}", line.Id }
-			}, cancellationToken );
-			await InsertStocklogCorrectionAsync( connection, transaction, line.ProductId, line.SupplyOrderId, line.Id, stockCorrection, cancellationToken );
 		}, cancellationToken );
 	}
 
@@ -498,20 +434,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		}
 
 		await command.ExecuteNonQueryAsync( cancellationToken );
-	}
-
-	private Task InsertStocklogCorrectionAsync( MySqlConnection connection, MySqlTransaction transaction, int productId, int supplyOrderId, int supplyOrderLineId, double correctionAmount, CancellationToken cancellationToken )
-	{
-		if ( productId <= 0 || correctionAmount == 0d )
-			return Task.CompletedTask;
-
-		return ExecuteNonQueryInTransactionAsync( connection, transaction, InsertStocklogCorrectionQuery, new Dictionary<string, object>
-		{
-			{ $"@{DBNames.StocklogFieldNameProductId}", productId },
-			{ $"@{DBNames.StocklogFieldNameSupplyOrderId}", supplyOrderId > 0 ? supplyOrderId : DBNull.Value },
-			{ $"@{DBNames.StocklogFieldNameSupplyOrderlineId}", supplyOrderLineId > 0 ? supplyOrderLineId : DBNull.Value },
-			{ $"@{DBNames.StocklogFieldNameAmountCorrection}", correctionAmount }
-		}, cancellationToken );
 	}
 
 	private Task InsertStocklogReceiptAsync( MySqlConnection connection, MySqlTransaction transaction, int productId, int supplyOrderId, int supplyOrderLineId, double receivedAmount, DateTime? deliveryDate, CancellationToken cancellationToken )

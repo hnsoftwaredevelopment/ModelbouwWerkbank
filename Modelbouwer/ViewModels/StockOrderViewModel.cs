@@ -223,7 +223,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 				EditableOrder.Id = newOrderId;
 				foreach ( var line in pendingLines )
 				{
-					ApplyLocalInventoryCorrection( line.ProductId, line.Amount, line.OpenAmount );
+					ApplyLocalInOrderCorrection( line.ProductId, line.OpenAmount );
 				}
 
 				var lines = await GetOrderLinesAsync( newOrderId, cancellationToken );
@@ -516,7 +516,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 		foreach ( var line in linesToDelete )
 		{
-			ApplyLocalInventoryCorrection( line.ProductId, -line.Amount, -line.OpenAmount );
+			ApplyLocalInOrderCorrection( line.ProductId, -line.OpenAmount );
 		}
 
 		await _stockOrderService.DeleteOrderWithLinesAsync( EditableOrder.Id, linesToDelete );
@@ -573,9 +573,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			}
 			else
 			{
-				line.Id = await _stockOrderService.InsertOrderLineWithStockCorrectionAsync( line, line.Amount );
+				line.Id = await _stockOrderService.InsertOrderLineAsync( line );
 				OrderLines.Add( line );
-				ApplyLocalInventoryCorrection( line.ProductId, line.Amount, line.OpenAmount );
+				ApplyLocalInOrderCorrection( line.ProductId, line.OpenAmount );
 			}
 
 			RecalculateTotals();
@@ -607,7 +607,6 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			}
 
 			var line = SelectedOrderLine;
-			double originalAmount = line.Amount;
 			double originalOpenAmount = line.OpenAmount;
 			ProductModel product = BuildProductForLine( line );
 			var existingProductSupplier = await _supplierService.GetProductSupplierAsync( supplier.Id, line.ProductId );
@@ -636,9 +635,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			else
 			{
 				line.OpenAmount = Math.Max( dialogVm.Model.Amount - line.Received, 0d );
-				double stockCorrection = dialogVm.Model.Amount - originalAmount;
-				await _stockOrderService.UpdateOrderLineWithStockCorrectionAsync( line, stockCorrection );
-				ApplyLocalInventoryCorrection( line.ProductId, stockCorrection, line.OpenAmount - originalOpenAmount );
+				await _stockOrderService.UpdateOrderLineAsync( line );
+				ApplyLocalInOrderCorrection( line.ProductId, line.OpenAmount - originalOpenAmount );
 			}
 
 			RecalculateTotals();
@@ -666,8 +664,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 			if ( line.Id > 0 )
 			{
-				await _stockOrderService.DeleteOrderLineWithStockCorrectionAsync( line, -line.Amount );
-				ApplyLocalInventoryCorrection( line.ProductId, -line.Amount, -line.OpenAmount );
+				await _stockOrderService.DeleteOrderLineAsync( line.Id );
+				ApplyLocalInOrderCorrection( line.ProductId, -line.OpenAmount );
 			}
 
 			if ( PendingOrderLines.Contains( line ) )
@@ -703,21 +701,23 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		}
 	}
 
-	private void ApplyLocalInventoryCorrection( int productId, double inventoryCorrection, double inOrderCorrection )
+	/// <summary>
+	/// Updates the cached "in order" amount after an order line change. The inventory itself is not touched:
+	/// an order does not change the stock, only a receipt does (KAN-100).
+	/// </summary>
+	private void ApplyLocalInOrderCorrection( int productId, double inOrderCorrection )
 	{
-		if ( productId <= 0 || ( inventoryCorrection == 0d && inOrderCorrection == 0d ) )
+		if ( productId <= 0 || inOrderCorrection == 0d )
 			return;
 
 		if ( _inventoryByProductId.TryGetValue( productId, out StockManagementModel? inventory ) )
 		{
-			inventory.ProductInventory += inventoryCorrection;
 			inventory.ProductInOrder += inOrderCorrection;
 		}
 
 		ProductModel? product = _allAvailableProducts.FirstOrDefault( p => p.ProductId == productId );
 		if ( product != null )
 		{
-			product.CurrentInventory += inventoryCorrection;
 			product.InOrder += inOrderCorrection;
 		}
 	}
