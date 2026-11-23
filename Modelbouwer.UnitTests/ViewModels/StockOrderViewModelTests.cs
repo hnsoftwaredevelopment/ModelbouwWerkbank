@@ -19,8 +19,8 @@ public class StockOrderViewModelTests
 
 		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
 		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
-		_mockStockOrderService.Setup( s => s.UpdateOrderLineWithStockCorrectionAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>() ) ).Returns( Task.CompletedTask );
-		_mockStockOrderService.Setup( s => s.DeleteOrderLineWithStockCorrectionAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>() ) ).Returns( Task.CompletedTask );
+		_mockStockOrderService.Setup( s => s.UpdateOrderLineAsync( It.IsAny<StockOrderLineModel>() ) ).Returns( Task.CompletedTask );
+		_mockStockOrderService.Setup( s => s.DeleteOrderLineAsync( It.IsAny<int>() ) ).Returns( Task.CompletedTask );
 		_mockStockOrderService.Setup( s => s.DeleteOrderWithLinesAsync( It.IsAny<int>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).Returns( Task.CompletedTask );
 		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>() );
 		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>() );
@@ -741,20 +741,19 @@ public class StockOrderViewModelTests
 
 		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
 
-		_mockStockOrderService.Verify( s => s.UpdateOrderLineWithStockCorrectionAsync(
+		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync(
 			It.Is<StockOrderLineModel>( updated =>
 				updated.Id == 40 &&
 				updated.SupplierProductName == "Wheel Set Updated" &&
 				updated.Amount == 6d &&
 				updated.OpenAmount == 4d &&
 				updated.Price == 15d &&
-				updated.RealRowTotal == 90d ),
-			1d ),
+				updated.RealRowTotal == 90d ) ),
 			Times.Once );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithExistingLineAndLowerAmount_WritesNegativeDeltaCorrection()
+	public async Task EditSelectedOrderLineAsync_WithExistingLineAndLowerAmount_UpdatesLineWithoutStockCorrection()
 	{
 		var supplier = new SupplierModel
 		{
@@ -817,14 +816,13 @@ public class StockOrderViewModelTests
 
 		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
 
-		_mockStockOrderService.Verify( s => s.UpdateOrderLineWithStockCorrectionAsync(
-			It.Is<StockOrderLineModel>( updated => updated.Id == 40 && updated.Amount == 1d && updated.OpenAmount == 1d ),
-			-1d ),
+		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync(
+			It.Is<StockOrderLineModel>( updated => updated.Id == 40 && updated.Amount == 1d && updated.OpenAmount == 1d ) ),
 			Times.Once );
 	}
 
 	[TestMethod]
-	public async Task AddSelectedProductAsync_WithExistingOrder_InsertsLineAndWritesPositiveStockCorrection()
+	public async Task AddSelectedProductAsync_WithExistingOrder_InsertsLineWithoutStockCorrection()
 	{
 		var supplier = new SupplierModel
 		{
@@ -870,14 +868,13 @@ public class StockOrderViewModelTests
 			.ReturnsAsync( 70 );
 
 		_mockStockOrderService
-			.Setup( s => s.InsertOrderLineWithStockCorrectionAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>() ) )
+			.Setup( s => s.InsertOrderLineAsync( It.IsAny<StockOrderLineModel>() ) )
 			.ReturnsAsync( 40 );
 
 		await _viewModel.AddSelectedProductAsync();
 
-		_mockStockOrderService.Verify( s => s.InsertOrderLineWithStockCorrectionAsync(
-			It.Is<StockOrderLineModel>( line => line.SupplyOrderId == 25 && line.ProductId == 5 && line.Amount == 4d ),
-			4d ),
+		_mockStockOrderService.Verify( s => s.InsertOrderLineAsync(
+			It.Is<StockOrderLineModel>( line => line.SupplyOrderId == 25 && line.ProductId == 5 && line.Amount == 4d ) ),
 			Times.Once );
 	}
 
@@ -904,11 +901,11 @@ public class StockOrderViewModelTests
 
 		Assert.AreEqual( 0, _viewModel.PendingOrderLines.Count );
 		Assert.IsNull( _viewModel.SelectedOrderLine );
-		_mockStockOrderService.Verify( s => s.DeleteOrderLineWithStockCorrectionAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>() ), Times.Never );
+		_mockStockOrderService.Verify( s => s.DeleteOrderLineAsync( It.IsAny<int>() ), Times.Never );
 	}
 
 	[TestMethod]
-	public async Task DeleteSelectedOrderLineAsync_WithExistingLine_DeletesLineAndWritesNegativeStockCorrection()
+	public async Task DeleteSelectedOrderLineAsync_WithExistingLine_DeletesLineWithoutStockCorrection()
 	{
 		var order = new StockOrderModel
 		{
@@ -937,9 +934,7 @@ public class StockOrderViewModelTests
 
 		await _viewModel.DeleteOrderLineCommand.ExecuteAsync( null );
 
-		_mockStockOrderService.Verify( s => s.DeleteOrderLineWithStockCorrectionAsync(
-			It.Is<StockOrderLineModel>( deleted => deleted.Id == 40 && deleted.ProductId == 5 && deleted.Amount == 2d ),
-			-2d ),
+		_mockStockOrderService.Verify( s => s.DeleteOrderLineAsync( 40 ),
 			Times.Once );
 		Assert.AreEqual( 0, _viewModel.OrderLines.Count );
 		Assert.IsNull( _viewModel.SelectedOrderLine );
@@ -947,7 +942,7 @@ public class StockOrderViewModelTests
 	}
 
 	[TestMethod]
-	public async Task DeleteOrderAsync_WithExistingOrder_DeletesLinesWritesStockCorrectionsDeletesOrderAndResetsScreen()
+	public async Task DeleteOrderAsync_WithExistingOrder_DeletesLinesAndOrderAndResetsScreen()
 	{
 		var order = new StockOrderModel
 		{
@@ -1079,5 +1074,101 @@ public class StockOrderViewModelTests
 
 		var methodBody = source.Substring( methodStart, nextMethod - methodStart );
 		StringAssert.Contains( methodBody, expectedContent );
+	}
+
+	// KAN-100: order line changes only affect "in order", never the inventory.
+	private async Task<(ProductModel Product, StockManagementModel Inventory)> CreateViewModelWithInventoryAsync( IEnumerable<StockOrderLineModel> lines )
+	{
+		var product = new ProductModel { ProductId = 5, ProductCode = "P-005", ProductName = "Wheel Set", ProductPrice = 12.5 };
+		var inventory = new StockManagementModel { ProductId = 5, ProductInventory = 6, ProductInOrder = 2, ProductMinimalStock = 10 };
+
+		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel> { product } );
+		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel> { inventory } );
+		_mockStockOrderService.Setup( s => s.InsertOrderLineAsync( It.IsAny<StockOrderLineModel>() ) ).ReturnsAsync( 41 );
+		_mockSupplierService
+			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
+			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
+		_mockSupplierService
+			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
+			.ReturnsAsync( 70 );
+
+		_viewModel = new StockOrderViewModel(
+			_mockStockOrderService.Object,
+			_mockProductService.Object,
+			_mockStockService.Object,
+			_mockSupplierService.Object );
+		await _viewModel.InitializeAsync();
+
+		_viewModel.Suppliers.Clear();
+		_viewModel.Suppliers.Add( new SupplierModel { Id = 11, Name = "Supplier 11", CurrencyId = 2 } );
+		_viewModel.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 11, OrderNumber = "SO-025" }, lines );
+
+		return (product, inventory);
+	}
+
+	[TestMethod]
+	public async Task AddSelectedProductAsync_WithExistingOrder_RaisesInOrderButNotInventory()
+	{
+		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel>() );
+		double productInventoryBefore = product.CurrentInventory;
+		double productInOrderBefore = product.InOrder;
+		_viewModel.SelectedProduct = product;
+		_viewModel.ShowProductDialog = vm =>
+		{
+			vm.Model.Amount = 4;
+			vm.Model.UnitPrice = 15;
+			return true;
+		};
+
+		await _viewModel.AddSelectedProductAsync();
+
+		Assert.AreEqual( 6d, inventory.ProductInventory );
+		Assert.AreEqual( 6d, inventory.ProductInOrder );
+		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
+		Assert.AreEqual( productInOrderBefore + 4d, product.InOrder );
+	}
+
+	[TestMethod]
+	public async Task EditSelectedOrderLineAsync_WithExistingLine_ChangesInOrderButNotInventory()
+	{
+		var line = new StockOrderLineModel
+		{
+			Id = 40, SupplyOrderId = 25, ProductId = 5, SupplierId = 11, ProductCode = "P-005", ProductName = "Wheel Set",
+			SupplierProductName = "Wheel Set", Amount = 2, OpenAmount = 2, Price = 12.5, RealRowTotal = 25
+		};
+		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel> { line } );
+		double productInventoryBefore = product.CurrentInventory;
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowProductDialog = vm =>
+		{
+			vm.Model.Amount = 5;
+			vm.Model.UnitPrice = 12.5;
+			return true;
+		};
+
+		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( 6d, inventory.ProductInventory );
+		Assert.AreEqual( 5d, inventory.ProductInOrder );
+		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
+	}
+
+	[TestMethod]
+	public async Task DeleteSelectedOrderLineAsync_WithExistingLine_LowersInOrderButNotInventory()
+	{
+		var line = new StockOrderLineModel
+		{
+			Id = 40, SupplyOrderId = 25, ProductId = 5, SupplierId = 11, ProductCode = "P-005", ProductName = "Wheel Set",
+			SupplierProductName = "Wheel Set", Amount = 2, OpenAmount = 2, Price = 12.5, RealRowTotal = 25
+		};
+		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel> { line } );
+		double productInventoryBefore = product.CurrentInventory;
+		_viewModel.SelectedOrderLine = line;
+
+		await _viewModel.DeleteOrderLineCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( 6d, inventory.ProductInventory );
+		Assert.AreEqual( 0d, inventory.ProductInOrder );
+		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
 	}
 }
