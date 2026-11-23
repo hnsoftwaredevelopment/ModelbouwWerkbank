@@ -24,7 +24,7 @@ WHERE supplyorderline_Id IS NOT NULL
 
 SELECT ROW_COUNT() AS deleted_rows;
 
--- Check deleted_rows against the number of rows in step 1, then:
-COMMIT;
--- or, if the number does not match:
--- ROLLBACK;
+-- Stop here. Compare deleted_rows with the number of rows from step 1,
+-- then run ONE of these statements separately:
+-- COMMIT;     -- numbers match
+-- ROLLBACK;   -- numbers differ
