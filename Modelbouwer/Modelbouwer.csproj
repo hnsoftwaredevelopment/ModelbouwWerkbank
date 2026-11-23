@@ -77,6 +77,14 @@
     </None>
   </ItemGroup>
 
+  <!-- Local Syncfusion license (not in git, see KAN-78). Copied next to the exe so the installer ships it. -->
+  <ItemGroup Condition="Exists('$(MSBuildThisFileDirectory)..\docs\SyncfusionLicense.txt')">
+    <None Include="..\docs\SyncfusionLicense.txt" Link="SyncfusionLicense.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
   <!-- Exclude temporary generated files from SDK globs to avoid duplicate compilation -->
   <ItemGroup>
     <Compile Remove="..\tmp\**\*.cs" />

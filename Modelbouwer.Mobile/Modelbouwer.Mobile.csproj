@@ -108,7 +108,28 @@
 		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 		<MauiAsset Include="..\Modelbouwer\Resources\Config\modelbouwer.config" LogicalName="modelbouwer.config" />
+
+		<!-- Database credentials, generated at build time from environment variables (KAN-78). Never committed. -->
+		<MauiAsset Include="$(ModelbouwerSecretsFile)" LogicalName="modelbouwer.secrets" />
 	</ItemGroup>
+
+	<PropertyGroup>
+		<ModelbouwerSecretsFile>$(BaseIntermediateOutputPath)modelbouwer.secrets</ModelbouwerSecretsFile>
+	</PropertyGroup>
+
+	<!-- Reads MODELBOUWER_DB_PASSWORD, MODELBOUWER_DB_USER and MODELBOUWER_MOBILE_DB_SERVER from the
+	     developer's environment and writes them into the app package. -->
+	<Target Name="WriteModelbouwerSecrets" BeforeTargets="PrepareForBuild">
+		<Warning Condition="'$(MODELBOUWER_DB_PASSWORD)' == ''"
+			Text="MODELBOUWER_DB_PASSWORD is niet ingesteld. De app wordt gebouwd zonder databasewachtwoord en kan geen verbinding maken." />
+		<ItemGroup>
+			<_ModelbouwerSecretLine Include="Password=$([MSBuild]::Escape('$(MODELBOUWER_DB_PASSWORD)'))" />
+			<_ModelbouwerSecretLine Include="User=$([MSBuild]::Escape('$(MODELBOUWER_DB_USER)'))" />
+			<_ModelbouwerSecretLine Include="Server=$([MSBuild]::Escape('$(MODELBOUWER_MOBILE_DB_SERVER)'))" />
+		</ItemGroup>
+		<MakeDir Directories="$(BaseIntermediateOutputPath)" />
+		<WriteLinesToFile File="$(ModelbouwerSecretsFile)" Lines="@(_ModelbouwerSecretLine)" Overwrite="true" WriteOnlyWhenDifferent="true" />
+	</Target>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
