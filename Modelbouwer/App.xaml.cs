@@ -20,8 +20,10 @@ public partial class App : Application
 
 	private void ConfigureServices( IServiceCollection services )
 	{
-		// Register Syncfusion license
-		Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense( "Ngo9BigBOggjHTQxAR8/V1JGaF5cXGpCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdmWH1dcHVXQmVcU0dxX0BWYEs=" );
+		// Register Syncfusion license (key is kept outside the repository, see SyncfusionLicenseKeyResolver)
+		var syncfusionLicenseKey = SyncfusionLicenseKeyResolver.ResolveFromEnvironmentAndLocalFiles();
+		if ( !string.IsNullOrWhiteSpace( syncfusionLicenseKey ) )
+			Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense( syncfusionLicenseKey );
 
 		// Register services
 		services.AddSingleton<BrandService>();
@@ -132,6 +134,15 @@ public partial class App : Application
 
 	protected override async void OnStartup( StartupEventArgs e )
 	{
+		if ( !DBConnect.IsPasswordConfigured )
+		{
+			MessageBox.Show(
+				string.Format( Lang.StartupDatabasePasswordMissingMessage, DBConnect.PasswordVariable ),
+				Lang.generalMessageboxWarningTitle, MessageBoxButton.OK, MessageBoxImage.Error );
+			Shutdown( -1 );
+			return;
+		}
+
 		try
 		{
 			await _host.StartAsync();

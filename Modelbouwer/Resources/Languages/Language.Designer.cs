@@ -11599,6 +11599,20 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Er is geen databasewachtwoord ingesteld op deze computer.
+        ///
+        ///Stel de Windows-omgevingsvariabele {0} in voor je gebruikersaccount en start Modelbouwer opnieuw.
+        ///
+        ///PowerShell:
+        ///[Environment]::SetEnvironmentVariable(&apos;{0}&apos;, &apos;wachtwoord&apos;, &apos;User&apos;).
+        /// </summary>
+        public static string StartupDatabasePasswordMissingMessage {
+            get {
+                return ResourceManager.GetString("StartupDatabasePasswordMissingMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to ingelezen.
         /// </summary>
         public static string StatusRead {

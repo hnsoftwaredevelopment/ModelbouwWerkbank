@@ -4624,6 +4624,14 @@ In order to be able to add a new time registration, a date and project must firs
   <data name="SettingsSavedMessage" xml:space="preserve">
     <value>Settings saved</value>
   </data>
+  <data name="StartupDatabasePasswordMissingMessage" xml:space="preserve">
+    <value>No database password is configured on this computer.
+
+Set the Windows environment variable {0} for your user account and restart Modelbouwer.
+
+PowerShell:
+[Environment]::SetEnvironmentVariable(&apos;{0}&apos;, &apos;password&apos;, &apos;User&apos;)</value>
+  </data>
   <data name="SettingsSaveFailedMessage" xml:space="preserve">
     <value>Settings could not be saved</value>
   </data>

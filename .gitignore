@@ -363,3 +363,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /tmp
+
+# Local secrets (KAN-78): never commit license keys or credentials
+docs/[Ss]yncfusion[Ll]icense.txt
