@@ -14,13 +14,19 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- Toolbar: same actions as the context menu, for users who look for a button -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
             <Button
                 Style="{StaticResource ActionBarButtonStyle}"
-                Command="{Binding EditReceiptCommand}"
-                ToolTip="{x:Static language:Language.StockReceiptEditReceiptTooltip}">
+                Command="{Binding ActivateLineCommand}"
+                ToolTip="{x:Static language:Language.StockReceiptMenuReceive}">
                 <Image Style="{DynamicResource ToolBarReceiveIcon}" />
             </Button>
+            <Button Margin="8,0,0,0"
+                    Padding="10,4"
+                    VerticalAlignment="Center"
+                    Command="{Binding ReceiveAllCommand}"
+                    Content="{x:Static language:Language.StockReceiptMenuReceiveAll}" />
 
             <TextBlock Margin="16,0,8,0"
                        VerticalAlignment="Center"
@@ -32,10 +38,6 @@
                           ToolTip="{x:Static language:Language.StockOrderShowClosedOrders}" />
             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="16" Text="{Binding SelectedOrder.SupplierName}" />
             <TextBlock Margin="12,0,0,0" VerticalAlignment="Center" FontWeight="Bold" FontSize="16" Text="{Binding SelectedOrder.OrderNumber}" />
-            <CheckBox Margin="24,0,0,0"
-                      VerticalAlignment="Center"
-                      Content="{x:Static language:Language.StockReceiptSelectAllLinesLabel}"
-                      IsChecked="{Binding AreAllOrderLinesSelected, Mode=TwoWay}" />
         </StackPanel>
 
         <Grid Grid.Row="1">
@@ -55,7 +57,7 @@
                                        AllowTriStateSorting="True"
                                        ColumnSizer="Star"
                                        SelectionMode="Single"
-                                       NavigationMode="Cell">
+                                       NavigationMode="Row">
                     <syncfusion:SfDataGrid.Columns>
                         <syncfusion:GridTextColumn MappingName="SupplierName"
                                                    HeaderText="{x:Static language:Language.StockOrderOrderSelectionSupplierLabel}"
@@ -79,7 +81,8 @@
             </GroupBox>
 
             <GroupBox Grid.Column="1" Header="{x:Static language:Language.StockReceiptOpenLinesGroupTitle}">
-                <syncfusion:SfDataGrid ItemsSource="{Binding OpenOrderLines}"
+                <syncfusion:SfDataGrid x:Name="OrderLinesGrid"
+                                       ItemsSource="{Binding OpenOrderLines}"
                                        SelectedItem="{Binding SelectedOrderLine, Mode=TwoWay}"
                                        AutoGenerateColumns="False"
                                        AllowDraggingColumns="True"
@@ -87,51 +90,65 @@
                                        AllowResizingColumns="True"
                                        AllowSorting="True"
                                        AllowTriStateSorting="True"
+                                       AllowEditing="False"
                                        ColumnSizer="Star"
                                        SelectionMode="Single"
-                                       NavigationMode="Cell">
+                                       NavigationMode="Row"
+                                       GridContextMenuOpening="OrderLinesGrid_GridContextMenuOpening">
                     <syncfusion:SfDataGrid.RowStyle>
                         <Style TargetType="syncfusion:VirtualizingCellsControl">
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding Closed}" Value="True">
+                                    <Setter Property="Foreground" Value="Gray" />
                                     <Setter Property="ToolTip" Value="{x:Static language:Language.StockReceiptClosedOrderLineTooltip}" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </syncfusion:SfDataGrid.RowStyle>
                     <syncfusion:SfDataGrid.InputBindings>
-                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding EditReceiptCommand}" />
+                        <!-- Open line: receive. Closed line: adjust the registered receipt. -->
+                        <MouseBinding Gesture="LeftDoubleClick" Command="{Binding ActivateLineCommand}" />
+                        <KeyBinding Key="Enter" Command="{Binding ActivateLineCommand}" />
                     </syncfusion:SfDataGrid.InputBindings>
+                    <syncfusion:SfDataGrid.RecordContextMenu>
+                        <ContextMenu>
+                            <!-- Actions on the selected line -->
+                            <MenuItem Header="{x:Static language:Language.StockReceiptMenuReceive}"
+                                      FontWeight="SemiBold"
+                                      Command="{Binding DataGrid.DataContext.ReceiveLineCommand}" />
+                            <MenuItem Header="{x:Static language:Language.StockReceiptMenuCorrect}"
+                                      Command="{Binding DataGrid.DataContext.CorrectReceiptCommand}" />
+                            <MenuItem Header="{x:Static language:Language.StockReceiptMenuCancelRemainder}"
+                                      Command="{Binding DataGrid.DataContext.CancelRemainderCommand}" />
+                            <MenuItem Header="{x:Static language:Language.StockReceiptMenuEditSupplierData}"
+                                      Command="{Binding DataGrid.DataContext.EditSupplierDataCommand}" />
+                            <Separator />
+                            <!-- Action on the whole order -->
+                            <MenuItem Header="{x:Static language:Language.StockReceiptMenuReceiveAll}"
+                                      Command="{Binding DataGrid.DataContext.ReceiveAllCommand}" />
+                        </ContextMenu>
+                    </syncfusion:SfDataGrid.RecordContextMenu>
                     <syncfusion:SfDataGrid.Columns>
-                        <syncfusion:GridCheckBoxColumn MappingName="IsSelected"
-                                                       HeaderText="{x:Static language:Language.StockReceiptSelectLineLabel}"
-                                                       AllowEditing="True"
-                                                       Width="80" />
                         <syncfusion:GridTextColumn MappingName="DisplayProductNumber"
                                                    HeaderText="{x:Static language:Language.StockReceiptProductNumberLabel}"
-                                                   AllowEditing="False"
                                                    Width="160" />
                         <syncfusion:GridTextColumn MappingName="DisplayProductDescription"
-                                                   HeaderText="{x:Static language:Language.StockReceiptDescriptionLabel}"
-                                                   AllowEditing="False" />
+                                                   HeaderText="{x:Static language:Language.StockReceiptDescriptionLabel}" />
                         <syncfusion:GridNumericColumn MappingName="Amount"
                                                       HeaderText="{x:Static language:Language.StockReceiptOrderedAmountLabel}"
-                                                      AllowEditing="False"
                                                       HorizontalHeaderContentAlignment="Right"
-                                                      NumberDecimalDigits="2"
-                                                      Width="120" />
+                                                      NumberDecimalDigits="0"
+                                                      Width="110" />
                         <syncfusion:GridNumericColumn MappingName="Received"
                                                       HeaderText="{x:Static language:Language.StockReceiptAlreadyReceivedLabel}"
-                                                      AllowEditing="False"
                                                       HorizontalHeaderContentAlignment="Right"
-                                                      NumberDecimalDigits="2"
-                                                      Width="130" />
+                                                      NumberDecimalDigits="0"
+                                                      Width="120" />
                         <syncfusion:GridNumericColumn MappingName="OpenAmount"
                                                       HeaderText="{x:Static language:Language.StockReceiptOpenAmountLabel}"
-                                                      AllowEditing="False"
                                                       HorizontalHeaderContentAlignment="Right"
-                                                      NumberDecimalDigits="2"
-                                                      Width="120" />
+                                                      NumberDecimalDigits="0"
+                                                      Width="110" />
                     </syncfusion:SfDataGrid.Columns>
                 </syncfusion:SfDataGrid>
             </GroupBox>

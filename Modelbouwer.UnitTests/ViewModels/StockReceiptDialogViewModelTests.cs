@@ -3,112 +3,98 @@ namespace Modelbouwer.UnitTests.ViewModels;
 [TestClass]
 public class StockReceiptDialogViewModelTests
 {
-	[TestMethod]
-	public void ReceivedAmount_WhenComplete_AutomaticallyClosesLine()
+	private static StockOrderLineModel Line( double amount, double received ) => new()
 	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 2,
-			ReceivedAmount = 2,
-			OpenAmount = 3
-		};
-		var viewModel = new StockReceiptDialogViewModel( model );
-
-		model.ReceivedAmount = 5;
-
-		Assert.IsTrue( model.IsOrderLineClosed );
-		Assert.AreEqual( 0d, model.OpenAmount );
-		Assert.IsNull( viewModel.GetIncompleteCloseWarning() );
-	}
+		Id = 40,
+		SupplyOrderId = 25,
+		ProductId = 5,
+		ProductCode = "P-005",
+		ProductName = "Wheel Set",
+		Amount = amount,
+		Received = received,
+		OpenAmount = amount - received
+	};
 
 	[TestMethod]
-	public void ReceivedAmount_WhenReducedAfterAutomaticClose_ReopensLine()
+	public void Create_PrefillsReceiveAmountWithOpenAmountAndToday()
 	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 2,
-			ReceivedAmount = 2,
-			OpenAmount = 3
-		};
+		var model = StockReceiptDialogModel.Create( Line( 4, 2 ) );
 
-		model.ReceivedAmount = 5;
-		model.ReceivedAmount = 4;
-
-		Assert.IsFalse( model.IsOrderLineClosed );
-		Assert.AreEqual( 1d, model.OpenAmount );
-	}
-
-	[TestMethod]
-	public void IsOrderLineClosed_WhenUserChecksIncompleteLine_StaysClosedForWarning()
-	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 2,
-			ReceivedAmount = 4,
-			OpenAmount = 1
-		};
-
-		model.IsOrderLineClosed = true;
-
-		Assert.IsTrue( model.IsOrderLineClosed );
-		Assert.IsTrue( model.IsIncompleteClose );
-	}
-
-	[TestMethod]
-	public void IsOrderLineClosed_WhenIncomplete_ReturnsWarning()
-	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 1,
-			ReceivedAmount = 3,
-			OpenAmount = 2,
-			IsOrderLineClosed = true
-		};
-		var viewModel = new StockReceiptDialogViewModel( model );
-
-		var warning = viewModel.GetIncompleteCloseWarning();
-
-		Assert.AreEqual( Lang.StockReceiptIncompleteCloseWarning, warning );
-	}
-
-	[TestMethod]
-	public void LeaveOpen_KeepsIncompleteLineOpen()
-	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 1,
-			ReceivedAmount = 3,
-			IsOrderLineClosed = true
-		};
-		var viewModel = new StockReceiptDialogViewModel( model );
-
-		viewModel.LeaveOpen();
-
-		Assert.IsFalse( model.IsOrderLineClosed );
+		Assert.AreEqual( 4d, model.OrderedAmount );
+		Assert.AreEqual( 2d, model.AlreadyReceivedAmount );
 		Assert.AreEqual( 2d, model.OpenAmount );
+		Assert.AreEqual( 2d, model.ReceiveAmount, "This delivery defaults to everything that is still open." );
+		Assert.AreEqual( DateTime.Today, model.DeliveryDate );
 	}
 
 	[TestMethod]
-	public void CompleteWithReceivedAmount_ReducesOrderedAmountAndClosesLine()
+	public void RemainingAfterReceipt_FollowsReceiveAmount()
 	{
-		var model = new StockReceiptDialogModel
-		{
-			OrderedAmount = 5,
-			AlreadyReceivedAmount = 1,
-			ReceivedAmount = 3,
-			IsOrderLineClosed = true
-		};
-		var viewModel = new StockReceiptDialogViewModel( model );
+		var model = StockReceiptDialogModel.Create( Line( 10, 2 ) );
 
-		viewModel.CompleteWithReceivedAmount();
+		model.ReceiveAmount = 3;
 
-		Assert.AreEqual( 3d, model.OrderedAmount );
-		Assert.AreEqual( 0d, model.OpenAmount );
-		Assert.IsTrue( model.IsOrderLineClosed );
+		Assert.AreEqual( 5d, model.RemainingAfterReceipt );
+	}
+
+	[TestMethod]
+	public void Validate_AcceptsPartialAndFullReceipt()
+	{
+		var vm = new StockReceiptDialogViewModel( StockReceiptDialogModel.Create( Line( 4, 2 ) ) );
+
+		vm.Model.ReceiveAmount = 1;
+		Assert.IsNull( vm.Validate() );
+
+		vm.Model.ReceiveAmount = 2;
+		Assert.IsNull( vm.Validate() );
+	}
+
+	[TestMethod]
+	public void Validate_RejectsZeroAndNegativeAmounts()
+	{
+		var vm = new StockReceiptDialogViewModel( StockReceiptDialogModel.Create( Line( 4, 2 ) ) );
+
+		vm.Model.ReceiveAmount = 0;
+		Assert.AreEqual( Lang.StockReceiptReceiveAmountMustBePositive, vm.Validate() );
+
+		vm.Model.ReceiveAmount = -1;
+		Assert.AreEqual( Lang.StockReceiptReceiveAmountMustBePositive, vm.Validate() );
+	}
+
+	[TestMethod]
+	public void Validate_RejectsMoreThanOpenAmount()
+	{
+		var vm = new StockReceiptDialogViewModel( StockReceiptDialogModel.Create( Line( 4, 2 ) ) );
+
+		vm.Model.ReceiveAmount = 3;
+
+		Assert.IsNotNull( vm.Validate() );
+	}
+	[TestMethod]
+	public void CreateCorrection_PrefillsWithRegisteredTotalAndComputesDelta()
+	{
+		var model = StockReceiptDialogModel.CreateCorrection( Line( 5, 5 ) );
+
+		Assert.IsTrue( model.IsCorrection );
+		Assert.AreEqual( 5d, model.ReceiveAmount );
+
+		model.ReceiveAmount = 3;
+		Assert.AreEqual( -2d, model.StockDelta );
+		Assert.AreEqual( 2d, model.RemainingAfterReceipt );
+	}
+
+	[TestMethod]
+	public void Validate_Correction_AllowsZeroToOrderedAndRejectsOutside()
+	{
+		var vm = new StockReceiptDialogViewModel( StockReceiptDialogModel.CreateCorrection( Line( 5, 5 ) ) );
+
+		vm.Model.ReceiveAmount = 0;
+		Assert.IsNull( vm.Validate() );
+		vm.Model.ReceiveAmount = 5;
+		Assert.IsNull( vm.Validate() );
+		vm.Model.ReceiveAmount = 6;
+		Assert.IsNotNull( vm.Validate() );
+		vm.Model.ReceiveAmount = -1;
+		Assert.IsNotNull( vm.Validate() );
 	}
 }

@@ -4,523 +4,300 @@ namespace Modelbouwer.UnitTests.ViewModels;
 public class StockReceiptViewModelTests
 {
 	private Mock<IStockOrderService> _mockStockOrderService = null!;
+	private Mock<ISupplierService> _mockSupplierService = null!;
 	private StockReceiptViewModel _viewModel = null!;
+	private List<StockOrderLineModel> _linesInDatabase = [];
 
 	[TestInitialize]
 	public void Setup()
 	{
 		_mockStockOrderService = new Mock<IStockOrderService>();
+		_mockSupplierService = new Mock<ISupplierService>();
+		_linesInDatabase = [];
+
 		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
-		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( new List<StockOrderModel>() );
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>(), It.IsAny<CancellationToken>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( () => _linesInDatabase.ToList() );
 		_mockStockOrderService.Setup( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ) ).Returns( Task.CompletedTask );
-		_mockStockOrderService.Setup( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>(), It.IsAny<CancellationToken>() ) ).Returns( Task.CompletedTask );
+		_mockStockOrderService.Setup( s => s.UpdateOrderLineAsync( It.IsAny<StockOrderLineModel>() ) ).Returns( Task.CompletedTask );
 		_mockStockOrderService.Setup( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>() ) ).Returns( Task.CompletedTask );
-		_mockStockOrderService.Setup( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<CancellationToken>() ) ).Returns( Task.CompletedTask );
 
-		_viewModel = new StockReceiptViewModel( _mockStockOrderService.Object );
-	}
-
-	[TestMethod]
-	public async Task InitializeAsync_WithCancellationToken_PassesTokenToStockOrderService()
-	{
-		using var cts = new CancellationTokenSource();
-		_mockStockOrderService
-			.Setup( s => s.GetAllOrdersAsync( cts.Token ) )
-			.ReturnsAsync( new List<StockOrderModel>
-			{
-				new() { Id = 25, OrderNumber = "SO-025" }
-			} );
-
-		await _viewModel.InitializeAsync( cts.Token );
-
-		_mockStockOrderService.Verify( s => s.GetAllOrdersAsync( cts.Token ), Times.Once );
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.AreEqual( 25, _viewModel.Orders [ 0 ].Id );
-	}
-
-	[TestMethod]
-	public void ApplySelectedOrder_ShowsOnlyOpenOrderLines()
-	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
-		var lines = new List<StockOrderLineModel>
+		_viewModel = new StockReceiptViewModel( _mockStockOrderService.Object, _mockSupplierService.Object )
 		{
-			new() { Id = 40, SupplyOrderId = 25, ProductId = 5, ProductCode = "P-005", ProductName = "Wheel Set", Amount = 5, OpenAmount = 3, Closed = false },
-			new() { Id = 41, SupplyOrderId = 25, ProductId = 6, ProductCode = "P-006", ProductName = "Closed Item", Amount = 2, OpenAmount = 0, Closed = true }
+			ShowInformation = _ => { },
+			ConfirmAction = _ => true
 		};
+	}
 
+	private static StockOrderLineModel Line( int id, double amount, double received ) => new()
+	{
+		Id = id,
+		SupplyOrderId = 25,
+		ProductId = id,
+		ProductCode = $"P-{id}",
+		ProductName = $"Product {id}",
+		SupplierProductName = $"Product {id}",
+		Amount = amount,
+		Received = received,
+		OpenAmount = amount - received,
+		Price = 2,
+		Closed = amount - received <= 0
+	};
+
+	private StockOrderModel SelectOrder( params StockOrderLineModel [ ] lines )
+	{
+		var order = new StockOrderModel { Id = 25, SupplierId = 1, CurrencyId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132" };
+		_linesInDatabase = lines.ToList();
+		_viewModel.ReplaceOrdersForTest( [ order ] );
 		_viewModel.ApplySelectedOrder( order, lines );
+		return order;
+	}
 
-		Assert.AreEqual( 1, _viewModel.OpenOrderLines.Count );
-		Assert.AreEqual( 40, _viewModel.OpenOrderLines [ 0 ].Id );
+	[TestMethod]
+	public void ApplySelectedOrder_ShowsOpenAndClosedLinesOfTheSelectedOrder()
+	{
+		SelectOrder( Line( 1, 4, 0 ), Line( 2, 2, 2 ) );
+
+		Assert.AreEqual( 2, _viewModel.OpenOrderLines.Count );
 	}
 
 	[TestMethod]
 	public void ApplySelectedOrder_WhenClosedOrdersAreShown_ShowsClosedOrderLines()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = true };
-		var lines = new List<StockOrderLineModel>
-		{
-			new() { Id = 40, SupplyOrderId = 25, ProductId = 5, ProductCode = "P-005", ProductName = "Wheel Set", Amount = 5, OpenAmount = 0, Closed = true },
-			new() { Id = 41, SupplyOrderId = 25, ProductId = 6, ProductCode = "P-006", ProductName = "Axle", Amount = 2, OpenAmount = 0, Closed = true }
-		};
-
 		_viewModel.ShowClosedOrders = true;
-		_viewModel.ApplySelectedOrder( order, lines );
+		SelectOrder( Line( 1, 4, 0 ), Line( 2, 2, 2 ) );
 
 		Assert.AreEqual( 2, _viewModel.OpenOrderLines.Count );
-		Assert.IsTrue( _viewModel.OpenOrderLines.All( line => line.Closed ) );
 	}
 
 	[TestMethod]
 	public async Task SelectedOrder_WhenBackgroundLoadFails_StoresAsyncError()
 	{
 		var expected = new InvalidOperationException( "receipt lines failed" );
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 25 ) )
-			.ThrowsAsync( expected );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ThrowsAsync( expected );
 
 		_viewModel.SelectedOrder = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
 
 		await WaitUntilAsync( () => ReferenceEquals( expected, _viewModel.LastAsyncError ) );
-
 		Assert.AreSame( expected, _viewModel.LastAsyncError );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenLineIsClosed_DoesNotOpenDialogOrPersist()
+	public async Task ReceiveLine_PartialThenRest_BooksEachDeliveryAndClosesLine()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = true };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 0,
-			Received = 5,
-			Closed = true
-		};
-		var dialogOpened = false;
-		_viewModel.ShowClosedOrders = true;
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
+		// Reproduces KAN-101: 4 ordered, 2 received, then the remaining 2.
+		var line = Line( 1, 4, 0 );
+		SelectOrder( line );
 		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = _ =>
+		_viewModel.ShowReceiptDialog = vm => { vm.Model.ReceiveAmount = 2; return true; };
+
+		await _viewModel.ReceiveLineCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( 2d, line.Received );
+		Assert.AreEqual( 2d, line.OpenAmount );
+		Assert.IsFalse( line.Closed );
+
+		_viewModel.SelectedOrderLine = _viewModel.OpenOrderLines.Single( l => l.Id == 1 );
+		_viewModel.ShowReceiptDialog = vm =>
 		{
-			dialogOpened = true;
+			Assert.AreEqual( 2d, vm.Model.ReceiveAmount, "Second dialog must be prefilled with what is still open." );
 			return true;
 		};
 
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
+		await _viewModel.ReceiveLineCommand.ExecuteAsync( null );
 
-		Assert.IsFalse( dialogOpened );
+		Assert.AreEqual( 4d, line.Received );
+		Assert.AreEqual( 0d, line.OpenAmount );
+		Assert.IsTrue( line.Closed );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( line, 2d, It.IsAny<DateTime?>() ), Times.Exactly( 2 ) );
+	}
+
+	[TestMethod]
+	public async Task ReceiveLine_WhenInputInvalid_BooksNothing()
+	{
+		var line = Line( 1, 4, 2 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowReceiptDialog = vm => { vm.Model.ReceiveAmount = -1; return true; };
+
+		await _viewModel.ReceiveLineCommand.ExecuteAsync( null );
+
 		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Never );
+		Assert.AreEqual( 2d, line.Received );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenSaved_PersistsReceivedDeltaAndRefreshesOpenRows()
+	public void ReceiveLine_IsDisabledForClosedLine()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Supplier Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 4;
-			vm.Model.DeliveryDate = new DateTime( 2026, 5, 4 );
-			return true;
-		};
-
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync(
-			It.Is<StockOrderLineModel>( updated =>
-				updated.Id == 40 &&
-				updated.OpenAmount == 1d &&
-				updated.Received == 4d &&
-				updated.Closed == false ),
-			2d,
-			new DateTime( 2026, 5, 4 ) ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithCancellationToken_PassesTokenToStockOrderService()
-	{
-		using var cts = new CancellationTokenSource();
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Supplier Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-
-		_mockStockOrderService
-			.Setup( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), 2d, new DateTime( 2026, 5, 4 ), cts.Token ) )
-			.Returns( Task.CompletedTask );
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 25, cts.Token ) )
-			.ReturnsAsync( new List<StockOrderLineModel> { line } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 4;
-			vm.Model.DeliveryDate = new DateTime( 2026, 5, 4 );
-			return true;
-		};
-
-		await _viewModel.EditSelectedOrderLineAsync( cts.Token );
-
-		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync(
-			It.Is<StockOrderLineModel>( updated => updated.Id == 40 ),
-			2d,
-			new DateTime( 2026, 5, 4 ),
-			cts.Token ), Times.Once );
-		_mockStockOrderService.Verify( s => s.GetOrderLinesAsync( 25, cts.Token ), Times.Once );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenFullyReceived_AutomaticallyClosesLine()
-	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 5;
-			return true;
-		};
-
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync(
-			It.Is<StockOrderLineModel>( updated => updated.Id == 40 && updated.OpenAmount == 0d && updated.Closed ),
-			3d,
-			It.IsAny<DateTime?>() ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenLastOrderLineCloses_ClosesOrder()
-	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 5;
-			vm.Model.DeliveryDate = new DateTime( 2026, 5, 4 );
-			return true;
-		};
-
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.UpdateOrderAsync(
-			It.Is<StockOrderModel>( updated =>
-				updated.Id == 25 &&
-				updated.Closed &&
-				updated.ClosedDate == new DateTime( 2026, 5, 4 ) ) ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenLastOrderLineCloses_RemovesOrderFromOpenOrderList()
-	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line } );
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel> { order } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 5;
-			vm.Model.DeliveryDate = new DateTime( 2026, 5, 4 );
-			return true;
-		};
-
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
-
-		Assert.AreEqual( 0, _viewModel.Orders.Count );
-		Assert.IsTrue( order.Closed );
-		Assert.AreEqual( new DateTime( 2026, 5, 4 ), order.ClosedDate );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenLastOrderLineClosesAndClosedOrdersAreShown_UpdatesOrderInList()
-	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line } );
 		_viewModel.ShowClosedOrders = true;
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel> { order } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 5;
-			vm.Model.DeliveryDate = new DateTime( 2026, 5, 4 );
-			return true;
-		};
+		var closed = Line( 2, 2, 2 );
+		SelectOrder( closed );
+		_viewModel.SelectedOrderLine = closed;
 
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
-
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.IsTrue( _viewModel.Orders [ 0 ].Closed );
-		Assert.AreEqual( new DateTime( 2026, 5, 4 ), _viewModel.Orders [ 0 ].ClosedDate );
+		Assert.IsFalse( _viewModel.ReceiveLineCommand.CanExecute( null ) );
+		Assert.IsFalse( _viewModel.CancelRemainderCommand.CanExecute( null ) );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenAnotherOrderLineStillOpen_DoesNotCloseOrder()
+	public async Task ReceiveAll_BooksOpenAmountOfEveryOpenLineAndClosesOrder()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false
-		};
-		var otherLine = new StockOrderLineModel
-		{
-			Id = 41,
-			SupplyOrderId = 25,
-			ProductId = 6,
-			ProductCode = "P-006",
-			ProductName = "Axle",
-			Amount = 2,
-			OpenAmount = 1,
-			Received = 1,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { line, otherLine } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line, otherLine } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowReceiptDialog = vm =>
-		{
-			vm.Model.ReceivedAmount = 5;
-			return true;
-		};
+		var first = Line( 1, 4, 1 );
+		var second = Line( 2, 3, 0 );
+		var order = SelectOrder( first, second );
+		_viewModel.ShowReceiptDateDialog = _ => true;
 
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
+		await _viewModel.ReceiveAllCommand.ExecuteAsync( null );
 
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( first, 3d, It.IsAny<DateTime?>() ), Times.Once );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( second, 3d, It.IsAny<DateTime?>() ), Times.Once );
+		Assert.IsTrue( order.Closed );
+		_mockStockOrderService.Verify( s => s.UpdateOrderAsync( order ), Times.Once );
+	}
+
+	[TestMethod]
+	public async Task ReceiveLine_WhenAnotherLineStillOpen_DoesNotCloseOrder()
+	{
+		var first = Line( 1, 2, 0 );
+		var second = Line( 2, 3, 0 );
+		var order = SelectOrder( first, second );
+		_viewModel.SelectedOrderLine = first;
+		_viewModel.ShowReceiptDialog = _ => true;
+
+		await _viewModel.ReceiveLineCommand.ExecuteAsync( null );
+
+		Assert.IsTrue( first.Closed );
+		Assert.IsFalse( order.Closed );
 		_mockStockOrderService.Verify( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>() ), Times.Never );
 	}
 
 	[TestMethod]
-	public void AreAllOrderLinesSelected_SelectsOnlyOpenOrderLines()
+	public async Task CancelRemainder_ClosesLineWithoutBookingStockAndLowersOrderedAmountToReceived()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025" };
-		var openLine = new StockOrderLineModel { Id = 40, SupplyOrderId = 25, ProductId = 5, Amount = 5, OpenAmount = 3, Closed = false };
-		var closedLine = new StockOrderLineModel { Id = 41, SupplyOrderId = 25, ProductId = 6, Amount = 2, OpenAmount = 0, Closed = true };
+		var line = Line( 1, 4, 2 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
 
-		_viewModel.ShowClosedOrders = true;
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { openLine, closedLine } );
-		_viewModel.AreAllOrderLinesSelected = true;
+		await _viewModel.CancelRemainderCommand.ExecuteAsync( null );
 
-		Assert.IsTrue( openLine.IsSelected );
-		Assert.IsFalse( closedLine.IsSelected );
+		Assert.AreEqual( 2d, line.Amount, "Received is stored as ordered minus open, so ordered must drop to received." );
+		Assert.AreEqual( 4d, line.RealRowTotal, "Only the delivered quantity is charged." );
+		Assert.AreEqual( 2d, line.Received );
+		Assert.AreEqual( 0d, line.OpenAmount );
+		Assert.IsTrue( line.Closed );
+		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync( line ), Times.Once );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Never );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenLinesAreSelected_BulkReceivesSelectedLinesAndKeepsOrderSelected()
+	public async Task CancelRemainder_WhenNotConfirmed_ChangesNothing()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var selectedLine = new StockOrderLineModel
+		var line = Line( 1, 4, 2 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ConfirmAction = _ => false;
+
+		await _viewModel.CancelRemainderCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( 2d, line.OpenAmount );
+		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync( It.IsAny<StockOrderLineModel>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task EditSupplierData_UpsertsSupplierProductAndUpdatesLine()
+	{
+		var line = Line( 1, 4, 0 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		_mockSupplierService.Setup( s => s.GetProductSupplierAsync( 1, 1 ) ).ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
+		_mockSupplierService.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) ).ReturnsAsync( 70 );
+		_viewModel.ShowSupplierProductDialog = vm =>
 		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Closed = false,
-			IsSelected = true
-		};
-		var otherLine = new StockOrderLineModel
-		{
-			Id = 41,
-			SupplyOrderId = 25,
-			ProductId = 6,
-			ProductCode = "P-006",
-			ProductName = "Axle",
-			Amount = 2,
-			OpenAmount = 1,
-			Received = 1,
-			Closed = false
-		};
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { selectedLine, otherLine } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { selectedLine, otherLine } );
-		selectedLine.IsSelected = true;
-		_viewModel.SelectedOrderLine = otherLine;
-		_viewModel.ShowReceiptDialog = _ => throw new AssertFailedException( "The single-line dialog should not open for selected rows." );
-		_viewModel.ShowReceiptDateDialog = vm =>
-		{
-			vm.DeliveryDate = new DateTime( 2026, 5, 6 );
+			vm.Model.SupplierProductNumber = "CW-123";
+			vm.Model.SupplierProductName = "Walnut dowel 3mm";
+			vm.Model.UnitPrice = 2.5;
 			return true;
 		};
 
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
+		await _viewModel.EditSupplierDataCommand.ExecuteAsync( null );
 
-		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync(
-			It.Is<StockOrderLineModel>( updated =>
-				updated.Id == 40 &&
-				updated.Received == 5d &&
-				updated.OpenAmount == 0d &&
-				updated.Closed &&
-				updated.ClosedDate == new DateTime( 2026, 5, 6 ) ),
-			3d,
-			new DateTime( 2026, 5, 6 ) ),
-			Times.Once );
-		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.Is<StockOrderLineModel>( updated => updated.Id == 41 ), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Never );
+		_mockSupplierService.Verify( s => s.UpsertProductSupplierAsync( It.Is<Modelbouwer.Model.ProductSupplierModel>( ps =>
+			ps.SupplierId == 1 && ps.ProductId == 1 && ps.ProductNumber == "CW-123" && ps.ProductName == "Walnut dowel 3mm" && ps.Price == 2.5 ) ), Times.Once );
+		Assert.AreEqual( "Walnut dowel 3mm", line.SupplierProductName );
+		Assert.AreEqual( 2.5, line.Price );
+		Assert.AreEqual( 10d, line.RealRowTotal );
+		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync( line ), Times.Once );
+	}
+
+	[TestMethod]
+	public async Task ReceiveAll_KeepsClosedOrderAndLinesVisibleForCorrections()
+	{
+		var first = Line( 1, 4, 0 );
+		var second = Line( 2, 3, 0 );
+		var order = SelectOrder( first, second );
+		_viewModel.ShowReceiptDateDialog = _ => true;
+
+		await _viewModel.ReceiveAllCommand.ExecuteAsync( null );
+
+		Assert.IsTrue( order.Closed );
+		CollectionAssert.Contains( _viewModel.Orders, order, "The closed order stays in the list while it is selected." );
 		Assert.AreSame( order, _viewModel.SelectedOrder );
+		Assert.AreEqual( 2, _viewModel.OpenOrderLines.Count );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WhenBulkReceivesLastOpenLines_ClosesOrder()
+	public async Task CorrectReceipt_AfterEntireOrderReceived_ReopensLineAndOrderAndBooksNegativeDifference()
 	{
-		var order = new StockOrderModel { Id = 25, OrderNumber = "SO-025", Closed = false };
-		var firstLine = new StockOrderLineModel { Id = 40, SupplyOrderId = 25, ProductId = 5, Amount = 5, OpenAmount = 3, Received = 2, Closed = false, IsSelected = true };
-		var secondLine = new StockOrderLineModel { Id = 41, SupplyOrderId = 25, ProductId = 6, Amount = 2, OpenAmount = 1, Received = 1, Closed = false, IsSelected = true };
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { firstLine, secondLine } );
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel> { order } );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { firstLine, secondLine } );
-		firstLine.IsSelected = true;
-		secondLine.IsSelected = true;
-		_viewModel.ShowReceiptDateDialog = vm =>
+		// Large order received in full, but 3 of 5 pieces of one line actually arrived.
+		var first = Line( 1, 5, 0 );
+		var second = Line( 2, 2, 0 );
+		var order = SelectOrder( first, second );
+		_viewModel.ShowReceiptDateDialog = _ => true;
+		await _viewModel.ReceiveAllCommand.ExecuteAsync( null );
+
+		_viewModel.SelectedOrderLine = _viewModel.OpenOrderLines.Single( l => l.Id == 1 );
+		_viewModel.ShowReceiptDialog = vm =>
 		{
-			vm.DeliveryDate = new DateTime( 2026, 5, 6 );
+			Assert.IsTrue( vm.Model.IsCorrection );
+			Assert.AreEqual( 5d, vm.Model.ReceiveAmount, "Correction starts at the registered total." );
+			vm.Model.ReceiveAmount = 3;
 			return true;
 		};
 
-		await _viewModel.EditReceiptCommand.ExecuteAsync( null );
+		await _viewModel.ActivateLineCommand.ExecuteAsync( null );
 
-		_mockStockOrderService.Verify( s => s.UpdateOrderAsync(
-			It.Is<StockOrderModel>( updated =>
-				updated.Id == 25 &&
-				updated.Closed &&
-				updated.ClosedDate == new DateTime( 2026, 5, 6 ) ) ),
-			Times.Once );
+		Assert.AreEqual( 3d, first.Received );
+		Assert.AreEqual( 2d, first.OpenAmount );
+		Assert.IsFalse( first.Closed );
+		Assert.IsFalse( order.Closed, "The order reopens because a line is open again." );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( first, -2d, It.IsAny<DateTime?>() ), Times.Once );
+		Assert.IsTrue( _viewModel.ReceiveLineCommand.CanExecute( null ), "The remaining 2 can be received later." );
 	}
 
 	[TestMethod]
-	public void StockReceiptViewModel_EditReceiptCommandIsGuardedAgainstParallelExecution()
+	public async Task CorrectReceipt_WithUnchangedTotal_BooksNothing()
 	{
-		var source = LoadSource( "Modelbouwer", "ViewModels", "StockReceiptViewModel.cs" );
+		var line = Line( 1, 4, 4 );
+		_viewModel.ShowClosedOrders = true;
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowReceiptDialog = _ => true;
 
-		StringAssert.Contains( source, "[ObservableProperty] private bool _isEditingReceipt;" );
-		StringAssert.Contains( source, "EditReceiptCommand = new AsyncRelayCommand( () => EditSelectedOrderLineAsync(), () => !IsEditingReceipt );" );
-		StringAssert.Contains( source, "partial void OnIsEditingReceiptChanged( bool value ) => EditReceiptCommand.NotifyCanExecuteChanged();" );
-		AssertMethodContains( source, "private async Task EditSelectedOrderLineCoreAsync", "if ( IsEditingReceipt )" );
-		AssertMethodContains( source, "private async Task EditSelectedOrderLineCoreAsync", "IsEditingReceipt = true;" );
-		AssertMethodContains( source, "private async Task EditSelectedOrderLineCoreAsync", "finally" );
+		await _viewModel.CorrectReceiptCommand.ExecuteAsync( null );
+
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Never );
 	}
 
-	private static string LoadSource( params string [ ] relativeSegments )
+	[TestMethod]
+	public async Task ActivateLine_OnOpenLine_OpensNormalReceipt()
 	{
-		var directory = AppContext.BaseDirectory;
-		while ( directory != null && !File.Exists( Path.Combine( directory, "ModelbouwWerkbank.slnx" ) ) )
-		{
-			directory = Directory.GetParent( directory )?.FullName;
-		}
+		var line = Line( 1, 4, 1 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		bool? wasCorrection = null;
+		_viewModel.ShowReceiptDialog = vm => { wasCorrection = vm.Model.IsCorrection; return false; };
 
-		var repositoryRoot = directory ?? throw new DirectoryNotFoundException( "Could not locate repository root." );
-		var path = Path.Combine( [ repositoryRoot, .. relativeSegments ] );
+		await _viewModel.ActivateLineCommand.ExecuteAsync( null );
 
-		return File.ReadAllText( path );
-	}
-
-	private static void AssertMethodContains( string source, string methodSignature, string expectedContent )
-	{
-		var methodStart = source.IndexOf( methodSignature, StringComparison.Ordinal );
-		Assert.IsTrue( methodStart >= 0, $"Method '{methodSignature}' was not found." );
-
-		var nextMethod = source.IndexOf( "\n\tprivate ", methodStart + methodSignature.Length, StringComparison.Ordinal );
-		if ( nextMethod < 0 )
-			nextMethod = source.Length;
-
-		var methodBody = source.Substring( methodStart, nextMethod - methodStart );
-		StringAssert.Contains( methodBody, expectedContent );
+		Assert.AreEqual( false, wasCorrection );
 	}
 
 	private static async Task WaitUntilAsync( Func<bool> condition )

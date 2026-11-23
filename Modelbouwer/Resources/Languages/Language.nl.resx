@@ -4250,7 +4250,7 @@ Om een nieuwe tijdsregistratie toe te kunnen voegen moet eerst een Datum en proj
     <value>Ontvangst registreren</value>
   </data>
   <data name="StockReceiptClosedOrderLineTooltip" xml:space="preserve">
-    <value>Deze orderregel is gesloten en kan niet meer worden aangepast.</value>
+    <value>Deze bestelregel is volledig ontvangen. Dubbelklik om de ontvangst aan te passen.</value>
   </data>
   <data name="StockReceiptDialogTitle" xml:space="preserve">
     <value>Ontvangst registreren</value>
@@ -4685,5 +4685,50 @@ PowerShell:
   </data>
   <data name="generalButtonClose" xml:space="preserve">
     <value>Sluiten</value>
+  </data>
+  <data name="StockReceiptReceiveAmountLabel" xml:space="preserve">
+    <value>Nu ontvangen</value>
+  </data>
+  <data name="StockReceiptRemainingAfterLabel" xml:space="preserve">
+    <value>Daarna nog open</value>
+  </data>
+  <data name="StockReceiptReceiveAmountMustBePositive" xml:space="preserve">
+    <value>Vul een aantal groter dan 0 in.</value>
+  </data>
+  <data name="StockReceiptReceiveAmountTooHigh" xml:space="preserve">
+    <value>Er kan niet meer ontvangen worden dan er nog open staat ({0}).</value>
+  </data>
+  <data name="StockReceiptMenuReceive" xml:space="preserve">
+    <value>Ontvangen</value>
+  </data>
+  <data name="StockReceiptMenuReceiveAll" xml:space="preserve">
+    <value>Gehele bestelling volledig ontvangen</value>
+  </data>
+  <data name="StockReceiptMenuCancelRemainder" xml:space="preserve">
+    <value>Restant annuleren</value>
+  </data>
+  <data name="StockReceiptMenuEditSupplierData" xml:space="preserve">
+    <value>Leveranciergegevens wijzigen</value>
+  </data>
+  <data name="StockReceiptCancelRemainderConfirm" xml:space="preserve">
+    <value>Het restant van {0} van &quot;{1}&quot; wordt geannuleerd en de bestelregel wordt gesloten. Doorgaan?</value>
+  </data>
+  <data name="StockReceiptNothingOpen" xml:space="preserve">
+    <value>Deze order heeft geen open bestelregels meer.</value>
+  </data>
+  <data name="SupplierProductDialogTitle" xml:space="preserve">
+    <value>Leveranciergegevens</value>
+  </data>
+  <data name="StockReceiptMenuCorrect" xml:space="preserve">
+    <value>Ontvangst aanpassen</value>
+  </data>
+  <data name="StockReceiptCorrectDialogTitle" xml:space="preserve">
+    <value>Ontvangst aanpassen</value>
+  </data>
+  <data name="StockReceiptCorrectAmountLabel" xml:space="preserve">
+    <value>Werkelijk ontvangen (totaal)</value>
+  </data>
+  <data name="StockReceiptCorrectAmountOutOfRange" xml:space="preserve">
+    <value>Het ontvangen aantal moet tussen 0 en {0} liggen.</value>
   </data>
 </root>

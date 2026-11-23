@@ -4250,7 +4250,7 @@ In order to be able to add a new time registration, a date and project must firs
     <value>Register receipt</value>
   </data>
   <data name="StockReceiptClosedOrderLineTooltip" xml:space="preserve">
-    <value>This order line is closed and can no longer be changed.</value>
+    <value>This order line is fully received. Double-click to adjust the receipt.</value>
   </data>
   <data name="StockReceiptDialogTitle" xml:space="preserve">
     <value>Register receipt</value>
@@ -4685,5 +4685,50 @@ PowerShell:
   </data>
   <data name="generalButtonClose" xml:space="preserve">
     <value>Close</value>
+  </data>
+  <data name="StockReceiptReceiveAmountLabel" xml:space="preserve">
+    <value>Received now</value>
+  </data>
+  <data name="StockReceiptRemainingAfterLabel" xml:space="preserve">
+    <value>Still open afterwards</value>
+  </data>
+  <data name="StockReceiptReceiveAmountMustBePositive" xml:space="preserve">
+    <value>Enter a quantity greater than 0.</value>
+  </data>
+  <data name="StockReceiptReceiveAmountTooHigh" xml:space="preserve">
+    <value>You cannot receive more than the open quantity ({0}).</value>
+  </data>
+  <data name="StockReceiptMenuReceive" xml:space="preserve">
+    <value>Receive</value>
+  </data>
+  <data name="StockReceiptMenuReceiveAll" xml:space="preserve">
+    <value>Entire order fully received</value>
+  </data>
+  <data name="StockReceiptMenuCancelRemainder" xml:space="preserve">
+    <value>Cancel remainder</value>
+  </data>
+  <data name="StockReceiptMenuEditSupplierData" xml:space="preserve">
+    <value>Edit supplier data</value>
+  </data>
+  <data name="StockReceiptCancelRemainderConfirm" xml:space="preserve">
+    <value>The remaining {0} of &quot;{1}&quot; will be cancelled and the order line will be closed. Continue?</value>
+  </data>
+  <data name="StockReceiptNothingOpen" xml:space="preserve">
+    <value>This order has no open order lines.</value>
+  </data>
+  <data name="SupplierProductDialogTitle" xml:space="preserve">
+    <value>Supplier data</value>
+  </data>
+  <data name="StockReceiptMenuCorrect" xml:space="preserve">
+    <value>Adjust receipt</value>
+  </data>
+  <data name="StockReceiptCorrectDialogTitle" xml:space="preserve">
+    <value>Adjust receipt</value>
+  </data>
+  <data name="StockReceiptCorrectAmountLabel" xml:space="preserve">
+    <value>Actually received (total)</value>
+  </data>
+  <data name="StockReceiptCorrectAmountOutOfRange" xml:space="preserve">
+    <value>The received quantity must be between 0 and {0}.</value>
   </data>
 </root>
