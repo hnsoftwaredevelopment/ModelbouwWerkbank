@@ -12,6 +12,7 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 	private readonly ISupplierService _supplierService;
 	private bool _suppressSelectedOrderChange;
 	private List<StockOrderModel> _allOrders = [];
+	private readonly HashSet<int> _ordersWithUnsavedStatus = [ ];
 
 	public ObservableCollection<StockOrderModel> Orders { get; } = [ ];
 	public ObservableCollection<StockOrderLineModel> OpenOrderLines { get; } = [ ];
@@ -131,6 +132,14 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 			return;
 
 		ApplySelectedOrder( order, lines );
+
+		// Saving the order status failed earlier in this session: try again now, without a new stock booking.
+		if ( _ordersWithUnsavedStatus.Contains( order.Id ) )
+		{
+			await SyncOrderStatusAsync( order, lines, DateTime.Today );
+			order.OpenLineCount = lines.Count( line => !line.Closed );
+			ApplyOrderFilters();
+		}
 	}
 
 	#region Double click: receive an open line, adjust the receipt of a closed line
@@ -405,13 +414,17 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 
 	/// <summary>
 	/// Derives the order status from the stored lines: closed when every line is closed, open otherwise.
-	/// When saving fails, the order keeps its previous status, so the next action detects the difference again.
+	/// When saving fails, the order keeps its previous status and is remembered, so selecting it again (or the next
+	/// action on it) saves the status without a new stock booking.
 	/// </summary>
 	private async Task SyncOrderStatusAsync( StockOrderModel order, IReadOnlyCollection<StockOrderLineModel> lines, DateTime deliveryDate )
 	{
 		bool shouldBeClosed = lines.Count > 0 && lines.All( line => line.Closed );
 		if ( order.Closed == shouldBeClosed )
+		{
+			_ordersWithUnsavedStatus.Remove( order.Id );
 			return;
+		}
 
 		var previous = (order.Closed, order.ClosedDate);
 		order.Closed = shouldBeClosed;
@@ -419,10 +432,12 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 		try
 		{
 			await _stockOrderService.UpdateOrderAsync( order );
+			_ordersWithUnsavedStatus.Remove( order.Id );
 		}
 		catch
 		{
 			(order.Closed, order.ClosedDate) = previous;
+			_ordersWithUnsavedStatus.Add( order.Id );
 			throw;
 		}
 	}
