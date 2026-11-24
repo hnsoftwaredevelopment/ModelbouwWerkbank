@@ -37,7 +37,7 @@
         <!-- The two questions -->
         <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,0,12,8" VerticalAlignment="Center" Text="{Binding AmountLabel}" />
         <TextBox x:Name="ReceiveAmountBox" Grid.Row="2" Grid.Column="1" Margin="0,0,0,8"
-                 Text="{Binding Model.ReceiveAmount, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:0.##}}"
+                 Text="{Binding Model.ReceiveAmount, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True, StringFormat={}{0:0.##}}"
                  GotKeyboardFocus="ReceiveAmountBox_GotKeyboardFocus" />
 
         <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,12,8" VerticalAlignment="Center" Text="{x:Static language:Language.StockReceiptDeliveryDateLabel}" />

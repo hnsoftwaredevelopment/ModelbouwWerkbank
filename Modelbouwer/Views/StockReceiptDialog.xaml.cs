@@ -21,6 +21,9 @@ public partial class StockReceiptDialog : Window
 		if ( DataContext is not StockReceiptDialogViewModel vm )
 			return;
 
+		if ( DialogValidation.BlockOnInvalidInput( this ) )
+			return;
+
 		var validationMessage = vm.Validate();
 		if ( validationMessage != null )
 		{

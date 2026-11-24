@@ -13,6 +13,9 @@ public partial class StockOrderProductDialog : Window
 		if ( DataContext is not StockOrderProductDialogViewModel vm )
 			return;
 
+		if ( DialogValidation.BlockOnInvalidInput( this ) )
+			return;
+
 		if ( !vm.TryConfirm( out var errorMessage ) )
 		{
 			MessageBox.Show( errorMessage, Lang.generalMessageboxWarningTitle, MessageBoxButton.OK, MessageBoxImage.Warning );

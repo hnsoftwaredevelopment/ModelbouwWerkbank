@@ -4746,4 +4746,7 @@ PowerShell:
   <data name="OrderSelectorNoOrders" xml:space="preserve">
     <value>No orders</value>
   </data>
+  <data name="DialogInvalidNumber" xml:space="preserve">
+    <value>One or more fields do not contain a valid number. Correct the input marked in red.</value>
+  </data>
 </root>

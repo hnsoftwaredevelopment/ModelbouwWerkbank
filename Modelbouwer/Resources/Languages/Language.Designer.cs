@@ -14244,5 +14244,13 @@ namespace Modelbouwer.Resources.Languages {
                 return ResourceManager.GetString("OrderSelectorNoOrders", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to Een of meer velden bevatten geen geldig getal. Pas de rood gemarkeerde invoer aan..
+        /// </summary>
+        public static string DialogInvalidNumber {
+            get {
+                return ResourceManager.GetString("DialogInvalidNumber", resourceCulture);
+            }
+        }
     }
 }

@@ -4746,4 +4746,7 @@ PowerShell:
   <data name="OrderSelectorNoOrders" xml:space="preserve">
     <value>Geen orders</value>
   </data>
+  <data name="DialogInvalidNumber" xml:space="preserve">
+    <value>Een of meer velden bevatten geen geldig getal. Pas de rood gemarkeerde invoer aan.</value>
+  </data>
 </root>
