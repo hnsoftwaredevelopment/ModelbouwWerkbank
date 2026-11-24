@@ -191,14 +191,24 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return SaveOrderAsync( order, lines, deletedLineIds, productSuppliers, CancellationToken.None );
 	}
 
-	public Task<int> SaveOrderAsync( StockOrderModel order, IEnumerable<StockOrderLineModel> lines, IEnumerable<int> deletedLineIds, IEnumerable<Modelbouwer.Model.ProductSupplierModel> productSuppliers, CancellationToken cancellationToken )
+	/// <summary>
+	/// Saves order, lines, deleted lines and supplier data in one transaction. Generated ids are written back to
+	/// the lines and supplier data only after the commit, so a rolled back attempt leaves them unchanged and a
+	/// retry inserts again instead of updating rows that do not exist.
+	/// </summary>
+	public async Task<int> SaveOrderAsync( StockOrderModel order, IEnumerable<StockOrderLineModel> lines, IEnumerable<int> deletedLineIds, IEnumerable<Modelbouwer.Model.ProductSupplierModel> productSuppliers, CancellationToken cancellationToken )
 	{
 		List<StockOrderLineModel> lineList = lines.ToList();
 		List<int> deletedIds = deletedLineIds.Where( id => id > 0 ).Distinct().ToList();
 		List<Modelbouwer.Model.ProductSupplierModel> supplierList = productSuppliers.ToList();
+		Dictionary<StockOrderLineModel, int> insertedLineIds = new( ReferenceEqualityComparer.Instance );
+		Dictionary<Modelbouwer.Model.ProductSupplierModel, int> insertedProductSupplierIds = new( ReferenceEqualityComparer.Instance );
 
-		return _dataService.ExecuteInTransactionAsync<int>( async ( connection, transaction ) =>
+		int savedOrderId = await _dataService.ExecuteInTransactionAsync<int>( async ( connection, transaction ) =>
 		{
+			insertedLineIds.Clear();
+			insertedProductSupplierIds.Clear();
+
 			int orderId = order.Id;
 			if ( orderId <= 0 )
 			{
@@ -219,14 +229,17 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 
 			foreach ( var line in lineList )
 			{
-				line.SupplyOrderId = orderId;
 				if ( line.Id <= 0 )
 				{
-					line.Id = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderLineQuery, BuildOrderLineParameters( line, includeId: false ), cancellationToken );
+					var parameters = BuildOrderLineParameters( line, includeId: false );
+					parameters [ $"@{DBNames.OrderLineFieldNameSupplierOrderId}" ] = orderId;
+					insertedLineIds [ line ] = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderLineQuery, parameters, cancellationToken );
 				}
-				else if ( line.IsDirty )
+				else if ( line.IsDirty || line.SupplyOrderId != orderId )
 				{
-					await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateOrderLineQuery, BuildOrderLineParameters( line, includeId: true ), cancellationToken );
+					var parameters = BuildOrderLineParameters( line, includeId: true );
+					parameters [ $"@{DBNames.OrderLineFieldNameSupplierOrderId}" ] = orderId;
+					await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateOrderLineQuery, parameters, cancellationToken );
 				}
 			}
 
@@ -249,12 +262,25 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 				}
 				else
 				{
-					productSupplier.ProductSupplierId = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertProductSupplierQuery, parameters, cancellationToken );
+					insertedProductSupplierIds [ productSupplier ] = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertProductSupplierQuery, parameters, cancellationToken );
 				}
 			}
 
 			return orderId;
 		}, cancellationToken );
+
+		// Committed: now the generated ids are real.
+		foreach ( var line in lineList )
+		{
+			line.SupplyOrderId = savedOrderId;
+			if ( insertedLineIds.TryGetValue( line, out int lineId ) )
+				line.Id = lineId;
+		}
+
+		foreach ( var (productSupplier, productSupplierId) in insertedProductSupplierIds )
+			productSupplier.ProductSupplierId = productSupplierId;
+
+		return savedOrderId;
 	}
 
 	public Task<List<StockOrderModel>> GetAllOrdersAsync()

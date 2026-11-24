@@ -30,7 +30,8 @@ public partial class StockOrderView : UserControl
 	private void OrderLinesGrid_CurrentCellBeginEdit( object? sender, CurrentCellBeginEditEventArgs e )
 	{
 		var record = OrderLinesGrid.GetRecordAtRowIndex( e.RowColumnIndex.RowIndex );
-		if ( record is StockOrderLineModel { Closed: true } )
+		// Closed lines stay read only, and nothing is edited while the order is being saved or deleted.
+		if ( record is StockOrderLineModel { Closed: true } || DataContext is StockOrderViewModel { CanEditOrder: false } )
 			e.Cancel = true;
 	}
 

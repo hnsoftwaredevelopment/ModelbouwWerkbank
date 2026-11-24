@@ -31,7 +31,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	private List<StockOrderModel> _allOrders = [];
 	private List<StockOrderProductRowModel> _allRows = [];
 	private Dictionary<(int SupplierId, int ProductId), ProductSupplierModel> _productSuppliers = [];
-	private readonly Dictionary<int, ProductSupplierModel> _pendingProductSuppliers = [];
+	private readonly Dictionary<(int SupplierId, int ProductId), ProductSupplierModel> _pendingProductSuppliers = [];
 	private readonly List<int> _deletedLineIds = [];
 	private Dictionary<int, double> _savedOpenByProduct = [];
 
@@ -48,13 +48,17 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	[ObservableProperty] private bool _isNewOrder;
 	[ObservableProperty] private bool _hasUnsavedChanges;
 	[ObservableProperty] private bool _isSavingOrder;
+	[ObservableProperty] private bool _isDeletingOrder;
 	[ObservableProperty] private bool _isEditingOrderLine;
 	[ObservableProperty] private bool _showClosedOrders;
 	[ObservableProperty] private bool _showOnlyShortages;
 	[ObservableProperty] private string? _searchText;
 
 	public bool IsClosedOrder => EditableOrder.Closed;
-	public bool CanEditOrder => !EditableOrder.Closed;
+	/// <summary>Saving or deleting is in progress: the order on screen must not change until it is done.</summary>
+	public bool IsWorking => IsSavingOrder || IsDeletingOrder;
+	public bool CanSwitchOrder => !IsWorking;
+	public bool CanEditOrder => !EditableOrder.Closed && !IsWorking;
 
 	/// <summary>The supplier decides article numbers and prices, so it is fixed once the order has lines.</summary>
 	public bool CanChangeSupplier => CanEditOrder && OrderLines.Count == 0;
@@ -84,9 +88,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		_stockService = stockService;
 		_supplierService = supplierService;
 
-		NewOrderCommand = new RelayCommand( RequestNewOrder );
+		NewOrderCommand = new RelayCommand( RequestNewOrder, () => !IsWorking );
 		SaveOrderCommand = new AsyncRelayCommand( cancellationToken => SaveOrderAsync( cancellationToken ), CanSaveOrder );
-		DeleteOrderCommand = new AsyncRelayCommand( DeleteOrderAsync );
+		DeleteOrderCommand = new AsyncRelayCommand( DeleteOrderAsync, () => !IsWorking );
 		AddProductToOrderCommand = new AsyncRelayCommand( AddSelectedProductAsync, CanAddProduct );
 		AddShortagesCommand = new AsyncRelayCommand( AddShortagesAsync, CanEditOrderLineCommand );
 		EditLineSupplierDataCommand = new AsyncRelayCommand( EditSelectedLineSupplierDataAsync, () => CanEditOrderLineCommand() && SelectedOrderLine != null );
@@ -98,7 +102,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		ObserveBackgroundTask( InitializeAsync() );
 	}
 
-	private bool CanSaveOrder() => !IsSavingOrder;
+	private bool CanSaveOrder() => !IsWorking;
 	private bool CanEditOrderLineCommand() => CanEditOrder && !IsEditingOrderLine;
 	private bool CanAddProduct() => CanEditOrderLineCommand() && SelectedProductRow != null;
 
@@ -110,7 +114,20 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		DeleteOrderLineCommand.NotifyCanExecuteChanged();
 	}
 
-	partial void OnIsSavingOrderChanged( bool value ) => SaveOrderCommand.NotifyCanExecuteChanged();
+	partial void OnIsSavingOrderChanged( bool value ) => OnWorkingChanged();
+	partial void OnIsDeletingOrderChanged( bool value ) => OnWorkingChanged();
+
+	private void OnWorkingChanged()
+	{
+		OnPropertyChanged( nameof( IsWorking ) );
+		OnPropertyChanged( nameof( CanSwitchOrder ) );
+		OnPropertyChanged( nameof( CanEditOrder ) );
+		OnPropertyChanged( nameof( CanChangeSupplier ) );
+		SaveOrderCommand.NotifyCanExecuteChanged();
+		NewOrderCommand.NotifyCanExecuteChanged();
+		DeleteOrderCommand.NotifyCanExecuteChanged();
+		NotifyOrderLineCommandsCanExecuteChanged();
+	}
 	partial void OnIsEditingOrderLineChanged( bool value ) => NotifyOrderLineCommandsCanExecuteChanged();
 	partial void OnSelectedOrderLineChanged( StockOrderLineModel? value ) => NotifyOrderLineCommandsCanExecuteChanged();
 	partial void OnSelectedProductRowChanged( StockOrderProductRowModel? value ) => AddProductToOrderCommand.NotifyCanExecuteChanged();
@@ -124,9 +141,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		if ( _suppressSelectedOrderChange || value == null || ReferenceEquals( value, _loadedOrder ) )
 			return;
 
-		if ( HasUnsavedChanges && !Confirm( Lang.StockOrderDiscardChangesConfirm ) )
+		if ( IsWorking || ( HasUnsavedChanges && !Confirm( Lang.StockOrderDiscardChangesConfirm ) ) )
 		{
-			RestoreSelectedOrder();
+			RestoreSelectedOrder( value );
 			return;
 		}
 
@@ -135,10 +152,14 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	}
 
 	/// <summary>Puts the dropdown back on the order that is on screen (after "keep my changes").</summary>
-	private void RestoreSelectedOrder()
+	private void RestoreSelectedOrder( StockOrderModel refused )
 	{
 		void Restore()
 		{
+			// The user may have picked yet another order in the meantime; that choice wins.
+			if ( !ReferenceEquals( SelectedOrder, refused ) )
+				return;
+
 			_suppressSelectedOrderChange = true;
 			SelectedOrder = _loadedOrder;
 			_suppressSelectedOrderChange = false;
@@ -154,7 +175,24 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 	private async Task LoadSelectedOrderAsync( StockOrderModel order, int loadVersion )
 	{
-		var lines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+		List<StockOrderLineModel> lines;
+		try
+		{
+			lines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+		}
+		catch
+		{
+			// The editor still shows the previous order, so the dropdown goes back to it. An older failed load
+			// does not undo a newer selection.
+			if ( loadVersion == _selectionLoadVersion )
+			{
+				_suppressSelectedOrderChange = true;
+				SelectedOrder = _loadedOrder;
+				_suppressSelectedOrderChange = false;
+			}
+
+			throw;
+		}
 
 		if ( loadVersion != _selectionLoadVersion || SelectedOrder?.Id != order.Id )
 			return;
@@ -409,7 +447,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 	private ProductSupplierModel? GetProductSupplier( int productId )
 	{
-		if ( _pendingProductSuppliers.TryGetValue( productId, out var pending ) )
+		if ( _pendingProductSuppliers.TryGetValue( (EditableOrder.SupplierId, productId), out var pending ) )
 			return pending;
 
 		return _productSuppliers.TryGetValue( (EditableOrder.SupplierId, productId), out var saved ) ? saved : null;
@@ -441,6 +479,10 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			_savedOpenByProduct.TryGetValue( row.ProductId, out double saved );
 			row.PendingInOrder = onScreen - saved;
 		}
+
+		// The shortage filter depends on what is in order, so it follows every change of the lines.
+		if ( ShowOnlyShortages )
+			ApplyProductFilter();
 	}
 
 	private void ApplyProductFilter()
@@ -526,7 +568,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	/// Adds a product with the suggested quantity. When the product is already on an open line, that line is
 	/// raised instead. The supplier data popup only appears when article number or description is missing.
 	/// </summary>
-	private async Task<bool> AddProductCoreAsync( StockOrderProductRowModel row, bool askForMissingSupplierData )
+	private async Task<bool> AddProductCoreAsync( StockOrderProductRowModel row, bool askForMissingSupplierData, bool refreshProductList = true )
 	{
 		var supplier = GetEditableOrderSupplier();
 		if ( supplier == null )
@@ -540,6 +582,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			|| string.IsNullOrWhiteSpace( productSupplier.ProductNumber )
 			|| string.IsNullOrWhiteSpace( productSupplier.ProductName );
 
+		bool supplierDataConfirmed = false;
 		if ( missingData && askForMissingSupplierData )
 		{
 			var model = StockOrderProductDialogModel.Create( row.Product, supplier, productSupplier );
@@ -548,12 +591,29 @@ public partial class StockOrderViewModel : AsyncObservableObject
 				return false;
 
 			productSupplier = SetPendingProductSupplier( row.ProductId, model.ProductSupplierId, model.SupplierProductNumber, model.SupplierProductName, model.UnitPrice, model.ProductUrl );
+			supplierDataConfirmed = true;
 		}
 
 		double amount = row.SuggestedAmount;
 		var existing = OrderLines.FirstOrDefault( line => line.ProductId == row.ProductId && !line.Closed );
 		if ( existing != null )
 		{
+			if ( supplierDataConfirmed )
+			{
+				// The confirmed data also applies to the line that is already there.
+				_suppressLineTracking = true;
+				try
+				{
+					existing.SupplierProductNumber = productSupplier!.ProductNumber;
+					existing.SupplierProductName = productSupplier.ProductName;
+					existing.Price = productSupplier.Price;
+				}
+				finally
+				{
+					_suppressLineTracking = false;
+				}
+			}
+
 			existing.Amount += amount;   // the change handler recalculates open amount, total and shortage
 		}
 		else
@@ -578,11 +638,18 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			SelectedOrderLine = line;
 		}
 
+		HasUnsavedChanges = true;
+		if ( refreshProductList )
+			RefreshAfterLinesChanged();
+
+		return true;
+	}
+
+	private void RefreshAfterLinesChanged()
+	{
 		RefreshSupplierOnRows();
 		RefreshPendingInOrder();
 		RecalculateTotals();
-		HasUnsavedChanges = true;
-		return true;
 	}
 
 	/// <summary>Bestel advies (KAN-82): adds every product of this supplier with a shortage that is not on the order yet.</summary>
@@ -611,8 +678,11 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		IsEditingOrderLine = true;
 		try
 		{
+			// The product list is refreshed once, after all lines are added.
 			foreach ( var row in candidates )
-				await AddProductCoreAsync( row, askForMissingSupplierData: false );
+				await AddProductCoreAsync( row, askForMissingSupplierData: false, refreshProductList: false );
+
+			RefreshAfterLinesChanged();
 		}
 		finally
 		{
@@ -749,7 +819,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			URL = url,
 			DefaultSupplier = false
 		};
-		_pendingProductSuppliers [ productId ] = productSupplier;
+		_pendingProductSuppliers [ (EditableOrder.SupplierId, productId) ] = productSupplier;
 		return productSupplier;
 	}
 	#endregion
@@ -775,10 +845,17 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		try
 		{
 			var lines = OrderLines.ToList();
-			var productSuppliers = _pendingProductSuppliers.Values.ToList();
+			var productSuppliers = _pendingProductSuppliers
+				.Where( pending => pending.Key.SupplierId == EditableOrder.SupplierId )
+				.Select( pending => pending.Value )
+				.ToList();
 			int orderId = cancellationToken.HasValue
 				? await _stockOrderService.SaveOrderAsync( EditableOrder, lines, _deletedLineIds.ToList(), productSuppliers, cancellationToken.Value )
 				: await _stockOrderService.SaveOrderAsync( EditableOrder, lines, _deletedLineIds.ToList(), productSuppliers );
+
+			// Committed. Record that before reading anything back: when the reload below fails, a second save
+			// updates this order instead of inserting it again.
+			MarkSaved( orderId, lines, productSuppliers );
 
 			// Reload, so stock figures, "in order" and supplier data come from the database again.
 			await LoadReferenceDataAsync();
@@ -816,12 +893,47 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		if ( !Confirm( string.Format( Lang.StockOrderDeleteOrderConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName ) ) )
 			return;
 
-		var lines = await _stockOrderService.GetOrderLinesAsync( EditableOrder.Id );
-		await _stockOrderService.DeleteOrderWithLinesAsync( EditableOrder.Id, lines );
+		// Fixed before the first await, and the screen is locked while deleting.
+		int orderId = EditableOrder.Id;
+		IsDeletingOrder = true;
+		try
+		{
+			var lines = await _stockOrderService.GetOrderLinesAsync( orderId );
+			await _stockOrderService.DeleteOrderWithLinesAsync( orderId, lines );
+		}
+		finally
+		{
+			IsDeletingOrder = false;
+		}
 
 		ResetToNewOrder();
 		await LoadReferenceDataAsync();
 		await LoadOrdersAsync( null );
+	}
+
+	/// <summary>The save is committed: the editor now holds a stored order with stored lines and supplier data.</summary>
+	private void MarkSaved( int orderId, IEnumerable<StockOrderLineModel> savedLines, IEnumerable<ProductSupplierModel> savedProductSuppliers )
+	{
+		_suppressEditableOrderTracking = true;
+		try
+		{
+			EditableOrder.Id = orderId;
+		}
+		finally
+		{
+			_suppressEditableOrderTracking = false;
+		}
+
+		foreach ( var line in savedLines )
+			line.IsDirty = false;
+
+		foreach ( var productSupplier in savedProductSuppliers )
+			_productSuppliers [ (productSupplier.SupplierId, productSupplier.ProductId) ] = productSupplier;
+
+		_deletedLineIds.Clear();
+		_pendingProductSuppliers.Clear();
+		IsNewOrder = false;
+		HasUnsavedChanges = false;
 	}
 	#endregion
 

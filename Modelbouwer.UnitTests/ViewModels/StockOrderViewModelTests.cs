@@ -322,7 +322,7 @@ public class StockOrderViewModelTests
 
 		_orders.Verify( s => s.SaveOrderAsync(
 			It.IsAny<StockOrderModel>(),
-			It.Is<IEnumerable<StockOrderLineModel>>( lines => lines.Single().IsDirty && lines.Single().RealRowTotal == 5.6 ),
+			It.Is<IEnumerable<StockOrderLineModel>>( lines => lines.Single().RealRowTotal == 5.6 ),
 			It.IsAny<IEnumerable<int>>(),
 			It.Is<IEnumerable<ProductSupplierModel>>( ps => ps.Single().ProductSupplierId == 70 && ps.Single().Price == 1.4 ) ),
 			Times.Once );
@@ -445,16 +445,186 @@ public class StockOrderViewModelTests
 	}
 
 	[TestMethod]
-	public void SaveOrderCommand_IsGuardedAgainstParallelExecution()
+	public async Task Save_WhileSaving_IgnoresSecondSaveAndLocksTheScreen()
 	{
-		var directory = AppContext.BaseDirectory;
-		while ( directory != null && !File.Exists( Path.Combine( directory, "ModelbouwWerkbank.slnx" ) ) )
-			directory = Directory.GetParent( directory )?.FullName;
-		var source = File.ReadAllText( Path.Combine( directory!, "Modelbouwer", "ViewModels", "StockOrderViewModel.cs" ) );
+		var gate = new TaskCompletionSource<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Returns( gate.Task );
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
 
-		StringAssert.Contains( source, "SaveOrderCommand = new AsyncRelayCommand( cancellationToken => SaveOrderAsync( cancellationToken ), CanSaveOrder );" );
-		StringAssert.Contains( source, "private bool CanSaveOrder() => !IsSavingOrder;" );
-		StringAssert.Contains( source, "if ( IsSavingOrder )" );
+		var firstSave = _vm.SaveOrderAsync();
+
+		Assert.IsTrue( _vm.IsWorking );
+		Assert.IsFalse( _vm.CanEditOrder, "Lines cannot be edited while saving." );
+		Assert.IsFalse( _vm.CanSwitchOrder );
+		Assert.IsFalse( _vm.SaveOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.NewOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.DeleteOrderCommand.CanExecute( null ) );
+
+		await _vm.SaveOrderAsync();
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Once );
+
+		gate.SetResult( 25 );
+		await firstSave;
+
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsTrue( _vm.SaveOrderCommand.CanExecute( null ), "A later save is possible again." );
+	}
+
+	[TestMethod]
+	public async Task Save_WhenReloadAfterCommitFails_NextSaveUpdatesTheSameOrder()
+	{
+		bool failOrderListOnce = false;
+		_orders.Setup( s => s.GetAllOrdersAsync() ).Returns( () =>
+		{
+			if ( !failOrderListOnce )
+				return Task.FromResult( new List<StockOrderModel>() );
+
+			failOrderListOnce = false;
+			return Task.FromException<List<StockOrderModel>>( new InvalidOperationException( "connection lost" ) );
+		} );
+		var savedOrderIds = new List<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Callback<StockOrderModel, IEnumerable<StockOrderLineModel>, IEnumerable<int>, IEnumerable<ProductSupplierModel>>( ( order, _, _, _ ) => savedOrderIds.Add( order.Id ) )
+			.ReturnsAsync( 25 );
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+		failOrderListOnce = true;
+
+		await AssertThrowsAsync<InvalidOperationException>( _vm.SaveOrderAsync );
+
+		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The commit is recorded before the reload." );
+		Assert.IsFalse( _vm.IsNewOrder );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+		Assert.IsFalse( _vm.IsWorking );
+
+		await _vm.SaveOrderAsync();
+
+		CollectionAssert.AreEqual( new List<int> { 0, 25 }, savedOrderIds, "The second save updates order 25 instead of inserting a new order." );
+	}
+
+	[TestMethod]
+	public async Task PendingSupplierData_IsKeptPerSupplier()
+	{
+		await CreateAsync();
+		int dialogs = 0;
+		_vm.ShowSupplierProductDialog = dialog =>
+		{
+			dialogs++;
+			dialog.Model.SupplierProductNumber = dialogs == 1 ? "CW-BR2" : "OT-BR2";
+			dialog.Model.UnitPrice = dialogs == 1 ? 2.4 : 3.1;
+			return true;
+		};
+
+		await SelectSupplierAndAddAsync( 8 );
+		_vm.SelectedOrderLine = _vm.OrderLines.Single();
+		_vm.DeleteSelectedOrderLine();
+		_vm.EditableOrder.SupplierId = 2;
+		_vm.SelectedProductRow = Row( 8 );
+		await _vm.AddSelectedProductAsync();
+
+		Assert.AreEqual( 2, dialogs, "The data entered for Cornwall is not used for the other supplier." );
+		Assert.AreEqual( "OT-BR2", _vm.OrderLines.Single().SupplierProductNumber );
+		Assert.AreEqual( 3.1, _vm.OrderLines.Single().Price );
+
+		await _vm.SaveOrderAsync();
+		_orders.Verify( s => s.SaveOrderAsync(
+			It.IsAny<StockOrderModel>(),
+			It.IsAny<IEnumerable<StockOrderLineModel>>(),
+			It.IsAny<IEnumerable<int>>(),
+			It.Is<IEnumerable<ProductSupplierModel>>( ps => ps.Single().SupplierId == 2 && ps.Single().ProductNumber == "OT-BR2" ) ),
+			Times.Once );
+	}
+
+	[TestMethod]
+	public async Task AddProduct_ToLineWithoutSupplierData_AppliesConfirmedPriceToThatLine()
+	{
+		await CreateAsync();
+		var line = new StockOrderLineModel { Id = 41, SupplyOrderId = 25, SupplierId = 1, ProductId = 8, ProductCode = "P-008", ProductName = "Brass rod", Amount = 3, OpenAmount = 3, Price = 2, RealRowTotal = 6 };
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today }, [ line ] );
+		_vm.ShowSupplierProductDialog = dialog =>
+		{
+			dialog.Model.SupplierProductNumber = "CW-BR2";
+			dialog.Model.SupplierProductName = "Brass rod 2mm";
+			dialog.Model.UnitPrice = 2.4;
+			return true;
+		};
+
+		_vm.SelectedProductRow = Row( 8 );
+		await _vm.AddSelectedProductAsync();
+
+		Assert.AreEqual( 4d, line.Amount );
+		Assert.AreEqual( 2.4, line.Price );
+		Assert.AreEqual( "CW-BR2", line.SupplierProductNumber );
+		Assert.AreEqual( 9.6, line.RealRowTotal );
+	}
+
+	[TestMethod]
+	public async Task OnlyShortages_FollowsTheLinesOnScreen()
+	{
+		await CreateAsync();
+		_vm.ShowOnlyShortages = true;
+		Assert.IsTrue( _vm.ProductRows.Any( row => row.ProductId == 5 ) );
+
+		await SelectSupplierAndAddAsync( 5 );
+		Assert.IsFalse( _vm.ProductRows.Any( row => row.ProductId == 5 ), "The shortage is covered by the new line." );
+
+		_vm.SelectedOrderLine = _vm.OrderLines.Single();
+		_vm.DeleteSelectedOrderLine();
+		Assert.IsTrue( _vm.ProductRows.Any( row => row.ProductId == 5 ), "Removing the line brings the shortage back." );
+	}
+
+	[TestMethod]
+	public async Task SelectedOrder_WhenLoadFails_DropdownReturnsToTheOrderOnScreen()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		var failure = new InvalidOperationException( "order lines failed" );
+		_orders.Setup( s => s.GetOrderLinesAsync( 30 ) ).ThrowsAsync( failure );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30 };
+
+		for ( int i = 0; i < 40 && !ReferenceEquals( failure, _vm.LastAsyncError ); i++ )
+			await Task.Delay( 25 );
+		Assert.AreSame( failure, _vm.LastAsyncError );
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id );
+		Assert.AreEqual( 25, _vm.EditableOrder.Id );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrder_LocksTheScreenAndDeletesTheOrderItStartedWith()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		var gate = new TaskCompletionSource<List<StockOrderLineModel>>();
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).Returns( gate.Task );
+		_orders.Setup( s => s.DeleteOrderWithLinesAsync( It.IsAny<int>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).Returns( Task.CompletedTask );
+
+		var delete = _vm.DeleteOrderCommand.ExecuteAsync( null );
+		Assert.IsTrue( _vm.IsWorking );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30 };
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id, "Switching order is refused while deleting." );
+
+		gate.SetResult( [ SavedLine( 4, 0 ) ] );
+		await delete;
+
+		_orders.Verify( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ), Times.Once );
+		_orders.Verify( s => s.GetOrderLinesAsync( 30 ), Times.Never );
+		Assert.IsFalse( _vm.IsWorking );
+	}
+
+	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
+	{
+		try
+		{
+			await action();
+		}
+		catch ( TException )
+		{
+			return;
+		}
+
+		Assert.Fail( $"Expected {typeof( TException ).Name}." );
 	}
 	#endregion
 }

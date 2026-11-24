@@ -41,7 +41,7 @@
                         ToolTip="{x:Static language:Language.toolbarButtonActionDelete}">
                     <Image Style="{DynamicResource ToolBarDeleteIcon}" />
                 </Button>
-                <controls:OrderSelector Margin="16,0,0,0" />
+                <controls:OrderSelector Margin="16,0,0,0" IsEnabled="{Binding CanSwitchOrder}" />
             </StackPanel>
             <TextBlock DockPanel.Dock="Right"
                        HorizontalAlignment="Right"
@@ -223,11 +223,11 @@
                             <syncfusion:GridTextColumn MappingName="ProductCode" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderProductCode}" Width="110" />
                             <syncfusion:GridTextColumn MappingName="SupplierProductNumber" HeaderText="{x:Static language:Language.StockOrderProductDialogSupplierProductNumber}" Width="120" />
                             <syncfusion:GridTextColumn MappingName="ProductName" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderProductName}" />
-                            <syncfusion:GridNumericColumn MappingName="MinimalStock" HeaderText="{x:Static language:Language.StockManagementDataGridHeaderMinimalStock}" NumberDecimalDigits="0" Width="80" />
-                            <syncfusion:GridNumericColumn MappingName="Inventory" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderCurrentInventory}" NumberDecimalDigits="0" Width="80" />
-                            <syncfusion:GridNumericColumn MappingName="TotalInOrder" HeaderText="{x:Static language:Language.StockManagementDataGridHeaderOrdered}" NumberDecimalDigits="0" Width="80" />
-                            <syncfusion:GridNumericColumn MappingName="StandardOrderQuantity" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderOrderQuantity}" NumberDecimalDigits="0" Width="80" />
-                            <syncfusion:GridNumericColumn MappingName="SuggestedAmount" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderSuggested}" NumberDecimalDigits="0" Width="80" />
+                            <syncfusion:GridNumericColumn MappingName="MinimalStock" HeaderText="{x:Static language:Language.StockManagementDataGridHeaderMinimalStock}" NumberDecimalDigits="2" Width="80" />
+                            <syncfusion:GridNumericColumn MappingName="Inventory" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderCurrentInventory}" NumberDecimalDigits="2" Width="80" />
+                            <syncfusion:GridNumericColumn MappingName="TotalInOrder" HeaderText="{x:Static language:Language.StockManagementDataGridHeaderOrdered}" NumberDecimalDigits="2" Width="80" />
+                            <syncfusion:GridNumericColumn MappingName="StandardOrderQuantity" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderOrderQuantity}" NumberDecimalDigits="2" Width="80" />
+                            <syncfusion:GridNumericColumn MappingName="SuggestedAmount" HeaderText="{x:Static language:Language.StockOrderProductGridHeaderSuggested}" NumberDecimalDigits="2" Width="80" />
                         </syncfusion:SfDataGrid.Columns>
                     </syncfusion:SfDataGrid>
                 </Grid>
@@ -269,10 +269,10 @@
                     <syncfusion:SfDataGrid.Columns>
                         <syncfusion:GridTextColumn MappingName="DisplayProductNumber" HeaderText="{x:Static language:Language.StockOrderProductDialogSupplierProductNumber}" AllowEditing="False" Width="110" />
                         <syncfusion:GridTextColumn MappingName="DisplayProductDescription" HeaderText="{x:Static language:Language.StockOrderProductDialogSupplierProductName}" AllowEditing="False" />
-                        <syncfusion:GridNumericColumn MappingName="Amount" HeaderText="{x:Static language:Language.StockOrderLineGridHeaderOrderedAmount}" AllowEditing="True" NumberDecimalDigits="2" Width="80" />
-                        <syncfusion:GridNumericColumn MappingName="Price" HeaderText="{x:Static language:Language.StockOrderLineGridHeaderProductPrice}" AllowEditing="True" NumberDecimalDigits="2" Width="85" />
+                        <syncfusion:GridNumericColumn MappingName="Amount" HeaderText="{x:Static language:Language.StockOrderLineGridHeaderOrderedAmount}" NumberDecimalDigits="2" Width="80" />
+                        <syncfusion:GridNumericColumn MappingName="Price" HeaderText="{x:Static language:Language.StockOrderLineGridHeaderProductPrice}" NumberDecimalDigits="2" Width="85" />
                         <syncfusion:GridNumericColumn MappingName="RealRowTotal" HeaderText="{x:Static language:Language.StockOrderLineGridHeaderRowTotal}" AllowEditing="False" NumberDecimalDigits="2" Width="90" />
-                        <syncfusion:GridNumericColumn MappingName="Received" HeaderText="{x:Static language:Language.StockReceiptAlreadyReceivedLabel}" AllowEditing="False" NumberDecimalDigits="0" Width="80" />
+                        <syncfusion:GridNumericColumn MappingName="Received" HeaderText="{x:Static language:Language.StockReceiptAlreadyReceivedLabel}" AllowEditing="False" NumberDecimalDigits="2" Width="80" />
                     </syncfusion:SfDataGrid.Columns>
                 </syncfusion:SfDataGrid>
             </GroupBox>
