@@ -499,9 +499,43 @@ public class StockOrderViewModelTests
 		Assert.IsFalse( _vm.HasUnsavedChanges );
 		Assert.IsFalse( _vm.IsWorking );
 
+		var storedOrder = new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today };
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { storedOrder } );
+
 		await _vm.SaveOrderAsync();
 
-		CollectionAssert.AreEqual( new List<int> { 0, 25 }, savedOrderIds, "The second save updates order 25 instead of inserting a new order." );
+		CollectionAssert.AreEqual( new List<int> { 0 }, savedOrderIds, "Without new changes the retry only reloads; nothing is written again." );
+		Assert.AreSame( storedOrder, _vm.SelectedOrder );
+
+		// After the reload, a real change is saved as an update of order 25.
+		_vm.EditableOrder.OrderNumber = "CW0201";
+		await _vm.SaveOrderAsync();
+		CollectionAssert.AreEqual( new List<int> { 0, 25 }, savedOrderIds );
+	}
+
+	[TestMethod]
+	public async Task Save_WhileAnotherOrderIsStillLoading_KeepsTheSavedOrderInTheEditor()
+	{
+		var slowLoad = new TaskCompletionSource<List<StockOrderLineModel>>();
+		_orders.Setup( s => s.GetOrderLinesAsync( 30 ) ).Returns( slowLoad.Task );
+		var saveGate = new TaskCompletionSource<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Returns( saveGate.Task );
+		var orderA = new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall" };
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { orderA } );
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30, SupplierId = 2 };   // order B starts loading
+		var save = _vm.SaveOrderAsync();                                        // saving A starts before B arrives
+		slowLoad.SetResult( [ new StockOrderLineModel { Id = 90, SupplyOrderId = 30, ProductId = 8, Amount = 1, OpenAmount = 1 } ] );
+		await Task.Delay( 50 );
+
+		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The late load of B does not replace the editor while A is saved." );
+		Assert.IsFalse( _vm.OrderLines.Any( line => line.Id == 90 ) );
+
+		saveGate.SetResult( 25 );
+		await save;
+		Assert.AreEqual( 25, _vm.EditableOrder.Id );
 	}
 
 	[TestMethod]

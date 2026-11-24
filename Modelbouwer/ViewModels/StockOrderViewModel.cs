@@ -26,6 +26,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	private int _selectionLoadVersion;
 	private StockOrderModel? _trackedEditableOrder;
 	private StockOrderModel? _loadedOrder;
+	private int? _reloadPendingOrderId;
 	private IRelayCommand? _clearSearchCommand;
 
 	private List<StockOrderModel> _allOrders = [];
@@ -209,6 +210,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		SelectedOrder = order;
 		_suppressSelectedOrderChange = false;
 		_loadedOrder = order;
+		_reloadPendingOrderId = null;
 
 		EditableOrder = new StockOrderModel
 		{
@@ -256,6 +258,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		SelectedOrder = null;
 		_suppressSelectedOrderChange = false;
 		_loadedOrder = null;
+		_reloadPendingOrderId = null;
 		_selectionLoadVersion++;
 
 		ReplaceLines( [] );
@@ -834,6 +837,23 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		if ( IsSavingOrder )
 			return;
 
+		// The last save was committed but reading it back failed. Without new changes there is nothing to
+		// write again; only the reload is repeated, so changes stored elsewhere are not overwritten.
+		if ( _reloadPendingOrderId is int pendingOrderId && !HasUnsavedChanges )
+		{
+			IsSavingOrder = true;
+			try
+			{
+				await ReloadSavedOrderAsync( pendingOrderId, cancellationToken );
+			}
+			finally
+			{
+				IsSavingOrder = false;
+			}
+
+			return;
+		}
+
 		var validationMessage = ValidateOrderForSave();
 		if ( validationMessage != null )
 		{
@@ -842,6 +862,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		}
 
 		IsSavingOrder = true;
+
+		// A load of another order that started before this save must not replace the editor while saving.
+		_selectionLoadVersion++;
 		try
 		{
 			var lines = OrderLines.ToList();
@@ -856,24 +879,31 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			// Committed. Record that before reading anything back: when the reload below fails, a second save
 			// updates this order instead of inserting it again.
 			MarkSaved( orderId, lines, productSuppliers );
+			_reloadPendingOrderId = orderId;
 
-			// Reload, so stock figures, "in order" and supplier data come from the database again.
-			await LoadReferenceDataAsync();
-			await LoadOrdersAsync( cancellationToken );
-
-			var savedLines = cancellationToken.HasValue
-				? await _stockOrderService.GetOrderLinesAsync( orderId, cancellationToken.Value )
-				: await _stockOrderService.GetOrderLinesAsync( orderId );
-			var savedOrder = _allOrders.FirstOrDefault( order => order.Id == orderId )
-				?? new StockOrderModel { Id = orderId, SupplierId = EditableOrder.SupplierId, CurrencyId = EditableOrder.CurrencyId, OrderNumber = EditableOrder.OrderNumber, OrderDate = EditableOrder.OrderDate };
-
-			ApplySelectedOrder( savedOrder, savedLines );
-			ApplyOrderFilters();
+			await ReloadSavedOrderAsync( orderId, cancellationToken );
 		}
 		finally
 		{
 			IsSavingOrder = false;
 		}
+	}
+
+	/// <summary>Reloads stock figures, "in order", supplier data and the saved order from the database.</summary>
+	private async Task ReloadSavedOrderAsync( int orderId, CancellationToken? cancellationToken )
+	{
+		await LoadReferenceDataAsync();
+		await LoadOrdersAsync( cancellationToken );
+
+		var savedLines = cancellationToken.HasValue
+			? await _stockOrderService.GetOrderLinesAsync( orderId, cancellationToken.Value )
+			: await _stockOrderService.GetOrderLinesAsync( orderId );
+		var savedOrder = _allOrders.FirstOrDefault( order => order.Id == orderId )
+			?? new StockOrderModel { Id = orderId, SupplierId = EditableOrder.SupplierId, CurrencyId = EditableOrder.CurrencyId, OrderNumber = EditableOrder.OrderNumber, OrderDate = EditableOrder.OrderDate };
+
+		ApplySelectedOrder( savedOrder, savedLines );
+		ApplyOrderFilters();
+		_reloadPendingOrderId = null;
 	}
 
 	private async Task DeleteOrderAsync()
