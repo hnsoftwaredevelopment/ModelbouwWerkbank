@@ -349,6 +349,92 @@ public class StockReceiptViewModelTests
 		Assert.AreEqual( Lang.OrderSelectorClosed, new StockOrderModel { OpenLineCount = 0, Closed = true }.OpenLinesText );
 	}
 
+	[TestMethod]
+	public async Task SwitchingOrder_ClearsOldLinesAtOnceAndIgnoresAStaleLoad()
+	{
+		var line = Line( 1, 4, 0 );
+		SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		var slowLoad = new TaskCompletionSource<List<StockOrderLineModel>>();
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 30 ) ).Returns( slowLoad.Task );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 31 ) ).ReturnsAsync( new List<StockOrderLineModel> { Line( 7, 1, 0 ) } );
+
+		_viewModel.SelectedOrder = new StockOrderModel { Id = 30, SupplierId = 2 };
+
+		Assert.AreEqual( 0, _viewModel.OpenOrderLines.Count );
+		Assert.IsNull( _viewModel.SelectedOrderLine );
+		Assert.IsFalse( _viewModel.EditSupplierDataCommand.CanExecute( null ) );
+		Assert.IsFalse( _viewModel.ReceiveAllCommand.CanExecute( null ) );
+
+		_viewModel.SelectedOrder = new StockOrderModel { Id = 31, SupplierId = 3 };
+		await WaitUntilAsync( () => _viewModel.OpenOrderLines.Count == 1 );
+		slowLoad.SetResult( [ Line( 8, 1, 0 ), Line( 9, 1, 0 ) ] );
+		await Task.Delay( 50 );
+
+		Assert.AreEqual( 7, _viewModel.OpenOrderLines.Single().Id, "The late result of order 30 is not shown." );
+	}
+
+	[TestMethod]
+	public async Task ReceiveLine_WhenBookingFails_RestoresTheStoredLineState()
+	{
+		var line = Line( 1, 4, 0 );
+		SelectOrder( line );
+		_linesInDatabase = [ Line( 1, 4, 0 ) ];
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowReceiptDialog = _ => true;
+		_mockStockOrderService.Setup( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ) )
+			.ThrowsAsync( new InvalidOperationException( "database offline" ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( _viewModel.ReceiveSelectedLineAsync );
+
+		Assert.AreEqual( 0d, line.Received );
+		Assert.IsFalse( line.Closed );
+		var shown = _viewModel.OpenOrderLines.Single();
+		Assert.AreEqual( 4d, shown.OpenAmount );
+		Assert.IsFalse( shown.Closed );
+		Assert.AreSame( shown, _viewModel.SelectedOrderLine );
+		Assert.IsTrue( _viewModel.ReceiveLineCommand.CanExecute( null ), "The line can be received again." );
+	}
+
+	[TestMethod]
+	public async Task CorrectReceipt_WhenReopeningOrderFailed_RetryWithoutNewDeltaReopensIt()
+	{
+		var line = Line( 1, 5, 5 );
+		_viewModel.ShowClosedOrders = true;
+		var order = SelectOrder( line );
+		order.Closed = true;
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowReceiptDialog = vm => { vm.Model.ReceiveAmount = 3; return true; };
+		int updateCalls = 0;
+		_mockStockOrderService.Setup( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>() ) )
+			.Returns( () => ++updateCalls == 1 ? Task.FromException( new InvalidOperationException( "database offline" ) ) : Task.CompletedTask );
+
+		await AssertThrowsAsync<InvalidOperationException>( _viewModel.CorrectSelectedReceiptAsync );
+		Assert.IsTrue( order.Closed, "The failed save leaves the order closed, as it is stored." );
+
+		_viewModel.SelectedOrderLine = _viewModel.OpenOrderLines.Single();
+		await _viewModel.CorrectSelectedReceiptAsync();
+
+		Assert.IsFalse( order.Closed );
+		Assert.AreEqual( 2, updateCalls );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Once,
+			"The correction is booked only once." );
+	}
+
+	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
+	{
+		try
+		{
+			await action();
+		}
+		catch ( TException )
+		{
+			return;
+		}
+
+		Assert.Fail( $"Expected {typeof( TException ).Name}." );
+	}
+
 	private static async Task WaitUntilAsync( Func<bool> condition )
 	{
 		for ( int attempt = 0; attempt < 40; attempt++ )

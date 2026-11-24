@@ -33,7 +33,7 @@
         <TextBox Grid.Row="2" Grid.Column="1" Margin="0,0,0,8" Text="{Binding Model.SupplierProductName, UpdateSourceTrigger=PropertyChanged}" />
 
         <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,12,8" VerticalAlignment="Center" Text="{x:Static language:Language.StockOrderProductDialogPrice}" />
-        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Text="{Binding Model.UnitPrice, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:N4}}" />
+        <TextBox Grid.Row="3" Grid.Column="1" Margin="0,0,0,8" Text="{Binding Model.UnitPrice, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True, StringFormat={}{0:N4}}" />
 
         <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button Width="100" Margin="0,12,8,0" Content="{x:Static language:Language.StockOrderProductDialogCancel}" IsCancel="True" />

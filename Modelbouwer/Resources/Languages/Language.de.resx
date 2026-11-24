@@ -4809,4 +4809,7 @@ PowerShell:
   <data name="StockOrderLinesGroupTitle" xml:space="preserve">
     <value>Bestellpositionen</value>
   </data>
+  <data name="DialogInvalidNumber" xml:space="preserve">
+    <value>Ein oder mehrere Felder enthalten keine gültige Zahl. Korrigieren Sie die rot markierte Eingabe.</value>
+  </data>
 </root>

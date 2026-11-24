@@ -69,6 +69,13 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 
 	partial void OnSelectedOrderChanged( StockOrderModel? value )
 	{
+		if ( !_suppressSelectedOrderChange )
+		{
+			// Lines of the previous order must not stay actionable while the next order loads.
+			SelectedOrderLine = null;
+			OpenOrderLines.Clear();
+		}
+
 		NotifyCommands();
 		if ( _suppressSelectedOrderChange || value == null )
 			return;
@@ -118,6 +125,11 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 	private async Task LoadSelectedOrderAsync( StockOrderModel order )
 	{
 		var lines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+
+		// Another order may have been selected while this one loaded.
+		if ( !ReferenceEquals( SelectedOrder, order ) )
+			return;
+
 		ApplySelectedOrder( order, lines );
 	}
 
@@ -156,20 +168,12 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 				return;
 
 			double delta = dialogVm.Model.StockDelta;
-			if ( delta == 0d )
-				return;
-
 			DateTime deliveryDate = dialogVm.Model.DeliveryDate ?? DateTime.Today;
-			ApplyReceipt( line, delta, deliveryDate );
-			await _stockOrderService.RegisterReceiptAsync( line, delta, deliveryDate );
+			if ( delta != 0d )
+				await BookReceiptAsync( order, line, delta, deliveryDate );
 
-			if ( order.Closed && !line.Closed )
-			{
-				order.Closed = false;
-				order.ClosedDate = null;
-				await _stockOrderService.UpdateOrderAsync( order );
-			}
-
+			// The order status is derived from the stored lines, also without a new delta: an earlier attempt
+			// may have booked the correction but failed to reopen the order.
 			await RefreshOrderAsync( order, deliveryDate, line.Id );
 		}
 		finally
@@ -199,8 +203,7 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 			double receiveAmount = dialogVm.Model.ReceiveAmount;
 			DateTime deliveryDate = dialogVm.Model.DeliveryDate ?? DateTime.Today;
 
-			ApplyReceipt( line, receiveAmount, deliveryDate );
-			await _stockOrderService.RegisterReceiptAsync( line, receiveAmount, deliveryDate );
+			await BookReceiptAsync( order, line, receiveAmount, deliveryDate );
 			await RefreshOrderAsync( order, deliveryDate, line.Id );
 		}
 		finally
@@ -243,8 +246,8 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 				if ( receiveAmount <= 0d )
 					continue;
 
-				ApplyReceipt( line, receiveAmount, deliveryDate );
-				await _stockOrderService.RegisterReceiptAsync( line, receiveAmount, deliveryDate );
+				// Lines booked before a failure stay booked; the reload after the failure shows them.
+				await BookReceiptAsync( order, line, receiveAmount, deliveryDate );
 			}
 
 			await RefreshOrderAsync( order, deliveryDate, null );
@@ -352,7 +355,7 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 	{
 		var refreshedLines = await _stockOrderService.GetOrderLinesAsync( order.Id );
 		order.OpenLineCount = refreshedLines.Count( line => !line.Closed );
-		await CloseOrderWhenAllLinesAreClosedAsync( order, refreshedLines, deliveryDate );
+		await SyncOrderStatusAsync( order, refreshedLines, deliveryDate );
 		ApplyOrderFilters();
 		ApplySelectedOrder( order, refreshedLines );
 
@@ -363,14 +366,65 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 			ShowInformationMessage( Lang.StockReceiptNothingOpen );
 	}
 
-	private async Task CloseOrderWhenAllLinesAreClosedAsync( StockOrderModel order, IReadOnlyCollection<StockOrderLineModel> lines, DateTime deliveryDate )
+	/// <summary>
+	/// Books a receipt for one line. When the booking fails, the line gets its previous state back and the stored
+	/// lines are reloaded before the commands become available again.
+	/// </summary>
+	private async Task BookReceiptAsync( StockOrderModel order, StockOrderLineModel line, double amount, DateTime deliveryDate )
 	{
-		if ( order.Closed || lines.Count == 0 || lines.Any( line => !line.Closed ) )
+		var previous = (line.Received, line.OpenAmount, line.Closed, line.ClosedDate);
+		ApplyReceipt( line, amount, deliveryDate );
+		try
+		{
+			await _stockOrderService.RegisterReceiptAsync( line, amount, deliveryDate );
+		}
+		catch
+		{
+			(line.Received, line.OpenAmount, line.Closed, line.ClosedDate) = previous;
+			await ReloadLinesAfterFailureAsync( order, line.Id );
+			throw;
+		}
+	}
+
+	private async Task ReloadLinesAfterFailureAsync( StockOrderModel order, int lineId )
+	{
+		try
+		{
+			var storedLines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+			if ( !ReferenceEquals( SelectedOrder, order ) )
+				return;
+
+			ApplySelectedOrder( order, storedLines );
+			SelectedOrderLine = OpenOrderLines.FirstOrDefault( line => line.Id == lineId );
+		}
+		catch
+		{
+			// The line was already restored locally; the original error is the one to report.
+		}
+	}
+
+	/// <summary>
+	/// Derives the order status from the stored lines: closed when every line is closed, open otherwise.
+	/// When saving fails, the order keeps its previous status, so the next action detects the difference again.
+	/// </summary>
+	private async Task SyncOrderStatusAsync( StockOrderModel order, IReadOnlyCollection<StockOrderLineModel> lines, DateTime deliveryDate )
+	{
+		bool shouldBeClosed = lines.Count > 0 && lines.All( line => line.Closed );
+		if ( order.Closed == shouldBeClosed )
 			return;
 
-		order.Closed = true;
-		order.ClosedDate = deliveryDate;
-		await _stockOrderService.UpdateOrderAsync( order );
+		var previous = (order.Closed, order.ClosedDate);
+		order.Closed = shouldBeClosed;
+		order.ClosedDate = shouldBeClosed ? deliveryDate : null;
+		try
+		{
+			await _stockOrderService.UpdateOrderAsync( order );
+		}
+		catch
+		{
+			(order.Closed, order.ClosedDate) = previous;
+			throw;
+		}
 	}
 
 	private void ApplyOrderFilters()
