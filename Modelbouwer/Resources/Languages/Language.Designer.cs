@@ -14204,5 +14204,45 @@ namespace Modelbouwer.Resources.Languages {
                 return ResourceManager.GetString("toolbarVisibleRowLabelUnit", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to Order.
+        /// </summary>
+        public static string OrderSelectorLabel {
+            get {
+                return ResourceManager.GetString("OrderSelectorLabel", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to afgesloten.
+        /// </summary>
+        public static string OrderSelectorClosed {
+            get {
+                return ResourceManager.GetString("OrderSelectorClosed", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to 1 regel open.
+        /// </summary>
+        public static string OrderSelectorOneLineOpen {
+            get {
+                return ResourceManager.GetString("OrderSelectorOneLineOpen", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to {0} regels open.
+        /// </summary>
+        public static string OrderSelectorLinesOpen {
+            get {
+                return ResourceManager.GetString("OrderSelectorLinesOpen", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Geen orders.
+        /// </summary>
+        public static string OrderSelectorNoOrders {
+            get {
+                return ResourceManager.GetString("OrderSelectorNoOrders", resourceCulture);
+            }
+        }
     }
 }

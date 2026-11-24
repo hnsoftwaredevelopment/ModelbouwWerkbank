@@ -4731,4 +4731,19 @@ PowerShell:
   <data name="StockReceiptCorrectAmountOutOfRange" xml:space="preserve">
     <value>The received quantity must be between 0 and {0}.</value>
   </data>
+  <data name="OrderSelectorLabel" xml:space="preserve">
+    <value>Order</value>
+  </data>
+  <data name="OrderSelectorClosed" xml:space="preserve">
+    <value>closed</value>
+  </data>
+  <data name="OrderSelectorOneLineOpen" xml:space="preserve">
+    <value>1 line open</value>
+  </data>
+  <data name="OrderSelectorLinesOpen" xml:space="preserve">
+    <value>{0} lines open</value>
+  </data>
+  <data name="OrderSelectorNoOrders" xml:space="preserve">
+    <value>No orders</value>
+  </data>
 </root>

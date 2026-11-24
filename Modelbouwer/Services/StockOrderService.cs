@@ -27,8 +27,11 @@ SELECT
 	{DBNames.OrderViewFieldNameClosed},
 	{DBNames.OrderViewFieldNameClosedDate},
 	{DBNames.OrderViewFieldNameOrderMemo},
-	{DBNames.OrderViewFieldNameHasStockLog}
-FROM {DBNames.Database}.{DBNames.OrderView}
+	{DBNames.OrderViewFieldNameHasStockLog},
+	(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} ol
+	 WHERE ol.{DBNames.OrderLineFieldNameSupplierOrderId} = o.{DBNames.OrderViewFieldNameId}
+	   AND ol.{DBNames.OrderLineFieldNameClosed} = 0) AS OpenLineCount
+FROM {DBNames.Database}.{DBNames.OrderView} o
 ORDER BY {DBNames.OrderViewFieldNameOrderDate} DESC, {DBNames.OrderViewFieldNameId} DESC;";
 
 	public string OrderLinesQuery = $@"
@@ -179,7 +182,8 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 				Closed = DatabaseValueConverter.GetSByte( reader [ DBNames.OrderViewFieldNameClosed ] ) == 1,
 				ClosedDate = GetNullableDateTime( reader [ DBNames.OrderViewFieldNameClosedDate ] ),
 				Memo = DatabaseValueConverter.GetString( reader [ DBNames.OrderViewFieldNameOrderMemo ] ),
-				HasStockLog = DatabaseValueConverter.GetSByte( reader [ DBNames.OrderViewFieldNameHasStockLog ] ) == 1
+				HasStockLog = DatabaseValueConverter.GetSByte( reader [ DBNames.OrderViewFieldNameHasStockLog ] ) == 1,
+				OpenLineCount = DatabaseValueConverter.GetInt( reader [ "OpenLineCount" ] )
 			};
 		}, null, cancellationToken );
 	}

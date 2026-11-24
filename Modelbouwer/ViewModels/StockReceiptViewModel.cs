@@ -87,6 +87,11 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 	{
 		_allOrders = await _stockOrderService.GetAllOrdersAsync();
 		ApplyOrderFilters();
+
+		// The common case: one order is on its way. Select it, so there is nothing to choose.
+		var openOrders = _allOrders.Where( order => !order.Closed ).ToList();
+		if ( SelectedOrder == null && openOrders.Count == 1 )
+			SelectedOrder = openOrders [ 0 ];
 	}
 
 	public void ApplySelectedOrder( StockOrderModel order, IEnumerable<StockOrderLineModel> lines )
@@ -346,6 +351,7 @@ public partial class StockReceiptViewModel : AsyncObservableObject
 	private async Task RefreshOrderAsync( StockOrderModel order, DateTime deliveryDate, int? reselectLineId )
 	{
 		var refreshedLines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+		order.OpenLineCount = refreshedLines.Count( line => !line.Closed );
 		await CloseOrderWhenAllLinesAreClosedAsync( order, refreshedLines, deliveryDate );
 		ApplyOrderFilters();
 		ApplySelectedOrder( order, refreshedLines );

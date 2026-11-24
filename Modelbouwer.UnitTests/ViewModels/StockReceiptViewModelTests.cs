@@ -300,6 +300,55 @@ public class StockReceiptViewModelTests
 		Assert.AreEqual( false, wasCorrection );
 	}
 
+	[TestMethod]
+	public async Task Initialize_WithExactlyOneOpenOrder_SelectsIt()
+	{
+		var open = new StockOrderModel { Id = 25, OrderNumber = "CW0132", OpenLineCount = 2 };
+		var closed = new StockOrderModel { Id = 24, OrderNumber = "OLD", Closed = true };
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { open, closed } );
+
+		await _viewModel.InitializeAsync();
+
+		Assert.AreSame( open, _viewModel.SelectedOrder );
+	}
+
+	[TestMethod]
+	public async Task Initialize_WithSeveralOpenOrders_SelectsNothing()
+	{
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>
+		{
+			new() { Id = 25, OrderNumber = "A" },
+			new() { Id = 26, OrderNumber = "B" }
+		} );
+
+		await _viewModel.InitializeAsync();
+
+		Assert.IsNull( _viewModel.SelectedOrder );
+	}
+
+	[TestMethod]
+	public async Task ReceiveLine_UpdatesOpenLineCountOfOrder()
+	{
+		var first = Line( 1, 2, 0 );
+		var second = Line( 2, 3, 0 );
+		var order = SelectOrder( first, second );
+		order.OpenLineCount = 2;
+		_viewModel.SelectedOrderLine = first;
+		_viewModel.ShowReceiptDialog = _ => true;
+
+		await _viewModel.ReceiveLineCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( 1, order.OpenLineCount );
+	}
+
+	[TestMethod]
+	public void OpenLinesText_ShowsCountSingularOrClosed()
+	{
+		Assert.AreEqual( string.Format( Lang.OrderSelectorLinesOpen, 3 ), new StockOrderModel { OpenLineCount = 3 }.OpenLinesText );
+		Assert.AreEqual( Lang.OrderSelectorOneLineOpen, new StockOrderModel { OpenLineCount = 1 }.OpenLinesText );
+		Assert.AreEqual( Lang.OrderSelectorClosed, new StockOrderModel { OpenLineCount = 0, Closed = true }.OpenLinesText );
+	}
+
 	private static async Task WaitUntilAsync( Func<bool> condition )
 	{
 		for ( int attempt = 0; attempt < 40; attempt++ )
