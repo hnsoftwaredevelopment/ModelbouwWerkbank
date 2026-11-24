@@ -421,6 +421,75 @@ public class StockReceiptViewModelTests
 			"The correction is booked only once." );
 	}
 
+	[TestMethod]
+	public async Task CorrectReceipt_ToZero_WhenReopeningOrderFailed_SelectingTheOrderAgainReopensIt()
+	{
+		var line = Line( 1, 5, 5 );
+		_viewModel.ShowClosedOrders = true;
+		var order = SelectOrder( line );
+		order.Closed = true;
+		_viewModel.SelectedOrderLine = line;
+		_viewModel.ShowReceiptDialog = vm => { vm.Model.ReceiveAmount = 0; return true; };
+		FailFirstOrderUpdate();
+
+		await AssertThrowsAsync<InvalidOperationException>( _viewModel.CorrectSelectedReceiptAsync );
+		Assert.IsTrue( order.Closed );
+
+		await SelectAgainAsync( order );
+
+		await WaitUntilAsync( () => !order.Closed );
+		_mockStockOrderService.Verify( s => s.UpdateOrderAsync( order ), Times.Exactly( 2 ) );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Once,
+			"Repairing the status books no stock." );
+	}
+
+	[TestMethod]
+	public async Task CancelRemainder_OfOnlyLine_WhenClosingOrderFailed_SelectingTheOrderAgainClosesIt()
+	{
+		var line = Line( 1, 4, 0 );
+		var order = SelectOrder( line );
+		_viewModel.SelectedOrderLine = line;
+		FailFirstOrderUpdate();
+
+		await AssertThrowsAsync<InvalidOperationException>( _viewModel.CancelRemainderAsync );
+		Assert.IsTrue( line.Closed );
+		Assert.IsFalse( order.Closed );
+
+		await SelectAgainAsync( order );
+
+		await WaitUntilAsync( () => order.Closed );
+		_mockStockOrderService.Verify( s => s.UpdateOrderAsync( order ), Times.Exactly( 2 ) );
+		_mockStockOrderService.Verify( s => s.RegisterReceiptAsync( It.IsAny<StockOrderLineModel>(), It.IsAny<double>(), It.IsAny<DateTime?>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task SelectingAnOrder_WithoutEarlierFailure_DoesNotSaveItsStatus()
+	{
+		// Older orders may be closed with open lines; viewing them must not change them.
+		var order = new StockOrderModel { Id = 25, Closed = true };
+		_linesInDatabase = [ Line( 1, 4, 0 ) ];
+
+		_viewModel.SelectedOrder = order;
+		await WaitUntilAsync( () => _viewModel.OpenOrderLines.Count == 1 );
+
+		Assert.IsTrue( order.Closed );
+		_mockStockOrderService.Verify( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>() ), Times.Never );
+	}
+
+	private void FailFirstOrderUpdate()
+	{
+		int calls = 0;
+		_mockStockOrderService.Setup( s => s.UpdateOrderAsync( It.IsAny<StockOrderModel>() ) )
+			.Returns( () => ++calls == 1 ? Task.FromException( new InvalidOperationException( "database offline" ) ) : Task.CompletedTask );
+	}
+
+	private async Task SelectAgainAsync( StockOrderModel order )
+	{
+		_viewModel.SelectedOrder = null;
+		_viewModel.SelectedOrder = order;
+		await WaitUntilAsync( () => _viewModel.OpenOrderLines.Count > 0 );
+	}
+
 	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
 	{
 		try
