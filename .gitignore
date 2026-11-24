@@ -366,3 +366,4 @@ FodyWeavers.xsd
 
 # Local secrets (KAN-78): never commit license keys or credentials
 docs/[Ss]yncfusion[Ll]icense.txt
+Tools/root.txt
