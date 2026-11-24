@@ -140,6 +140,13 @@ if ($local.ExitCode -ne 0) { Fail "Lokale database niet bereikbaar: $($local.Err
 $localInfo = "$($local.Output)".Split("`t")
 Write-Host "Lokaal:    localhost, MySQL $($localInfo[0])"
 
+# The collation must exist locally before anything is dropped, otherwise CREATE (and the restore) would fail.
+$Collation = 'utf8mb4_0900_ai_ci'
+$check = Invoke-MySql $mysql ($localConn + @('-N', '-B', "--execute=SELECT COUNT(*) FROM information_schema.COLLATIONS WHERE COLLATION_NAME='$Collation'")) $localPassword
+if ($check.ExitCode -ne 0 -or "$($check.Output)".Trim() -ne '1') {
+    Fail "De lokale server kent collation $Collation niet. Er is niets gewijzigd."
+}
+
 # ---------------------------------------------------------------- 2. confirmation
 if (-not $Force) {
     Write-Host "`nDe LOKALE database '$Database' wordt vervangen door de gegevens van productie." -ForegroundColor Yellow
@@ -182,7 +189,8 @@ $writer = New-Object System.IO.StreamWriter($prodImport, $false, $utf8)
 $changed = 0
 try {
     while ($null -ne ($line = $reader.ReadLine())) {
-        if ($line.Contains('DEFINER') -or $line.Contains('NO_AUTO_CREATE_USER')) {
+        # Only object definitions and sql_mode settings are rewritten; data rows (INSERT) stay byte-identical.
+        if (-not $line.StartsWith('INSERT INTO') -and ($line.Contains('DEFINER') -or $line.Contains('NO_AUTO_CREATE_USER'))) {
             $new = $line -replace 'DEFINER=`[^`]*`@`[^`]*`', 'DEFINER=CURRENT_USER' -replace 'SQL SECURITY DEFINER', 'SQL SECURITY INVOKER'
             # Production runs MariaDB 10.3; its routines carry sql_mode NO_AUTO_CREATE_USER, which MySQL 8+ rejects.
             $new = $new -replace ',NO_AUTO_CREATE_USER', '' -replace 'NO_AUTO_CREATE_USER,?', ''
@@ -200,8 +208,7 @@ Write-Host "$changed regels aangepast"
 
 # ---------------------------------------------------------------- 6. replace local database
 function Import-IntoLocal([string] $file) {
-    $collation = 'utf8mb4_0900_ai_ci'
-    $recreate = "DROP DATABASE IF EXISTS ``$Database``; CREATE DATABASE ``$Database`` CHARACTER SET utf8mb4 COLLATE $collation;"
+    $recreate = "DROP DATABASE IF EXISTS ``$Database``; CREATE DATABASE ``$Database`` CHARACTER SET utf8mb4 COLLATE $Collation;"
     $r = Invoke-MySql $mysql ($localConn + @("--execute=$recreate")) $localPassword
     if ($r.ExitCode -ne 0) { return $r }
     return Invoke-MySqlFile $file
@@ -212,8 +219,11 @@ function Invoke-MySqlFile([string] $file) {
     $errFile = "$file.err"
     $env:MYSQL_PWD = $localPassword
     try {
+        # Start-Process joins arguments with spaces, so quote each one to keep it a single argument.
+        $arguments = ($localConn + @('--default-character-set=utf8mb4', $Database)) |
+            ForEach-Object { '"' + ($_ -replace '"', '\"') + '"' }
         $p = Start-Process -FilePath $mysql -NoNewWindow -Wait -PassThru `
-            -ArgumentList ($localConn + @('--default-character-set=utf8mb4', $Database)) `
+            -ArgumentList $arguments `
             -RedirectStandardInput $file -RedirectStandardError $errFile
         $errors = (Get-Content $errFile -ErrorAction SilentlyContinue) |
             Where-Object { $_ -and $_ -notmatch '^(mysql)(\.exe)?: \[Warning\]|^Warning: ' }
@@ -225,13 +235,19 @@ function Invoke-MySqlFile([string] $file) {
     }
 }
 
+function Import-IntoLocalSafe([string] $file) {
+    # Any exception becomes a failed result, so the restore path always runs.
+    try { return Import-IntoLocal $file }
+    catch { return [pscustomobject]@{ ExitCode = 1; Output = $null; Errors = $_.Exception.Message } }
+}
+
 Write-Step "Lokale database vervangen"
-$r = Import-IntoLocal $prodImport
+$r = Import-IntoLocalSafe $prodImport
 if ($r.ExitCode -ne 0 -or $r.Errors) {
     Write-Host "Import mislukt: $($r.Errors)" -ForegroundColor Red
     if ($localBackup) {
         Write-Step "Back-up terugzetten"
-        $restore = Import-IntoLocal $localBackup
+        $restore = Import-IntoLocalSafe $localBackup
         if ($restore.ExitCode -ne 0 -or $restore.Errors) {
             Fail "Terugzetten mislukt: $($restore.Errors)`nZet handmatig terug met: mysql -u $localUser -p $Database < `"$localBackup`""
         }
@@ -253,17 +269,27 @@ UNION ALL SELECT 'urenregels', COUNT(*) FROM ``$Database``.time
 UNION ALL SELECT 'voorraadmutaties', COUNT(*) FROM ``$Database``.stocklog
 UNION ALL SELECT 'inkooporders', COUNT(*) FROM ``$Database``.supplyorder;
 "@
-foreach ($side in @(@{ Name = 'productie'; Conn = $prodConn; Pwd = $prodPassword }, @{ Name = 'lokaal'; Conn = $localConn; Pwd = $localPassword })) {
-    $r = Invoke-MySql $mysql ($side.Conn + @('-N', '-B', "--execute=$count")) $side.Pwd
-    $side.Rows = @{}
-    foreach ($row in $r.Output) { $p = "$row".Split("`t"); $side.Rows[$p[0]] = $p[1] }
-    Set-Variable -Name ("rows_" + $side.Name) -Value $side.Rows
+function Get-Counts($conn, [string] $password, [string] $name) {
+    $r = Invoke-MySql $mysql ($conn + @('-N', '-B', "--execute=$count")) $password
+    if ($r.ExitCode -ne 0) {
+        Write-Host "Telling op $name mislukt: $($r.Errors)" -ForegroundColor Yellow
+        return @{}
+    }
+    $rows = @{}
+    foreach ($row in $r.Output) { $p = "$row".Split("`t"); $rows[$p[0]] = $p[1] }
+    return $rows
 }
+$rows_productie = Get-Counts $prodConn $prodPassword 'productie'
+$rows_lokaal = Get-Counts $localConn $localPassword 'lokaal'
+
 $allEqual = $true
 '{0,-22}{1,12}{2,12}' -f '', 'productie', 'lokaal' | Write-Host
 foreach ($key in 'tabellen', 'views', 'procedures/functies', 'projecten', 'producten', 'urenregels', 'voorraadmutaties', 'inkooporders') {
     $p = $rows_productie[$key]; $l = $rows_lokaal[$key]
-    if ($p -ne $l) { $allEqual = $false }
+    # A missing count is never a success.
+    if ($null -eq $p -or $null -eq $l -or $p -ne $l) { $allEqual = $false }
+    if ($null -eq $p) { $p = '?' }
+    if ($null -eq $l) { $l = '?' }
     '{0,-22}{1,12}{2,12}' -f $key, $p, $l | Write-Host -ForegroundColor ($(if ($p -eq $l) { 'Gray' } else { 'Yellow' }))
 }
 
