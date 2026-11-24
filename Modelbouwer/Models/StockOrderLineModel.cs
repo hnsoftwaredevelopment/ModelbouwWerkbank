@@ -20,6 +20,9 @@ public partial class StockOrderLineModel : ObservableObject
 	[ObservableProperty] private DateTime? _closedDate;
 	[ObservableProperty] private bool _isSelected;
 
+	/// <summary>Changed in the screen and not yet saved (not stored in the database).</summary>
+	[ObservableProperty] private bool _isDirty;
+
 	public string DisplayProductNumber => string.IsNullOrWhiteSpace( SupplierProductNumber ) ? ProductCode ?? string.Empty : SupplierProductNumber;
 	public string DisplayProductDescription => string.IsNullOrWhiteSpace( SupplierProductName ) ? ProductName ?? string.Empty : SupplierProductName;
 

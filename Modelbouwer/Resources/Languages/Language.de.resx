@@ -4746,4 +4746,67 @@ PowerShell:
   <data name="OrderSelectorNoOrders" xml:space="preserve">
     <value>Keine Bestellungen</value>
   </data>
+  <data name="StockOrderGroupSupplierProducts" xml:space="preserve">
+    <value>Bei diesem Lieferanten</value>
+  </data>
+  <data name="StockOrderGroupOtherProducts" xml:space="preserve">
+    <value>Weitere Produkte</value>
+  </data>
+  <data name="StockOrderGroupAllProducts" xml:space="preserve">
+    <value>Produkte</value>
+  </data>
+  <data name="StockOrderMenuAddToOrder" xml:space="preserve">
+    <value>Zu Bestellpositionen hinzufügen</value>
+  </data>
+  <data name="StockOrderMenuDeleteLine" xml:space="preserve">
+    <value>Position löschen</value>
+  </data>
+  <data name="StockOrderOnlyShortages" xml:space="preserve">
+    <value>Nur Fehlbestände</value>
+  </data>
+  <data name="StockOrderAddShortages" xml:space="preserve">
+    <value>Fehlbestände dieses Lieferanten hinzufügen</value>
+  </data>
+  <data name="StockOrderNoShortages" xml:space="preserve">
+    <value>Es gibt keine Fehlbestände bei diesem Lieferanten, die noch nicht in der Bestellung stehen.</value>
+  </data>
+  <data name="StockOrderSelectSupplierFirst" xml:space="preserve">
+    <value>Wählen Sie zuerst einen Lieferanten.</value>
+  </data>
+  <data name="StockOrderSupplierRequired" xml:space="preserve">
+    <value>Wählen Sie einen Lieferanten.</value>
+  </data>
+  <data name="StockOrderOrderDateRequired" xml:space="preserve">
+    <value>Geben Sie ein Bestelldatum ein.</value>
+  </data>
+  <data name="StockOrderAmountBelowReceived" xml:space="preserve">
+    <value>Die Menge kann nicht niedriger sein als bereits erhalten ({0}).</value>
+  </data>
+  <data name="StockOrderAmountMustBePositive" xml:space="preserve">
+    <value>Die Menge muss größer als 0 sein.</value>
+  </data>
+  <data name="StockOrderLineHasReceipts" xml:space="preserve">
+    <value>Diese Position hat bereits Eingänge und kann nicht gelöscht werden. Verwenden Sie unter Eingänge &quot;Rest stornieren&quot;.</value>
+  </data>
+  <data name="StockOrderOrderHasReceipts" xml:space="preserve">
+    <value>Diese Bestellung hat bereits Eingänge und kann nicht gelöscht werden.</value>
+  </data>
+  <data name="StockOrderDeleteOrderConfirm" xml:space="preserve">
+    <value>Bestellung {0} von {1} mit allen Positionen löschen?</value>
+  </data>
+  <data name="StockOrderDiscardChangesConfirm" xml:space="preserve">
+    <value>Diese Bestellung hat ungespeicherte Änderungen. Änderungen verwerfen?</value>
+  </data>
+  <data name="StockOrderSupplierLockedTooltip" xml:space="preserve">
+    <value>Der Lieferant ist festgelegt, sobald die Bestellung Positionen hat.</value>
+  </data>
+  <data name="StockOrderUnsavedChanges" xml:space="preserve">
+    <value>Nicht gespeichert</value>
+  </data>
+  <data name="StockOrderProductGridHeaderSuggested" xml:space="preserve">
+    <value>Vorschlag</value>
+  </data>
+  <data name="StockOrderLinesGroupTitle" xml:space="preserve">
+    <value>Bestellpositionen</value>
+  </data>
 </root>
