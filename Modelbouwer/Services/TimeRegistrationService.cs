@@ -138,64 +138,112 @@ public class TimeRegistrationService : ITimeRegistrationService
 	public Task<int> InsertMaterialUsageAsync( MaterialUsageModel usage ) =>
 		InsertMaterialUsageAsync( usage, CancellationToken.None );
 
+	#region Material usage and stock (KAN-136)
+	// Usage on a project lowers the stock: every productusage row has one stocklog row with AmountUsed.
+	public static readonly string InsertMaterialUsageQuery =
+		$"INSERT INTO {DBNames.Database}.{DBNames.ProductUsageTable} " +
+		$"({DBNames.ProductUsageFieldNameProjectId}, {DBNames.ProductUsageFieldNameProductId}, {DBNames.ProductUsageFieldNameAmountUsed}, {DBNames.ProductUsageFieldNameUsageDate}, {DBNames.ProductUsageFieldNameComment}) " +
+		$"VALUES (@ProjectId, @ProductId, @AmountUsed, @UsageDate, @Comment); {DBNames.SqlSelectLastId}";
+
+	public static readonly string UpdateMaterialUsageQuery =
+		$"UPDATE {DBNames.Database}.{DBNames.ProductUsageTable} SET " +
+		$"{DBNames.ProductUsageFieldNameProjectId} = @ProjectId, " +
+		$"{DBNames.ProductUsageFieldNameProductId} = @ProductId, " +
+		$"{DBNames.ProductUsageFieldNameAmountUsed} = @AmountUsed, " +
+		$"{DBNames.ProductUsageFieldNameUsageDate} = @UsageDate, " +
+		$"{DBNames.ProductUsageFieldNameComment} = @Comment " +
+		$"WHERE {DBNames.ProductUsageFieldNameId} = @ProductUsageId;";
+
+	public static readonly string DeleteMaterialUsageQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.ProductUsageTable} " +
+		$"WHERE {DBNames.ProductUsageFieldNameId} = @ProductUsageId;";
+
+	public static readonly string InsertUsageStocklogQuery =
+		$"INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} " +
+		$"({DBNames.StocklogFieldNameProductId}, {DBNames.StocklogFieldNameProductUsageId}, {DBNames.StocklogFieldNameAmountReceived}, {DBNames.StocklogFieldNameAmountUsed}, {DBNames.StocklogFieldNameAmountCorrection}, {DBNames.StocklogFieldNameLogDate}) " +
+		$"VALUES (@ProductId, @ProductUsageId, 0, @AmountUsed, 0, @UsageDate);";
+
+	public static readonly string DeleteUsageStocklogQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.StocklogTable} " +
+		$"WHERE {DBNames.StocklogFieldNameProductUsageId} = @ProductUsageId;";
+
 	public async Task<int> InsertMaterialUsageAsync( MaterialUsageModel usage, CancellationToken cancellationToken )
 	{
-		string query =
-			$"INSERT INTO {DBNames.Database}.{DBNames.ProductUsageTable} " +
-			$"({DBNames.ProductUsageFieldNameProjectId}, {DBNames.ProductUsageFieldNameProductId}, {DBNames.ProductUsageFieldNameAmountUsed}, {DBNames.ProductUsageFieldNameUsageDate}, {DBNames.ProductUsageFieldNameComment}) " +
-			$"VALUES (@ProjectId, @ProductId, @AmountUsed, @UsageDate, @Comment); {DBNames.SqlSelectLastId}";
-
-		uint id = await _dataService.ExecuteScalarAsync<uint>( query, new Dictionary<string, object>
+		return await _dataService.ExecuteInTransactionAsync<int>( async ( connection, transaction ) =>
 		{
-			{ "@ProjectId", usage.ProjectId },
-			{ "@ProductId", usage.ProductId },
-			{ "@AmountUsed", usage.Amount },
-			{ "@UsageDate", usage.UsageDate.Date },
-			{ "@Comment", usage.Comment ?? string.Empty }
+			int usageId = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertMaterialUsageQuery, CreateUsageParameters( usage ), cancellationToken );
+			var stockParameters = CreateUsageParameters( usage );
+			stockParameters [ "@ProductUsageId" ] = usageId;
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, InsertUsageStocklogQuery, stockParameters, cancellationToken );
+			return usageId;
 		}, cancellationToken );
-
-		return ( int ) id;
 	}
 
 	public Task UpdateMaterialUsageAsync( MaterialUsageModel usage ) =>
 		UpdateMaterialUsageAsync( usage, CancellationToken.None );
 
+	/// <summary>
+	/// Updates the usage and replaces its stocklog row, so product, amount and date always match. Replacing also
+	/// repairs older usage that has no stocklog row yet.
+	/// </summary>
 	public Task UpdateMaterialUsageAsync( MaterialUsageModel usage, CancellationToken cancellationToken )
 	{
-		string query =
-			$"UPDATE {DBNames.Database}.{DBNames.ProductUsageTable} SET " +
-			$"{DBNames.ProductUsageFieldNameProjectId} = @ProjectId, " +
-			$"{DBNames.ProductUsageFieldNameProductId} = @ProductId, " +
-			$"{DBNames.ProductUsageFieldNameAmountUsed} = @AmountUsed, " +
-			$"{DBNames.ProductUsageFieldNameUsageDate} = @UsageDate, " +
-			$"{DBNames.ProductUsageFieldNameComment} = @Comment " +
-			$"WHERE {DBNames.ProductUsageFieldNameId} = @ProductUsageId;";
-
-		return _dataService.ExecuteNonQueryAsync( query, new Dictionary<string, object>
+		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
 		{
-			{ "@ProjectId", usage.ProjectId },
-			{ "@ProductId", usage.ProductId },
-			{ "@AmountUsed", usage.Amount },
-			{ "@UsageDate", usage.UsageDate.Date },
-			{ "@Comment", usage.Comment ?? string.Empty },
-			{ "@ProductUsageId", usage.ProductUsageId }
+			var parameters = CreateUsageParameters( usage );
+			parameters [ "@ProductUsageId" ] = usage.ProductUsageId;
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateMaterialUsageQuery, parameters, cancellationToken );
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteUsageStocklogQuery, parameters, cancellationToken );
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, InsertUsageStocklogQuery, parameters, cancellationToken );
 		}, cancellationToken );
 	}
 
 	public Task DeleteMaterialUsageAsync( int materialUsageId ) =>
 		DeleteMaterialUsageAsync( materialUsageId, CancellationToken.None );
 
+	/// <summary>Deletes the usage and its stocklog row, so the stock goes back up.</summary>
 	public Task DeleteMaterialUsageAsync( int materialUsageId, CancellationToken cancellationToken )
 	{
-		string query =
-			$"DELETE FROM {DBNames.Database}.{DBNames.ProductUsageTable} " +
-			$"WHERE {DBNames.ProductUsageFieldNameId} = @ProductUsageId;";
-
-		return _dataService.ExecuteNonQueryAsync( query, new Dictionary<string, object>
+		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
 		{
-			{ "@ProductUsageId", materialUsageId }
+			var parameters = new Dictionary<string, object> { { "@ProductUsageId", materialUsageId } };
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteUsageStocklogQuery, parameters, cancellationToken );
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteMaterialUsageQuery, parameters, cancellationToken );
 		}, cancellationToken );
 	}
+
+	private static Dictionary<string, object> CreateUsageParameters( MaterialUsageModel usage ) => new()
+	{
+		{ "@ProjectId", usage.ProjectId },
+		{ "@ProductId", usage.ProductId },
+		{ "@AmountUsed", usage.Amount },
+		{ "@UsageDate", usage.UsageDate.Date },
+		{ "@Comment", usage.Comment ?? string.Empty }
+	};
+
+	private static async Task<T> ExecuteScalarInTransactionAsync<T>( MySqlConnection connection, MySqlTransaction transaction, string query, Dictionary<string, object> parameters, CancellationToken cancellationToken )
+	{
+		await using MySqlCommand command = new( query, connection, transaction );
+		foreach ( var parameter in parameters )
+			command.Parameters.AddWithValue( parameter.Key, parameter.Value ?? DBNull.Value );
+
+		object? result = await command.ExecuteScalarAsync( cancellationToken );
+		if ( result == null || result == DBNull.Value )
+			return default!;
+
+		Type targetType = Nullable.GetUnderlyingType( typeof( T ) ) ?? typeof( T );
+		return ( T ) Convert.ChangeType( result, targetType, CultureInfo.InvariantCulture );
+	}
+
+	private static async Task ExecuteNonQueryInTransactionAsync( MySqlConnection connection, MySqlTransaction transaction, string query, Dictionary<string, object> parameters, CancellationToken cancellationToken )
+	{
+		await using MySqlCommand command = new( query, connection, transaction );
+		foreach ( var parameter in parameters )
+			command.Parameters.AddWithValue( parameter.Key, parameter.Value ?? DBNull.Value );
+
+		await command.ExecuteNonQueryAsync( cancellationToken );
+	}
+	#endregion
 
 	public Task<double> GetHourRateAsync() =>
 		GetHourRateAsync( CancellationToken.None );
