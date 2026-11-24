@@ -4250,7 +4250,7 @@ Um eine neue Zeitregistrierung hinzufügen zu können, muss zuerst ein Datum und
     <value>Wareneingang erfassen</value>
   </data>
   <data name="StockReceiptClosedOrderLineTooltip" xml:space="preserve">
-    <value>Diese Bestellposition ist geschlossen und kann nicht mehr geandert werden.</value>
+    <value>Diese Bestellposition ist vollständig erhalten. Doppelklicken, um den Empfang zu korrigieren.</value>
   </data>
   <data name="StockReceiptDialogTitle" xml:space="preserve">
     <value>Wareneingang erfassen</value>
@@ -4685,5 +4685,68 @@ PowerShell:
   </data>
   <data name="generalButtonClose" xml:space="preserve">
     <value>Schließen</value>
+  </data>
+  <data name="StockReceiptReceiveAmountLabel" xml:space="preserve">
+    <value>Jetzt erhalten</value>
+  </data>
+  <data name="StockReceiptRemainingAfterLabel" xml:space="preserve">
+    <value>Danach noch offen</value>
+  </data>
+  <data name="StockReceiptReceiveAmountMustBePositive" xml:space="preserve">
+    <value>Geben Sie eine Menge größer als 0 ein.</value>
+  </data>
+  <data name="StockReceiptReceiveAmountTooHigh" xml:space="preserve">
+    <value>Es kann nicht mehr erhalten werden, als noch offen ist ({0}).</value>
+  </data>
+  <data name="StockReceiptMenuReceive" xml:space="preserve">
+    <value>Empfangen</value>
+  </data>
+  <data name="StockReceiptMenuReceiveAll" xml:space="preserve">
+    <value>Gesamte Bestellung vollständig erhalten</value>
+  </data>
+  <data name="StockReceiptMenuCancelRemainder" xml:space="preserve">
+    <value>Rest stornieren</value>
+  </data>
+  <data name="StockReceiptMenuEditSupplierData" xml:space="preserve">
+    <value>Lieferantendaten bearbeiten</value>
+  </data>
+  <data name="StockReceiptCancelRemainderConfirm" xml:space="preserve">
+    <value>Der Rest von {0} von &quot;{1}&quot; wird storniert und die Bestellposition wird geschlossen. Fortfahren?</value>
+  </data>
+  <data name="StockReceiptNothingOpen" xml:space="preserve">
+    <value>Diese Bestellung hat keine offenen Bestellpositionen mehr.</value>
+  </data>
+  <data name="SupplierProductDialogTitle" xml:space="preserve">
+    <value>Lieferantendaten</value>
+  </data>
+  <data name="StockReceiptMenuCorrect" xml:space="preserve">
+    <value>Empfang korrigieren</value>
+  </data>
+  <data name="StockReceiptCorrectDialogTitle" xml:space="preserve">
+    <value>Empfang korrigieren</value>
+  </data>
+  <data name="StockReceiptCorrectAmountLabel" xml:space="preserve">
+    <value>Tatsächlich erhalten (gesamt)</value>
+  </data>
+  <data name="StockReceiptCorrectAmountOutOfRange" xml:space="preserve">
+    <value>Die erhaltene Menge muss zwischen 0 und {0} liegen.</value>
+  </data>
+  <data name="OrderSelectorLabel" xml:space="preserve">
+    <value>Bestellung</value>
+  </data>
+  <data name="OrderSelectorClosed" xml:space="preserve">
+    <value>abgeschlossen</value>
+  </data>
+  <data name="OrderSelectorOneLineOpen" xml:space="preserve">
+    <value>1 Position offen</value>
+  </data>
+  <data name="OrderSelectorLinesOpen" xml:space="preserve">
+    <value>{0} Positionen offen</value>
+  </data>
+  <data name="OrderSelectorNoOrders" xml:space="preserve">
+    <value>Keine Bestellungen</value>
+  </data>
+  <data name="DialogInvalidNumber" xml:space="preserve">
+    <value>Ein oder mehrere Felder enthalten keine gültige Zahl. Korrigieren Sie die rot markierte Eingabe.</value>
   </data>
 </root>

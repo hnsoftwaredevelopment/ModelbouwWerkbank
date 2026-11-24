@@ -1,0 +1,49 @@
+<UserControl x:Class="Modelbouwer.Controls.OrderSelector"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:language="clr-namespace:Modelbouwer.Resources.Languages"
+             mc:Ignorable="d">
+    <!--
+        Reusable order selection (KAN-104), shared by the receipt screen and the order screen.
+        Binds to the inherited DataContext, which must expose: Orders, SelectedOrder, ShowClosedOrders.
+    -->
+    <StackPanel Orientation="Horizontal">
+        <TextBlock Margin="0,0,8,0"
+                   VerticalAlignment="Center"
+                   FontWeight="SemiBold"
+                   Text="{x:Static language:Language.OrderSelectorLabel}" />
+        <ComboBox x:Name="OrderComboBox"
+                  MinWidth="460"
+                  VerticalAlignment="Center"
+                  ItemsSource="{Binding Orders}"
+                  SelectedItem="{Binding SelectedOrder, Mode=TwoWay}"
+                  IsTextSearchEnabled="True"
+                  TextSearch.TextPath="OrderNumber"
+                  MaxDropDownHeight="400">
+            <ComboBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Padding="2">
+                        <Run Text="{Binding SupplierName, Mode=OneWay}" FontWeight="SemiBold" />
+                        <Run Text="  ·  " Foreground="Gray" />
+                        <Run Text="{Binding OrderNumber, Mode=OneWay}" />
+                        <Run Text="  ·  " Foreground="Gray" />
+                        <Run Text="{Binding OrderDate, Mode=OneWay, StringFormat={}{0:dd-MM-yyyy}}" />
+                        <Run Text="  ·  " Foreground="Gray" />
+                        <Run Text="{Binding OpenLinesText, Mode=OneWay}" Foreground="Gray" />
+                    </TextBlock>
+                </DataTemplate>
+            </ComboBox.ItemTemplate>
+        </ComboBox>
+
+        <TextBlock Margin="16,0,8,0"
+                   VerticalAlignment="Center"
+                   FontWeight="SemiBold"
+                   Text="{x:Static language:Language.StockOrderShowClosedOrders}" />
+        <ToggleButton VerticalAlignment="Center"
+                      IsChecked="{Binding ShowClosedOrders, Mode=TwoWay}"
+                      Style="{StaticResource ToggleSwitchStyle}"
+                      ToolTip="{x:Static language:Language.StockOrderShowClosedOrders}" />
+    </StackPanel>
+</UserControl>

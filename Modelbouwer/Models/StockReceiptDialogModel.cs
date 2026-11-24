@@ -1,10 +1,12 @@
 namespace Modelbouwer.Models;
 
+/// <summary>
+/// Input for a receipt on one order line (KAN-101, KAN-102).
+/// Normal mode: the user enters the quantity of THIS delivery, prefilled with the open quantity.
+/// Correction mode: the user enters the actual TOTAL received, prefilled with what is registered now.
+/// </summary>
 public partial class StockReceiptDialogModel : ObservableObject
 {
-	private bool _suppressRecalculation;
-	private bool _closedAutomaticallyByReceivedAmount;
-
 	[ObservableProperty] private int _orderLineId;
 	[ObservableProperty] private int _orderId;
 	[ObservableProperty] private int _productId;
@@ -12,18 +14,28 @@ public partial class StockReceiptDialogModel : ObservableObject
 	[ObservableProperty] private string? _productDescription;
 	[ObservableProperty] private double _orderedAmount;
 	[ObservableProperty] private double _alreadyReceivedAmount;
-	[ObservableProperty] private double _receivedAmount;
 	[ObservableProperty] private double _openAmount;
 	[ObservableProperty] private DateTime? _deliveryDate = DateTime.Today;
-	[ObservableProperty] private bool _isOrderLineClosed;
+	[ObservableProperty] private bool _isCorrection;
 
-	public double ReceivedDelta => ReceivedAmount - AlreadyReceivedAmount;
-	public bool IsIncompleteClose => IsOrderLineClosed && OpenAmount > 0d;
+	[ObservableProperty]
+	[NotifyPropertyChangedFor( nameof( RemainingAfterReceipt ) )]
+	private double _receiveAmount;
 
-	public static StockReceiptDialogModel Create( StockOrderLineModel line )
+	/// <summary>Open quantity after the receipt or correction is booked.</summary>
+	public double RemainingAfterReceipt => IsCorrection
+		? Math.Max( OrderedAmount - ReceiveAmount, 0d )
+		: Math.Max( OpenAmount - ReceiveAmount, 0d );
+
+	/// <summary>Quantity to book on the stock: the delivery itself, or the difference with the registered total.</summary>
+	public double StockDelta => IsCorrection ? ReceiveAmount - AlreadyReceivedAmount : ReceiveAmount;
+
+	public static StockReceiptDialogModel Create( StockOrderLineModel line ) => Create( line, false );
+
+	public static StockReceiptDialogModel CreateCorrection( StockOrderLineModel line ) => Create( line, true );
+
+	private static StockReceiptDialogModel Create( StockOrderLineModel line, bool isCorrection )
 	{
-		double received = line.Amount - line.OpenAmount;
-
 		return new StockReceiptDialogModel
 		{
 			OrderLineId = line.Id,
@@ -32,73 +44,11 @@ public partial class StockReceiptDialogModel : ObservableObject
 			ProductNumber = line.DisplayProductNumber,
 			ProductDescription = line.DisplayProductDescription,
 			OrderedAmount = line.Amount,
-			AlreadyReceivedAmount = received,
-			ReceivedAmount = received,
+			AlreadyReceivedAmount = line.Received,
 			OpenAmount = line.OpenAmount,
-			DeliveryDate = line.ClosedDate ?? DateTime.Today,
-			IsOrderLineClosed = line.Closed
+			IsCorrection = isCorrection,
+			ReceiveAmount = isCorrection ? line.Received : line.OpenAmount,
+			DeliveryDate = isCorrection && line.ClosedDate is DateTime closed ? closed : DateTime.Today
 		};
-	}
-
-	public void LeaveOpen()
-	{
-		IsOrderLineClosed = false;
-		RecalculateOpenAmount();
-	}
-
-	public void CompleteWithReceivedAmount()
-	{
-		if ( ReceivedAmount < 0d )
-			ReceivedAmount = 0d;
-
-		OrderedAmount = ReceivedAmount;
-		OpenAmount = 0d;
-		IsOrderLineClosed = true;
-	}
-
-	partial void OnOrderedAmountChanged( double value )
-	{
-		RecalculateOpenAmount();
-	}
-
-	partial void OnReceivedAmountChanged( double value )
-	{
-		RecalculateOpenAmount();
-	}
-
-	partial void OnOpenAmountChanged( double value )
-	{
-		OnPropertyChanged( nameof( IsIncompleteClose ) );
-	}
-
-	partial void OnIsOrderLineClosedChanged( bool value )
-	{
-		OnPropertyChanged( nameof( IsIncompleteClose ) );
-	}
-
-	private void RecalculateOpenAmount()
-	{
-		if ( _suppressRecalculation )
-			return;
-
-		_suppressRecalculation = true;
-		try
-		{
-			OpenAmount = Math.Max( OrderedAmount - ReceivedAmount, 0d );
-			if ( OpenAmount == 0d && OrderedAmount >= 0d )
-			{
-				IsOrderLineClosed = true;
-				_closedAutomaticallyByReceivedAmount = true;
-			}
-			else if ( _closedAutomaticallyByReceivedAmount )
-			{
-				IsOrderLineClosed = false;
-				_closedAutomaticallyByReceivedAmount = false;
-			}
-		}
-		finally
-		{
-			_suppressRecalculation = false;
-		}
 	}
 }
