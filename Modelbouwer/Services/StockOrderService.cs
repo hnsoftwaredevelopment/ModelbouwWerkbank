@@ -432,8 +432,10 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 
 	/// <summary>
 	/// Deletes an order with everything that belongs to it: its lines and the old correction rows in the stocklog.
-	/// An order with receipts is refused with <see cref="OrderHasReceiptsException"/>; the check runs in the same
-	/// transaction, so a receipt booked meanwhile is never orphaned. The lines are taken from the database, the
+	/// An order with receipts is refused with <see cref="OrderHasReceiptsException"/>. The check reads the database
+	/// right before deleting, in the same transaction, so a receipt booked after the screen loaded the order is
+	/// seen. It takes no locks: a receipt committed in the very moment between check and delete is not caught, which
+	/// is acceptable for a single-user application. The lines are taken from the database, the
 	/// <paramref name="lines"/> argument is kept for callers only.
 	/// </summary>
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines, CancellationToken cancellationToken )
