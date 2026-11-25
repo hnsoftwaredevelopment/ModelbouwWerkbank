@@ -112,6 +112,59 @@ public class TimeRegistrationServiceTests
 		StringAssert.Contains( methodBody, expectedContent );
 	}
 
+	#region KAN-136: material usage lowers the stock
+	[TestMethod]
+	public void UsageStocklogQueries_BookUsageAsAmountUsedLinkedToTheUsage()
+	{
+		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"INSERT INTO {DBNames.Database}.{DBNames.StocklogTable}" );
+		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"{DBNames.StocklogFieldNameProductUsageId}" );
+		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, "VALUES (@ProductId, @ProductUsageId, 0, @AmountUsed, 0, @UsageDate)" );
+		StringAssert.Contains( TimeRegistrationService.DeleteUsageStocklogQuery, $"WHERE {DBNames.StocklogFieldNameProductUsageId} = @ProductUsageId" );
+	}
+
+	[TestMethod]
+	public async Task InsertMaterialUsage_RunsInOneTransaction()
+	{
+		var data = new Mock<GenericDataService>();
+		data.Setup( s => s.ExecuteInTransactionAsync<int>( It.IsAny<Func<MySql.Data.MySqlClient.MySqlConnection, MySql.Data.MySqlClient.MySqlTransaction, Task<int>>>(), CancellationToken.None ) )
+			.ReturnsAsync( 31 );
+		var service = new TimeRegistrationService( data.Object, null! );
+
+		int id = await service.InsertMaterialUsageAsync( new MaterialUsageModel { ProjectId = 4, ProductId = 11, Amount = 1, UsageDate = DateTime.Today } );
+
+		Assert.AreEqual( 31, id );
+		data.Verify( s => s.ExecuteInTransactionAsync<int>( It.IsAny<Func<MySql.Data.MySqlClient.MySqlConnection, MySql.Data.MySqlClient.MySqlTransaction, Task<int>>>(), CancellationToken.None ), Times.Once );
+		data.Verify( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ), Times.Never,
+			"The usage is not inserted outside the transaction." );
+	}
+
+	[TestMethod]
+	public async Task UpdateAndDeleteMaterialUsage_RunInOneTransaction()
+	{
+		var data = new Mock<GenericDataService>();
+		data.Setup( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySql.Data.MySqlClient.MySqlConnection, MySql.Data.MySqlClient.MySqlTransaction, Task>>(), CancellationToken.None ) )
+			.Returns( Task.CompletedTask );
+		var service = new TimeRegistrationService( data.Object, null! );
+
+		await service.UpdateMaterialUsageAsync( new MaterialUsageModel { ProductUsageId = 30, ProjectId = 4, ProductId = 11, Amount = 2, UsageDate = DateTime.Today } );
+		await service.DeleteMaterialUsageAsync( 30 );
+
+		data.Verify( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySql.Data.MySqlClient.MySqlConnection, MySql.Data.MySqlClient.MySqlTransaction, Task>>(), CancellationToken.None ), Times.Exactly( 2 ) );
+		data.Verify( s => s.ExecuteNonQueryAsync( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public void UsageService_DeletesStocklogRowBeforeTheUsageAndReplacesItOnUpdate()
+	{
+		var source = LoadSource( "Modelbouwer", "Services", "TimeRegistrationService.cs" );
+
+		AssertMethodContains( source, "public Task DeleteMaterialUsageAsync( int materialUsageId, CancellationToken cancellationToken )",
+			"DeleteUsageStocklogQuery, parameters, cancellationToken );\r\n\t\t\tawait ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteMaterialUsageQuery" );
+		AssertMethodContains( source, "public Task UpdateMaterialUsageAsync( MaterialUsageModel usage, CancellationToken cancellationToken )",
+			"DeleteUsageStocklogQuery, parameters, cancellationToken );\r\n\t\t\tawait ExecuteNonQueryInTransactionAsync( connection, transaction, InsertUsageStocklogQuery" );
+	}
+	#endregion
+
 	private static string LoadSource( params string [ ] relativeSegments )
 	{
 		var directory = AppContext.BaseDirectory;

@@ -47,8 +47,8 @@
 		<RuntimeIdentifiers Condition="'$(TargetFramework)' == 'net10.0-android'">android-arm64;android-x64</RuntimeIdentifiers>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</SupportedOSPlatformVersion>
 		<TargetPlatformMinVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">10.0.17763.0</TargetPlatformMinVersion>
-		<AssemblyVersion>26.5.25.0</AssemblyVersion>
-		<FileVersion>26.5.25.0</FileVersion>
+		<AssemblyVersion>2026.11.24.0</AssemblyVersion>
+		<FileVersion>2026.11.24.0</FileVersion>
 		<Platforms>AnyCPU;ARM64</Platforms>
 		<SignAssembly>False</SignAssembly>
 		<Copyright>HN Softwaredevelopment</Copyright>
@@ -120,8 +120,7 @@
 	<!-- Reads MODELBOUWER_DB_PASSWORD, MODELBOUWER_DB_USER and MODELBOUWER_MOBILE_DB_SERVER from the
 	     developer's environment and writes them into the app package. -->
 	<Target Name="WriteModelbouwerSecrets" BeforeTargets="PrepareForBuild">
-		<Warning Condition="'$(MODELBOUWER_DB_PASSWORD)' == ''"
-			Text="MODELBOUWER_DB_PASSWORD is niet ingesteld. De app wordt gebouwd zonder databasewachtwoord en kan geen verbinding maken." />
+		<Warning Condition="'$(MODELBOUWER_DB_PASSWORD)' == ''" Text="MODELBOUWER_DB_PASSWORD is niet ingesteld. De app wordt gebouwd zonder databasewachtwoord en kan geen verbinding maken." />
 		<ItemGroup>
 			<_ModelbouwerSecretLine Include="Password=$([MSBuild]::Escape('$(MODELBOUWER_DB_PASSWORD)'))" />
 			<_ModelbouwerSecretLine Include="User=$([MSBuild]::Escape('$(MODELBOUWER_DB_USER)'))" />

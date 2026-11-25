@@ -247,14 +247,43 @@ public sealed class MySqlMobileWorkspaceService : IMobileWorkspaceService
             SELECT LAST_INSERT_ID();
             """;
 
-		entry.Id = await ExecuteScalarIntAsync( sql, new()
+		// Usage lowers the stock (KAN-136): the stocklog row is written in the same transaction.
+		const string stocklogSql =
+			"""
+            INSERT INTO modelbuilder.stocklog
+            (product_Id, productusage_Id, AmountReceived, AmountUsed, AmountCorrection, LogDate)
+            VALUES
+            (@ProductId, @ProductUsageId, 0, @AmountUsed, 0, @UsageDate);
+            """;
+
+		var parameters = new Dictionary<string, object?>
 		{
 			[ "@ProjectId" ] = entry.Project?.Id ?? 0,
 			[ "@ProductId" ] = entry.Product?.Id ?? 0,
 			[ "@AmountUsed" ] = entry.Amount,
 			[ "@UsageDate" ] = entry.UsageDate.Date,
 			[ "@Comment" ] = entry.Comment
-		} );
+		};
+
+		await using ( var connection = await OpenConnectionAsync() )
+		{
+			await using var transaction = await connection.BeginTransactionAsync();
+
+			await using ( var usageCommand = new MySqlCommand( sql, connection, transaction ) )
+			{
+				AddParameters( usageCommand, parameters );
+				entry.Id = Convert.ToInt32( await usageCommand.ExecuteScalarAsync() );
+			}
+
+			parameters [ "@ProductUsageId" ] = entry.Id;
+			await using ( var stocklogCommand = new MySqlCommand( stocklogSql, connection, transaction ) )
+			{
+				AddParameters( stocklogCommand, parameters );
+				await stocklogCommand.ExecuteNonQueryAsync();
+			}
+
+			await transaction.CommitAsync();
+		}
 
 		MaterialEntries.Insert( 0, entry );
 		SortMaterialEntries();
