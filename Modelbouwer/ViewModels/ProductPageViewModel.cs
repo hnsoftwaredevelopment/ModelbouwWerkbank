@@ -16,6 +16,40 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 	private readonly ICategoryService _categoryService;
 	private readonly IStorageLocationService _storageLocationService;
 	private readonly ISupplierService _supplierService;
+	private readonly IStockService _stockService;
+	private int _stockHistoryVersion;
+
+	#region Stock history tab (KAN-80)
+	/// <summary>Newest first; the balance is the stock after each mutation.</summary>
+	public ObservableCollection<StockHistoryItemModel> StockHistory { get; } = [ ];
+	[ObservableProperty] private double _currentStock;
+	[ObservableProperty] private bool _hasStockHistory;
+
+	private async Task LoadStockHistoryAsync( ProductModel? product )
+	{
+		int version = ++_stockHistoryVersion;
+
+		// The previous product's figures must not be shown as this product's while it loads.
+		StockHistory.Clear();
+		CurrentStock = 0d;
+		HasStockHistory = false;
+
+		List<StockHistoryItemModel> history = product == null || product.ProductId <= 0
+			? [ ]
+			: await _stockService.GetStockHistoryAsync( product.ProductId );
+
+		// Another product may have been selected while this one loaded.
+		if ( version != _stockHistoryVersion )
+			return;
+
+		StockHistory.Clear();
+		for ( int i = history.Count - 1; i >= 0; i-- )
+			StockHistory.Add( history [ i ] );
+
+		CurrentStock = history.Count > 0 ? history [ ^1 ].Balance : 0d;
+		HasStockHistory = history.Count > 0;
+	}
+	#endregion
 
 	private int? _lastSelectedProductId;
 	private void UpdateSelectedCategoryFromProduct()
@@ -74,9 +108,11 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 			ICategoryService categoryService,
 			IStorageLocationService storageLocationService,
 			ISupplierService supplierService,
+			IStockService stockService,
 			IEntityValidator<ProductModel> validator
 		) : base( validator )
 	{
+		_stockService = stockService;
 		_dataService = dataService;
 		_brandService = brandService;
 		_unitService = unitService;
@@ -501,6 +537,7 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 		SelectedStorageLocation = ProductStorageLocation.FirstOrDefault( c => c.StorageId == newValue?.ProductStorageId );
 
 		UpdateFilteredSuppliers();
+		ObserveBackgroundTask( LoadStockHistoryAsync( newValue ) );
 
 		_previousProduct = newValue;
 	}

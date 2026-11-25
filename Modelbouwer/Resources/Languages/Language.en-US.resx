@@ -4812,4 +4812,43 @@ PowerShell:
   <data name="DialogInvalidNumber" xml:space="preserve">
     <value>One or more fields do not contain a valid number. Correct the input marked in red.</value>
   </data>
+  <data name="StockHistoryKindReceipt" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="StockHistoryKindUsage" xml:space="preserve">
+    <value>Usage</value>
+  </data>
+  <data name="StockHistoryKindCorrection" xml:space="preserve">
+    <value>Correction</value>
+  </data>
+  <data name="StockHistoryOrderCorrection" xml:space="preserve">
+    <value>For order {0}</value>
+  </data>
+  <data name="StockHistoryHeaderDate" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="StockHistoryHeaderKind" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="StockHistoryHeaderDescription" xml:space="preserve">
+    <value>Order / project</value>
+  </data>
+  <data name="StockHistoryHeaderIn" xml:space="preserve">
+    <value>In</value>
+  </data>
+  <data name="StockHistoryHeaderOut" xml:space="preserve">
+    <value>Out</value>
+  </data>
+  <data name="StockHistoryHeaderBalance" xml:space="preserve">
+    <value>Stock</value>
+  </data>
+  <data name="StockHistoryCurrentStock" xml:space="preserve">
+    <value>Current stock</value>
+  </data>
+  <data name="StockHistoryEmpty" xml:space="preserve">
+    <value>There are no stock movements for this product yet.</value>
+  </data>
+  <data name="StockHistoryOrderDeleted" xml:space="preserve">
+    <value>Order no longer exists</value>
+  </data>
 </root>

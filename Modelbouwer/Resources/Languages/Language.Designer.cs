@@ -14447,5 +14447,109 @@ namespace Modelbouwer.Resources.Languages {
                 return ResourceManager.GetString("toolbarVisibleRowLabelUnit", resourceCulture);
             }
         }
+        /// <summary>
+        ///   Looks up a localized string similar to Ontvangst.
+        /// </summary>
+        public static string StockHistoryKindReceipt {
+            get {
+                return ResourceManager.GetString("StockHistoryKindReceipt", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Verbruik.
+        /// </summary>
+        public static string StockHistoryKindUsage {
+            get {
+                return ResourceManager.GetString("StockHistoryKindUsage", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Correctie.
+        /// </summary>
+        public static string StockHistoryKindCorrection {
+            get {
+                return ResourceManager.GetString("StockHistoryKindCorrection", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Bij order {0}.
+        /// </summary>
+        public static string StockHistoryOrderCorrection {
+            get {
+                return ResourceManager.GetString("StockHistoryOrderCorrection", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Datum.
+        /// </summary>
+        public static string StockHistoryHeaderDate {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderDate", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Soort.
+        /// </summary>
+        public static string StockHistoryHeaderKind {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderKind", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Order / project.
+        /// </summary>
+        public static string StockHistoryHeaderDescription {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderDescription", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Bij.
+        /// </summary>
+        public static string StockHistoryHeaderIn {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderIn", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Af.
+        /// </summary>
+        public static string StockHistoryHeaderOut {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderOut", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Voorraad.
+        /// </summary>
+        public static string StockHistoryHeaderBalance {
+            get {
+                return ResourceManager.GetString("StockHistoryHeaderBalance", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Huidige voorraad.
+        /// </summary>
+        public static string StockHistoryCurrentStock {
+            get {
+                return ResourceManager.GetString("StockHistoryCurrentStock", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Er zijn nog geen voorraadmutaties voor dit product..
+        /// </summary>
+        public static string StockHistoryEmpty {
+            get {
+                return ResourceManager.GetString("StockHistoryEmpty", resourceCulture);
+            }
+        }
+        /// <summary>
+        ///   Looks up a localized string similar to Order niet meer aanwezig.
+        /// </summary>
+        public static string StockHistoryOrderDeleted {
+            get {
+                return ResourceManager.GetString("StockHistoryOrderDeleted", resourceCulture);
+            }
+        }
     }
 }

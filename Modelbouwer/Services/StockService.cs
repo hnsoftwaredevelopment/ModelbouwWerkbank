@@ -59,6 +59,49 @@ public class StockService : IStockService
 		$"WHERE {DBNames.ProductFieldNameId} = @{DBNames.ProductFieldNameId};";
 	#endregion
 
+	/// <summary>All stocklog rows of one product with the order, supplier or project they belong to (KAN-80).</summary>
+	public static readonly string StockHistoryQuery = $"" +
+		$"SELECT " +
+		$"	sl.{DBNames.StocklogFieldNameId} AS Id, " +
+		$"	sl.{DBNames.StocklogFieldNameLogDate} AS LogDate, " +
+		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountReceived}, 0) AS AmountReceived, " +
+		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountUsed}, 0) AS AmountUsed, " +
+		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountCorrection}, 0) AS AmountCorrection, " +
+		$"	sl.{DBNames.StocklogFieldNameSupplyOrderlineId} AS SupplyOrderLineId, " +
+		$"	sl.{DBNames.StocklogFieldNameProductUsageId} AS ProductUsageId, " +
+		$"	so.{DBNames.OrderFieldNameOrderNumber} AS OrderNumber, " +
+		$"	sup.{DBNames.SupplierFieldNameName} AS SupplierName, " +
+		$"	prj.{DBNames.ProjectFieldNameName} AS ProjectName " +
+		$"FROM {DBNames.Database}.{DBNames.StocklogTable} sl " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.OrderTable} so ON so.{DBNames.OrderFieldNameId} = sl.{DBNames.StocklogFieldNameSupplyOrderId} " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.SupplierTable} sup ON sup.{DBNames.SupplierFieldNameId} = so.{DBNames.OrderFieldNameSupplierId} " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.ProductUsageTable} pu ON pu.{DBNames.ProductUsageFieldNameId} = sl.{DBNames.StocklogFieldNameProductUsageId} " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.ProjectTable} prj ON prj.{DBNames.ProjectFieldNameId} = pu.{DBNames.ProductUsageFieldNameProjectId} " +
+		$"WHERE sl.{DBNames.StocklogFieldNameProductId} = @ProductId " +
+		$"ORDER BY sl.{DBNames.StocklogFieldNameLogDate}, sl.{DBNames.StocklogFieldNameId};";
+
+	public Task<List<StockHistoryItemModel>> GetStockHistoryAsync( int productId ) =>
+		GetStockHistoryAsync( productId, CancellationToken.None );
+
+	public async Task<List<StockHistoryItemModel>> GetStockHistoryAsync( int productId, CancellationToken cancellationToken )
+	{
+		var entries = await _dataService.ExecuteQueryAsync( StockHistoryQuery, reader => new StockLogEntry
+		{
+			Id = DatabaseValueConverter.GetInt( reader [ "Id" ] ),
+			LogDate = reader [ "LogDate" ] is DateTime logDate ? logDate : null,
+			AmountReceived = DatabaseValueConverter.GetDouble( reader [ "AmountReceived" ] ),
+			AmountUsed = DatabaseValueConverter.GetDouble( reader [ "AmountUsed" ] ),
+			AmountCorrection = DatabaseValueConverter.GetDouble( reader [ "AmountCorrection" ] ),
+			SupplyOrderLineId = reader [ "SupplyOrderLineId" ] is DBNull ? null : DatabaseValueConverter.GetInt( reader [ "SupplyOrderLineId" ] ),
+			ProductUsageId = reader [ "ProductUsageId" ] is DBNull ? null : DatabaseValueConverter.GetInt( reader [ "ProductUsageId" ] ),
+			OrderNumber = reader [ "OrderNumber" ] is DBNull ? null : DatabaseValueConverter.GetString( reader [ "OrderNumber" ] ),
+			SupplierName = reader [ "SupplierName" ] is DBNull ? null : DatabaseValueConverter.GetString( reader [ "SupplierName" ] ),
+			ProjectName = reader [ "ProjectName" ] is DBNull ? null : DatabaseValueConverter.GetString( reader [ "ProjectName" ] )
+		}, new Dictionary<string, object> { { "@ProductId", productId } }, cancellationToken );
+
+		return StockHistoryItemModel.Build( entries );
+	}
+
 	#region All Database mutations for inventory management
 	#region Get the complete inventory list
 	public Task<List<StockManagementModel>> GetCompleteInventoryAsync()
