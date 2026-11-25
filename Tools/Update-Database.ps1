@@ -177,7 +177,7 @@ foreach ($s in $Scripts) {
     if ($r.ExitCode -ne 0 -or $r.Errors) {
         Write-Host "`nFout in $s : $($r.Errors)" -ForegroundColor Red
         Write-Host "Terugzetten van de back-up (in een opdrachtprompt):"
-        Write-Host "  mysql -u $user -p -h $Server $Database < `"$backup`""
+        Write-Host "  mysql -u $user -p -h $Server --port=$Port --protocol=TCP $Database < `"$backup`""
         exit 1
     }
 }
