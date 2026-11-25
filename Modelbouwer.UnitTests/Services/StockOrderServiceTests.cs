@@ -262,6 +262,89 @@ public class StockOrderServiceTests
 			Times.Once );
 	}
 
+	#region KAN-137: an order with receipts cannot be deleted
+	[TestMethod]
+	public void DeleteOrderQueries_CheckReceiptsAndRemoveEverythingOfTheOrder()
+	{
+		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.StocklogFieldNameAmountReceived} <> 0" );
+		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderId} = @OrderId" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderlineId} IN (" );
+		StringAssert.Contains( StockOrderService.DeleteOrderLinesOfOrderQuery, $"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId" );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderAsync_GoesThroughTheGuardedTransaction()
+	{
+		_mockDataService
+			.Setup( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ) )
+			.Returns( Task.CompletedTask );
+
+		await _service.DeleteOrderAsync( 25 );
+
+		_mockDataService.Verify( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ), Times.Once );
+		_mockDataService.Verify( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ), Times.Never,
+			"The order is not deleted outside the receipt check." );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderSteps_WithReceipts_ThrowsAndDeletesNothing()
+	{
+		var executed = new List<string>();
+
+		await AssertThrowsAsync<OrderHasReceiptsException>( () => _service.DeleteOrderStepsAsync( 25,
+			( _, _ ) => Task.FromResult( 2L ),
+			( query, _ ) => { executed.Add( query ); return Task.CompletedTask; } ) );
+
+		Assert.AreEqual( 0, executed.Count );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderSteps_WithoutReceipts_DeletesStocklogLinesOfTheOrderAndTheOrder()
+	{
+		var executed = new List<(string Query, Dictionary<string, object> Parameters)>();
+
+		await _service.DeleteOrderStepsAsync( 25,
+			( _, _ ) => Task.FromResult( 0L ),
+			( query, parameters ) => { executed.Add( (query, parameters) ); return Task.CompletedTask; } );
+
+		CollectionAssert.AreEqual(
+			new[] { StockOrderService.DeleteOrderStocklogQuery, StockOrderService.DeleteOrderLinesOfOrderQuery, _service.DeleteOrderQuery },
+			executed.Select( step => step.Query ).ToArray() );
+		Assert.AreEqual( 25, executed [ 1 ].Parameters [ "@OrderId" ], "All lines of the order are deleted by order id, not only the lines on screen." );
+	}
+
+	[TestMethod]
+	public void DeleteOrderStocklogQuery_NeverDeletesReceipts()
+	{
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0" );
+	}
+
+	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
+	{
+		try
+		{
+			await action();
+		}
+		catch ( TException )
+		{
+			return;
+		}
+
+		Assert.Fail( $"Expected {typeof( TException ).Name}." );
+	}
+
+	[TestMethod]
+	public void OrderHasReceiptsException_CarriesTheMessageAndOrder()
+	{
+		var exception = new OrderHasReceiptsException( 25 );
+
+		Assert.AreEqual( Lang.StockOrderOrderHasReceipts, exception.Message );
+		Assert.AreEqual( 25, exception.OrderId );
+		Assert.IsInstanceOfType<EntityInUseException>( exception );
+	}
+	#endregion
+
 	[TestMethod]
 	public async Task DeleteOrderWithLinesAsync_UsesTransactionalDataService()
 	{

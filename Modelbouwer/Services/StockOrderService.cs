@@ -395,12 +395,10 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return DeleteOrderAsync( orderId, CancellationToken.None );
 	}
 
+	/// <summary>Deleting an order always goes through the guarded delete, so receipts are never orphaned.</summary>
 	public Task DeleteOrderAsync( int orderId, CancellationToken cancellationToken )
 	{
-		return _dataService.ExecuteScalarAsync<uint>( DeleteOrderQuery, new Dictionary<string, object>
-		{
-			{ $"@{DBNames.OrderFieldNameId}", orderId }
-		}, cancellationToken );
+		return DeleteOrderWithLinesAsync( orderId, [ ], cancellationToken );
 	}
 
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines )
@@ -408,29 +406,69 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return DeleteOrderWithLinesAsync( orderId, lines, CancellationToken.None );
 	}
 
+	#region Delete an order (KAN-137)
+	private static readonly string OrderLineIdsOfOrder =
+		$"SELECT {DBNames.OrderLineFieldNameId} FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId";
+
+	/// <summary>Receipts in the stocklog or received amounts on the lines of the order.</summary>
+	public static readonly string CountOrderReceiptsQuery =
+		$"SELECT " +
+		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.StocklogTable} " +
+		$" WHERE {DBNames.StocklogFieldNameAmountReceived} <> 0 " +
+		$"   AND ({DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder}))) + " +
+		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$" WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId " +
+		$"   AND {DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0);";
+
+	/// <summary>Stocklog rows of an order without receipts: the corrections orders wrote before KAN-100.</summary>
+	/// <remarks>Never deletes a receipt: one recorded after the check stays, so its stock is not lost.</remarks>
+	public static readonly string DeleteOrderStocklogQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.StocklogTable} " +
+		$"WHERE IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0 " +
+		$"  AND ({DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder}));";
+
+	public static readonly string DeleteOrderLinesOfOrderQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId;";
+
+	/// <summary>
+	/// Deletes an order with everything that belongs to it: its lines and the old correction rows in the stocklog.
+	/// An order with receipts is refused with <see cref="OrderHasReceiptsException"/>. The check reads the database
+	/// right before deleting, in the same transaction, so a receipt booked after the screen loaded the order is
+	/// seen. It takes no locks, so a receipt committed in the very moment between check and delete is not
+	/// refused; it is never deleted itself either (see <see cref="DeleteOrderStocklogQuery"/>), so its stock is
+	/// kept. For a single-user application that window is accepted. The lines are taken from the database, the
+	/// <paramref name="lines"/> argument is kept for callers only.
+	/// </summary>
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines, CancellationToken cancellationToken )
 	{
-		List<StockOrderLineModel> lineList = lines.ToList();
-
-		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
-		{
-			foreach ( var line in lineList )
-			{
-				if ( line.Id > 0 )
-				{
-					await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderLineQuery, new Dictionary<string, object>
-					{
-						{ $"@{DBNames.OrderLineFieldNameId}", line.Id }
-					}, cancellationToken );
-				}
-			}
-
-			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderQuery, new Dictionary<string, object>
-			{
-				{ $"@{DBNames.OrderFieldNameId}", orderId }
-			}, cancellationToken );
-		}, cancellationToken );
+		return _dataService.ExecuteInTransactionAsync( ( connection, transaction ) => DeleteOrderStepsAsync(
+			orderId,
+			( query, parameters ) => ExecuteScalarInTransactionAsync<long>( connection, transaction, query, parameters, cancellationToken ),
+			( query, parameters ) => ExecuteNonQueryInTransactionAsync( connection, transaction, query, parameters, cancellationToken ) ),
+			cancellationToken );
 	}
+
+	/// <summary>The statements of a guarded order delete, separate from the connection so tests can run them.</summary>
+	public async Task DeleteOrderStepsAsync(
+		int orderId,
+		Func<string, Dictionary<string, object>, Task<long>> countAsync,
+		Func<string, Dictionary<string, object>, Task> executeAsync )
+	{
+		var parameters = new Dictionary<string, object> { { "@OrderId", orderId } };
+
+		if ( await countAsync( CountOrderReceiptsQuery, parameters ) > 0 )
+			throw new OrderHasReceiptsException( orderId );
+
+		await executeAsync( DeleteOrderStocklogQuery, parameters );
+		await executeAsync( DeleteOrderLinesOfOrderQuery, parameters );
+		await executeAsync( DeleteOrderQuery, new Dictionary<string, object>
+		{
+			{ $"@{DBNames.OrderFieldNameId}", orderId }
+		} );
+	}
+	#endregion
 
 	public async Task<int> InsertOrderLineAsync( StockOrderLineModel line )
 	{
