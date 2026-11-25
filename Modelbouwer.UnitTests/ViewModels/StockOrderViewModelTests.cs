@@ -1,1174 +1,665 @@
+using Modelbouwer.Model;
+
 namespace Modelbouwer.UnitTests.ViewModels;
 
+/// <summary>Order screen (KAN-103): everything stays on screen until Save, which stores it in one transaction.</summary>
 [TestClass]
 public class StockOrderViewModelTests
 {
-	private Mock<IStockOrderService> _mockStockOrderService = null!;
-	private Mock<IProductService> _mockProductService = null!;
-	private Mock<IStockService> _mockStockService = null!;
-	private Mock<ISupplierService> _mockSupplierService = null!;
-	private StockOrderViewModel _viewModel = null!;
+	private Mock<IStockOrderService> _orders = null!;
+	private Mock<IProductService> _products = null!;
+	private Mock<IStockService> _stock = null!;
+	private Mock<ISupplierService> _suppliers = null!;
+	private StockOrderViewModel _vm = null!;
+	private List<string> _messages = null!;
+	private bool _confirmAnswer;
+
+	private static readonly SupplierModel Cornwall = new() { Id = 1, Name = "Cornwall", CurrencyId = 2, ShippingCosts = 7.5, OrderCosts = 1 };
+	private static readonly SupplierModel Other = new() { Id = 2, Name = "Other", CurrencyId = 1 };
+
+	// Product 5: minimum 10, stock 6, nothing on order, order multiple 3 -> shortage 4, suggestion 6.
+	// Product 8: minimum 2, stock 5 -> no shortage.
+	private static ProductModel Product5() => new() { ProductId = 5, ProductCode = "P-005", ProductName = "Walnut dowel 3 mm", ProductPrice = 1.5, ProductMinimalStock = 10, ProductStandardQuantity = 3 };
+	private static ProductModel Product8() => new() { ProductId = 8, ProductCode = "P-008", ProductName = "Brass rod", ProductPrice = 2, ProductMinimalStock = 2 };
 
 	[TestInitialize]
 	public void Setup()
 	{
-		_mockStockOrderService = new Mock<IStockOrderService>();
-		_mockProductService = new Mock<IProductService>();
-		_mockStockService = new Mock<IStockService>();
-		_mockSupplierService = new Mock<ISupplierService>();
+		_orders = new Mock<IStockOrderService>();
+		_products = new Mock<IProductService>();
+		_stock = new Mock<IStockService>();
+		_suppliers = new Mock<ISupplierService>();
+		_messages = [];
+		_confirmAnswer = true;
 
-		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
-		_mockStockOrderService.Setup( s => s.UpdateOrderLineAsync( It.IsAny<StockOrderLineModel>() ) ).Returns( Task.CompletedTask );
-		_mockStockOrderService.Setup( s => s.DeleteOrderLineAsync( It.IsAny<int>() ) ).Returns( Task.CompletedTask );
-		_mockStockOrderService.Setup( s => s.DeleteOrderWithLinesAsync( It.IsAny<int>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).Returns( Task.CompletedTask );
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>() );
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>() );
-		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync() ).ReturnsAsync( new List<SupplierModel>() );
-		_mockSupplierService.Setup( s => s.GetAllCurrenciesAsync() ).ReturnsAsync( new List<CurrencyModel>() );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-	}
-
-	[TestMethod]
-	public void Constructor_BeginsInNewOrderModeWithEmptyEditableOrder()
-	{
-		Assert.IsTrue( _viewModel.IsNewOrder );
-		Assert.IsNotNull( _viewModel.EditableOrder );
-		Assert.AreEqual( 0, _viewModel.EditableOrder.Id );
-		Assert.IsNull( _viewModel.SelectedOrder );
-		Assert.AreEqual( 0, _viewModel.VisibleOrderLines.Count );
-	}
-
-	[TestMethod]
-	public void ApplySelectedOrder_CopiesOrderAndLoadsLines()
-	{
-		var order = new StockOrderModel
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
+		_orders.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) ).ReturnsAsync( 25 );
+		_products.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( () => new List<ProductModel> { Product5(), Product8() } );
+		_stock.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( () => new List<StockManagementModel>
 		{
-			Id = 4,
-			SupplierId = 11,
-			OrderNumber = "SO-004",
-			Closed = false
+			new() { ProductId = 5, ProductInventory = 6, ProductInOrder = 0, ProductMinimalStock = 10 },
+			new() { ProductId = 8, ProductInventory = 5, ProductInOrder = 0, ProductMinimalStock = 2 }
+		} );
+		_suppliers.Setup( s => s.GetAllSuppliersAsync() ).ReturnsAsync( new List<SupplierModel> { Cornwall, Other } );
+		_suppliers.Setup( s => s.GetAllCurrenciesAsync() ).ReturnsAsync( new List<CurrencyModel>() );
+		_suppliers.Setup( s => s.GetAllProductSuppliersAsync() ).ReturnsAsync( () => new List<ProductSupplierModel>
+		{
+			new() { ProductSupplierId = 70, SupplierId = 1, ProductId = 5, ProductNumber = "CW-DOW3", ProductName = "Walnut Dowel 3mm", Price = 1.25 }
+		} );
+	}
+
+	private async Task CreateAsync()
+	{
+		_vm = new StockOrderViewModel( _orders.Object, _products.Object, _stock.Object, _suppliers.Object )
+		{
+			ShowMessage = message => _messages.Add( message ),
+			ConfirmAction = _ => _confirmAnswer
+		};
+		await _vm.InitializeAsync();
+	}
+
+	private StockOrderProductRowModel Row( int productId ) => _vm.ProductRows.Single( row => row.ProductId == productId );
+
+	private async Task SelectSupplierAndAddAsync( int productId )
+	{
+		_vm.EditableOrder.SupplierId = 1;
+		_vm.SelectedProductRow = Row( productId );
+		await _vm.AddSelectedProductAsync();
+	}
+
+	#region Start and header
+	[TestMethod]
+	public async Task Constructor_StartsWithEmptyNewOrderWithoutChanges()
+	{
+		await CreateAsync();
+
+		Assert.IsTrue( _vm.IsNewOrder );
+		Assert.AreEqual( 0, _vm.EditableOrder.Id );
+		Assert.AreEqual( DateTime.Today, _vm.EditableOrder.OrderDate );
+		Assert.AreEqual( 0, _vm.OrderLines.Count );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+	}
+
+	[TestMethod]
+	public async Task SelectingSupplier_FillsCurrencyAndCostsButKeepsManualCosts()
+	{
+		await CreateAsync();
+
+		_vm.EditableOrder.ShippingCosts = 3;
+		_vm.EditableOrder.SupplierId = 1;
+
+		Assert.AreEqual( 2, _vm.EditableOrder.CurrencyId );
+		Assert.AreEqual( 3d, _vm.EditableOrder.ShippingCosts, "Manually entered costs stay." );
+		Assert.AreEqual( 1d, _vm.EditableOrder.OrderCosts );
+	}
+
+	[TestMethod]
+	public async Task ValidateOrderForSave_RequiresSupplierButNotOrderNumber()
+	{
+		await CreateAsync();
+
+		Assert.AreEqual( Lang.StockOrderSupplierRequired, _vm.ValidateOrderForSave() );
+
+		_vm.EditableOrder.SupplierId = 1;
+		_vm.EditableOrder.OrderNumber = null;
+
+		Assert.IsNull( _vm.ValidateOrderForSave(), "A concept order without order number can be saved." );
+	}
+
+	[TestMethod]
+	public async Task Supplier_IsLockedOnceTheOrderHasLines()
+	{
+		await CreateAsync();
+		Assert.IsTrue( _vm.CanChangeSupplier );
+
+		await SelectSupplierAndAddAsync( 5 );
+
+		Assert.IsFalse( _vm.CanChangeSupplier );
+	}
+	#endregion
+
+	#region Product list
+	[TestMethod]
+	public async Task ProductRows_UseStockOverviewShortageRulesAndOrderMultiple()
+	{
+		await CreateAsync();
+
+		Assert.AreEqual( 4d, Row( 5 ).ShortInventory );
+		Assert.AreEqual( 6d, Row( 5 ).SuggestedAmount, "Shortage 4 rounded up to multiple 3." );
+		Assert.AreEqual( 0d, Row( 8 ).ShortInventory );
+		Assert.AreEqual( 1d, Row( 8 ).SuggestedAmount, "No shortage and no multiple: 1." );
+	}
+
+	[TestMethod]
+	public async Task SelectingSupplier_GroupsProductsAndShowsSupplierArticleNumber()
+	{
+		await CreateAsync();
+
+		_vm.EditableOrder.SupplierId = 1;
+
+		Assert.IsTrue( Row( 5 ).IsFromSelectedSupplier );
+		Assert.AreEqual( "CW-DOW3", Row( 5 ).SupplierProductNumber );
+		Assert.AreEqual( Lang.StockOrderGroupSupplierProducts, Row( 5 ).GroupName );
+		Assert.IsFalse( Row( 8 ).IsFromSelectedSupplier );
+		Assert.AreEqual( Lang.StockOrderGroupOtherProducts, Row( 8 ).GroupName );
+	}
+
+	[TestMethod]
+	public async Task Filters_SearchAlsoOnSupplierNumberAndShortagesOnly()
+	{
+		await CreateAsync();
+		_vm.EditableOrder.SupplierId = 1;
+
+		_vm.SearchText = "cw-dow";
+		Assert.AreEqual( 5, _vm.ProductRows.Single().ProductId );
+
+		_vm.SearchText = string.Empty;
+		_vm.ShowOnlyShortages = true;
+		Assert.AreEqual( 5, _vm.ProductRows.Single().ProductId );
+	}
+	#endregion
+
+	#region Adding products
+	[TestMethod]
+	public async Task AddProduct_WithoutSupplier_ShowsMessageAndAddsNothing()
+	{
+		await CreateAsync();
+		_vm.SelectedProductRow = Row( 5 );
+
+		await _vm.AddSelectedProductAsync();
+
+		Assert.AreEqual( 0, _vm.OrderLines.Count );
+		CollectionAssert.Contains( _messages, Lang.StockOrderSelectSupplierFirst );
+	}
+
+	[TestMethod]
+	public async Task AddProduct_WithKnownSupplierData_AddsLineWithoutPopupAndUpdatesShortage()
+	{
+		await CreateAsync();
+		bool dialogShown = false;
+		_vm.ShowSupplierProductDialog = _ => dialogShown = true;
+
+		await SelectSupplierAndAddAsync( 5 );
+
+		Assert.IsFalse( dialogShown );
+		var line = _vm.OrderLines.Single();
+		Assert.AreEqual( "CW-DOW3", line.SupplierProductNumber );
+		Assert.AreEqual( "Walnut Dowel 3mm", line.SupplierProductName );
+		Assert.AreEqual( 6d, line.Amount );
+		Assert.AreEqual( 1.25, line.Price, "Supplier price wins over product price." );
+		Assert.AreEqual( 7.5, line.RealRowTotal );
+		Assert.AreEqual( 0d, Row( 5 ).ShortInventory, "The unsaved line counts as on order." );
+		Assert.IsTrue( _vm.HasUnsavedChanges );
+	}
+
+	[TestMethod]
+	public async Task AddProduct_WithoutSupplierData_AsksAndCancelAddsNothing()
+	{
+		await CreateAsync();
+		_vm.ShowSupplierProductDialog = _ => false;
+
+		await SelectSupplierAndAddAsync( 8 );
+
+		Assert.AreEqual( 0, _vm.OrderLines.Count );
+	}
+
+	[TestMethod]
+	public async Task AddProduct_WithoutSupplierData_UsesPopupDataAndSavesItWithTheOrder()
+	{
+		await CreateAsync();
+		_vm.ShowSupplierProductDialog = dialog =>
+		{
+			Assert.AreEqual( "Brass rod", dialog.Model.SupplierProductName, "Description is prefilled with the own product name." );
+			dialog.Model.SupplierProductNumber = "CW-BR2";
+			dialog.Model.UnitPrice = 2.4;
+			return true;
 		};
 
-		var lines = new List<StockOrderLineModel>
-		{
-			new() { Id = 8, SupplyOrderId = 4, ProductId = 5, Amount = 2, Price = 10, RealRowTotal = 20 }
-		};
+		await SelectSupplierAndAddAsync( 8 );
+		_vm.EditableOrder.OrderNumber = "CW0200";
+		await _vm.SaveOrderAsync();
 
-		_viewModel.ApplySelectedOrder( order, lines );
-
-		Assert.IsFalse( _viewModel.IsNewOrder );
-		Assert.IsNotNull( _viewModel.SelectedOrder );
-		Assert.AreEqual( 4, _viewModel.EditableOrder.Id );
-		Assert.AreEqual( "SO-004", _viewModel.EditableOrder.OrderNumber );
-		Assert.AreEqual( 1, _viewModel.VisibleOrderLines.Count );
-	}
-
-	[TestMethod]
-	public void ValidateOrderForSave_WithMissingSupplier_ReturnsMessage()
-	{
-		_viewModel.EditableOrder.OrderNumber = "SO-123";
-		_viewModel.EditableOrder.OrderDate = DateTime.Today;
-		_viewModel.EditableOrder.SupplierId = 0;
-
-		var result = _viewModel.ValidateOrderForSave();
-
-		Assert.AreEqual( "Supplier is verplicht.", result );
-	}
-
-	[TestMethod]
-	public void EditableOrder_WhenSupplierSelectedOnNewOrder_FillsCurrencyAndSupplierCosts()
-	{
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2,
-			ShippingCosts = 7.5,
-			OrderCosts = 3.25
-		} );
-
-		_viewModel.EditableOrder.SupplierId = 11;
-
-		Assert.AreEqual( 2, _viewModel.EditableOrder.CurrencyId );
-		Assert.AreEqual( 7.5d, _viewModel.EditableOrder.ShippingCosts );
-		Assert.AreEqual( 3.25d, _viewModel.EditableOrder.OrderCosts );
-	}
-
-	[TestMethod]
-	public void EditableOrder_WhenCostsManuallyOverridden_KeepsManualValuesOnSupplierChange()
-	{
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2,
-			ShippingCosts = 7.5,
-			OrderCosts = 3.25
-		} );
-		_viewModel.Suppliers.Add( new SupplierModel
-		{
-			Id = 12,
-			Name = "Supplier 12",
-			CurrencyId = 3,
-			ShippingCosts = 12.5,
-			OrderCosts = 6.5
-		} );
-
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.EditableOrder.ShippingCosts = 99d;
-		_viewModel.EditableOrder.OrderCosts = 55d;
-
-		_viewModel.EditableOrder.SupplierId = 12;
-
-		Assert.AreEqual( 3, _viewModel.EditableOrder.CurrencyId );
-		Assert.AreEqual( 99d, _viewModel.EditableOrder.ShippingCosts );
-		Assert.AreEqual( 55d, _viewModel.EditableOrder.OrderCosts );
-	}
-
-	[TestMethod]
-	public void ApplySelectedOrder_WhenSupplierChanges_PreservesLoadedCosts()
-	{
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2,
-			ShippingCosts = 7.5,
-			OrderCosts = 3.25
-		} );
-		_viewModel.Suppliers.Add( new SupplierModel
-		{
-			Id = 12,
-			Name = "Supplier 12",
-			CurrencyId = 3,
-			ShippingCosts = 12.5,
-			OrderCosts = 6.5
-		} );
-
-		_viewModel.ApplySelectedOrder( new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			CurrencyId = 2,
-			OrderNumber = "SO-025",
-			ShippingCosts = 18d,
-			OrderCosts = 9d
-		}, new List<StockOrderLineModel>() );
-
-		_viewModel.EditableOrder.SupplierId = 12;
-
-		Assert.AreEqual( 3, _viewModel.EditableOrder.CurrencyId );
-		Assert.AreEqual( 18d, _viewModel.EditableOrder.ShippingCosts );
-		Assert.AreEqual( 9d, _viewModel.EditableOrder.OrderCosts );
-	}
-
-	[TestMethod]
-	public async Task ConstructorInitialization_PopulatesAvailableProductsWithInventoryFields()
-	{
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>
-		{
-			new()
-			{
-				ProductId = 5,
-				ProductCode = "P-005",
-				ProductName = "Wheel Set",
-				ProductPrice = 12.5,
-				ProductMinimalStock = 10,
-				ProductStandardQuantity = 4
-			}
-		} );
-
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>
-		{
-			new()
-			{
-				ProductId = 5,
-				ProductInventory = 6,
-				ProductInOrder = 3,
-				ProductMinimalStock = 10
-			}
-		} );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-
-		for ( int attempt = 0; attempt < 20 && _viewModel.AvailableProducts.Count == 0; attempt++ )
-		{
-			await Task.Delay( 25 );
-		}
-
-		Assert.AreEqual( 1, _viewModel.AvailableProducts.Count );
-		Assert.AreEqual( 6d, _viewModel.AvailableProducts [ 0 ].CurrentInventory );
-		Assert.AreEqual( 3d, _viewModel.AvailableProducts [ 0 ].InOrder );
-	}
-
-	[TestMethod]
-	public async Task InitializeAsync_PopulatesAvailableProductsWithInventoryFields()
-	{
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>
-		{
-			new()
-			{
-				ProductId = 5,
-				ProductCode = "P-005",
-				ProductName = "Wheel Set",
-				ProductPrice = 12.5,
-				ProductMinimalStock = 10,
-				ProductStandardQuantity = 4
-			}
-		} );
-
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>
-		{
-			new()
-			{
-				ProductId = 5,
-				ProductInventory = 6,
-				ProductInOrder = 3,
-				ProductMinimalStock = 10
-			}
-		} );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-
-		await _viewModel.InitializeAsync();
-
-		Assert.AreEqual( 1, _viewModel.AvailableProducts.Count );
-		Assert.AreEqual( 6d, _viewModel.AvailableProducts [ 0 ].CurrentInventory );
-		Assert.AreEqual( 3d, _viewModel.AvailableProducts [ 0 ].InOrder );
-		Assert.AreEqual( 10d, _viewModel.AvailableProducts [ 0 ].ProductMinimalStock );
-		Assert.AreEqual( 4d, _viewModel.AvailableProducts [ 0 ].ProductStandardQuantity );
-	}
-
-	[TestMethod]
-	public async Task InitializeAsync_WithCancellationToken_PassesTokenToStockOrderService()
-	{
-		using var cts = new CancellationTokenSource();
-
-		_mockStockOrderService
-			.Setup( s => s.GetAllOrdersAsync( cts.Token ) )
-			.ReturnsAsync( new List<StockOrderModel>
-			{
-				new() { Id = 25, SupplierId = 11, OrderNumber = "SO-025" }
-			} );
-
-		await _viewModel.InitializeAsync( cts.Token );
-
-		_mockStockOrderService.Verify( s => s.GetAllOrdersAsync( cts.Token ), Times.Once );
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.AreEqual( 25, _viewModel.Orders [ 0 ].Id );
-	}
-
-	[TestMethod]
-	public async Task SearchText_FiltersAvailableProductsByCodeAndName()
-	{
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>
-		{
-			new() { ProductId = 5, ProductCode = "AX-005", ProductName = "Wheel Set" },
-			new() { ProductId = 6, ProductCode = "BR-006", ProductName = "Brake Hose" },
-			new() { ProductId = 7, ProductCode = "LN-007", ProductName = "Lantern" }
-		} );
-
-		await _viewModel.InitializeAsync();
-
-		_viewModel.SearchText = "BR";
-
-		Assert.AreEqual( 1, _viewModel.AvailableProducts.Count );
-		Assert.AreEqual( "BR-006", _viewModel.AvailableProducts [ 0 ].ProductCode );
-
-		_viewModel.SearchText = "wheel";
-
-		Assert.AreEqual( 1, _viewModel.AvailableProducts.Count );
-		Assert.AreEqual( "Wheel Set", _viewModel.AvailableProducts [ 0 ].ProductName );
-	}
-
-	[TestMethod]
-	public async Task ClearSearchCommand_RestoresAvailableProducts()
-	{
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>
-		{
-			new() { ProductId = 5, ProductCode = "AX-005", ProductName = "Wheel Set" },
-			new() { ProductId = 6, ProductCode = "BR-006", ProductName = "Brake Hose" }
-		} );
-
-		await _viewModel.InitializeAsync();
-
-		_viewModel.SearchText = "wheel";
-		_viewModel.ClearSearchCommand.Execute( null );
-
-		Assert.AreEqual( string.Empty, _viewModel.SearchText );
-		Assert.AreEqual( 2, _viewModel.AvailableProducts.Count );
-	}
-
-	[TestMethod]
-	public async Task SaveOrderAsync_WithNewOrder_InsertsOrderAndPendingLines()
-	{
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.EditableOrder.CurrencyId = 2;
-		_viewModel.EditableOrder.OrderNumber = "SO-025";
-		_viewModel.EditableOrder.OrderDate = DateTime.Today;
-
-		_viewModel.PendingOrderLines.Add( new StockOrderLineModel
-		{
-			ProductId = 5,
-			SupplierId = 11,
-			Amount = 3,
-			OpenAmount = 3,
-			Price = 12.5,
-			RealRowTotal = 37.5
-		} );
-
-		_mockStockOrderService.Setup( s => s.InsertOrderWithLinesAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).ReturnsAsync( 25 );
-		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel>
-		{
-			new() { Id = 40, SupplyOrderId = 25, ProductId = 5, Amount = 3, OpenAmount = 3, Price = 12.5, RealRowTotal = 37.5 }
-		} );
-		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>
-		{
-			new() { Id = 25, SupplierId = 11, CurrencyId = 2, OrderNumber = "SO-025", OrderDate = DateTime.Today }
-		} );
-
-		await _viewModel.SaveOrderAsync();
-
-		_mockStockOrderService.Verify( s => s.InsertOrderWithLinesAsync(
-			It.IsAny<StockOrderModel>(),
-			It.Is<IEnumerable<StockOrderLineModel>>( lines => lines.Count() == 1 && lines.First().ProductId == 5 && lines.First().Amount == 3d ) ),
-			Times.Once );
-		Assert.IsFalse( _viewModel.IsNewOrder );
-		Assert.IsNotNull( _viewModel.SelectedOrder );
-		Assert.AreEqual( 25, _viewModel.SelectedOrder.Id );
-	}
-
-	[TestMethod]
-	public async Task SaveOrderAsync_WithCancellationToken_PassesTokenToStockOrderService()
-	{
-		using var cts = new CancellationTokenSource();
-
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.EditableOrder.CurrencyId = 2;
-		_viewModel.EditableOrder.OrderNumber = "SO-025";
-		_viewModel.EditableOrder.OrderDate = DateTime.Today;
-
-		_viewModel.PendingOrderLines.Add( new StockOrderLineModel
-		{
-			ProductId = 5,
-			SupplierId = 11,
-			Amount = 3,
-			OpenAmount = 3,
-			Price = 12.5,
-			RealRowTotal = 37.5
-		} );
-
-		_mockStockOrderService
-			.Setup( s => s.InsertOrderWithLinesAsync(
-				It.IsAny<StockOrderModel>(),
-				It.IsAny<IEnumerable<StockOrderLineModel>>(),
-				cts.Token ) )
-			.ReturnsAsync( 25 );
-
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 25, cts.Token ) )
-			.ReturnsAsync( new List<StockOrderLineModel>
-			{
-				new() { Id = 40, SupplyOrderId = 25, ProductId = 5, Amount = 3, OpenAmount = 3, Price = 12.5, RealRowTotal = 37.5 }
-			} );
-
-		_mockStockOrderService
-			.Setup( s => s.GetAllOrdersAsync( cts.Token ) )
-			.ReturnsAsync( new List<StockOrderModel>
-			{
-				new() { Id = 25, SupplierId = 11, CurrencyId = 2, OrderNumber = "SO-025", OrderDate = DateTime.Today }
-			} );
-
-		await _viewModel.SaveOrderAsync( cts.Token );
-
-		_mockStockOrderService.Verify( s => s.InsertOrderWithLinesAsync(
-			It.IsAny<StockOrderModel>(),
-			It.IsAny<IEnumerable<StockOrderLineModel>>(),
-			cts.Token ), Times.Once );
-		_mockStockOrderService.Verify( s => s.GetOrderLinesAsync( 25, cts.Token ), Times.Once );
-		_mockStockOrderService.Verify( s => s.GetAllOrdersAsync( cts.Token ), Times.Once );
-	}
-
-	[TestMethod]
-	public async Task AddSelectedProductAsync_WithNewOrder_AddsPendingLineAndUpsertsProductSupplier()
-	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
-
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5,
-			ProductStandardQuantity = 3,
-			ProductMinimalStock = 10
-		};
-
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>
-		{
-			new() { ProductId = 5, ProductInventory = 6, ProductMinimalStock = 10 }
-		} );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.SelectedProduct = product;
-		_viewModel.ShowProductDialog = _ => true;
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		await _viewModel.AddSelectedProductAsync();
-
-		Assert.AreEqual( 1, _viewModel.PendingOrderLines.Count );
-		Assert.AreEqual( "Wheel Set", _viewModel.PendingOrderLines [ 0 ].SupplierProductName );
-		Assert.AreEqual( 4d, _viewModel.PendingOrderLines [ 0 ].Amount );
-		Assert.AreEqual( 4d, _viewModel.PendingOrderLines [ 0 ].OpenAmount );
-		Assert.AreEqual( 50d, _viewModel.PendingOrderLines [ 0 ].RealRowTotal );
-		_mockSupplierService.Verify( s => s.UpsertProductSupplierAsync(
-			It.Is<Modelbouwer.Model.ProductSupplierModel>( ps => ps.SupplierId == 11 && ps.ProductId == 5 ) ),
+		_orders.Verify( s => s.SaveOrderAsync(
+			It.Is<StockOrderModel>( o => o.SupplierId == 1 && o.OrderNumber == "CW0200" ),
+			It.Is<IEnumerable<StockOrderLineModel>>( lines => lines.Single().ProductId == 8 && lines.Single().Price == 2.4 ),
+			It.Is<IEnumerable<int>>( ids => !ids.Any() ),
+			It.Is<IEnumerable<ProductSupplierModel>>( ps => ps.Single().ProductId == 8 && ps.Single().ProductNumber == "CW-BR2" && ps.Single().SupplierId == 1 ) ),
 			Times.Once );
 	}
 
 	[TestMethod]
-	public async Task AddSelectedProductAsync_WhenMinimumStockAlreadyCovered_DefaultsAmountToOne()
+	public async Task AddProduct_Twice_RaisesTheExistingLine()
 	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
+		await CreateAsync();
 
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5,
-			ProductMinimalStock = 10
-		};
+		await SelectSupplierAndAddAsync( 5 );
+		_vm.SelectedProductRow = Row( 5 );
+		await _vm.AddSelectedProductAsync();
 
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel>
-		{
-			new() { ProductId = 5, ProductInventory = 10, ProductMinimalStock = 10 }
-		} );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.SelectedProduct = product;
-		_viewModel.ShowProductDialog = _ => true;
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		await _viewModel.AddSelectedProductAsync();
-
-		Assert.AreEqual( 1d, _viewModel.PendingOrderLines [ 0 ].Amount );
-		Assert.AreEqual( 12.5d, _viewModel.PendingOrderLines [ 0 ].RealRowTotal );
+		Assert.AreEqual( 1, _vm.OrderLines.Count );
+		Assert.IsTrue( _vm.OrderLines [ 0 ].Amount > 6d );
 	}
 
 	[TestMethod]
-	public void ApplySupplierFilter_WhenEnabled_ShowsOnlyMatchingSupplierOrders()
+	public async Task AddShortages_AddsOnlyShortProductsOfThisSupplier()
 	{
-		_viewModel.EditableOrder.SupplierId = 5;
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel>
-		{
-			new() { Id = 1, SupplierId = 5, OrderNumber = "SO-1" },
-			new() { Id = 2, SupplierId = 8, OrderNumber = "SO-2" }
-		} );
+		await CreateAsync();
+		_vm.EditableOrder.SupplierId = 1;
 
-		_viewModel.EnableSupplierOrderFilter = true;
+		await _vm.AddShortagesAsync();
 
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.AreEqual( 5, _viewModel.Orders [ 0 ].SupplierId );
+		Assert.AreEqual( 5, _vm.OrderLines.Single().ProductId );
+		Assert.AreEqual( 6d, _vm.OrderLines.Single().Amount );
+
+		await _vm.AddShortagesAsync();
+		CollectionAssert.Contains( _messages, Lang.StockOrderNoShortages, "Nothing left to add the second time." );
+		Assert.AreEqual( 1, _vm.OrderLines.Count );
+	}
+	#endregion
+
+	#region Editing lines in the grid
+	private static StockOrderLineModel SavedLine( double amount, double received ) => new()
+	{
+		Id = 40,
+		SupplyOrderId = 25,
+		SupplierId = 1,
+		ProductId = 5,
+		ProductCode = "P-005",
+		ProductName = "Walnut dowel 3 mm",
+		SupplierProductNumber = "CW-DOW3",
+		SupplierProductName = "Walnut Dowel 3mm",
+		Amount = amount,
+		Received = received,
+		OpenAmount = amount - received,
+		Price = 1.25,
+		RealRowTotal = 1.25 * amount,
+		Closed = amount - received <= 0
+	};
+
+	private async Task LoadSavedOrderAsync( params StockOrderLineModel [ ] lines )
+	{
+		await CreateAsync();
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132", OrderDate = DateTime.Today }, lines );
 	}
 
 	[TestMethod]
-	public void ApplySupplierFilter_WhenSupplierChanges_RefreshesFilteredOrders()
+	public async Task EditAmount_RecalculatesOpenAmountTotalAndMarksChanged()
 	{
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( new SupplierModel { Id = 5, CurrencyId = 1 } );
-		_viewModel.Suppliers.Add( new SupplierModel { Id = 8, CurrencyId = 2 } );
-		_viewModel.EditableOrder.SupplierId = 5;
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel>
-		{
-			new() { Id = 1, SupplierId = 5, OrderNumber = "SO-1" },
-			new() { Id = 2, SupplierId = 8, OrderNumber = "SO-2" }
-		} );
-		_viewModel.EnableSupplierOrderFilter = true;
+		var line = SavedLine( 4, 0 );
+		await LoadSavedOrderAsync( line );
 
-		_viewModel.EditableOrder.SupplierId = 8;
+		line.Amount = 10;
 
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.AreEqual( 8, _viewModel.Orders [ 0 ].SupplierId );
+		Assert.AreEqual( 10d, line.OpenAmount );
+		Assert.AreEqual( 12.5, line.RealRowTotal );
+		Assert.AreEqual( 12.5, _vm.EditableOrder.LinesTotal );
+		Assert.IsTrue( line.IsDirty );
+		Assert.IsTrue( _vm.HasUnsavedChanges );
 	}
 
 	[TestMethod]
-	public async Task SelectedOrder_WhenOlderLoadCompletesAfterNewerSelection_KeepsLatestOrder()
+	public async Task EditAmount_BelowReceived_IsResetToReceived()
 	{
-		var firstOrderLines = new TaskCompletionSource<List<StockOrderLineModel>>();
-		var secondOrder = new StockOrderModel { Id = 2, SupplierId = 8, OrderNumber = "SO-2" };
+		var line = SavedLine( 4, 2 );
+		await LoadSavedOrderAsync( line );
 
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 1 ) )
-			.Returns( firstOrderLines.Task );
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 2 ) )
-			.ReturnsAsync( new List<StockOrderLineModel>
-			{
-				new() { Id = 20, SupplyOrderId = 2, ProductId = 200, Amount = 1, OpenAmount = 1 }
-			} );
+		line.Amount = 1;
 
-		_viewModel.SelectedOrder = new StockOrderModel { Id = 1, SupplierId = 5, OrderNumber = "SO-1" };
-		_viewModel.SelectedOrder = secondOrder;
-		await WaitUntilAsync( () => _viewModel.EditableOrder.Id == 2 );
+		Assert.AreEqual( 2d, line.Amount );
+		Assert.AreEqual( 0d, line.OpenAmount );
+		Assert.AreEqual( 1, _messages.Count );
+	}
 
-		firstOrderLines.SetResult( new List<StockOrderLineModel>
-		{
-			new() { Id = 10, SupplyOrderId = 1, ProductId = 100, Amount = 1, OpenAmount = 1 }
-		} );
-		await Task.Delay( 25 );
+	[TestMethod]
+	public async Task EditPrice_BecomesTheNewSupplierPriceOnSave()
+	{
+		var line = SavedLine( 4, 0 );
+		await LoadSavedOrderAsync( line );
 
-		Assert.AreEqual( 2, _viewModel.EditableOrder.Id );
-		Assert.AreEqual( "SO-2", _viewModel.EditableOrder.OrderNumber );
-		Assert.AreEqual( 20, _viewModel.OrderLines [ 0 ].Id );
+		line.Price = 1.4;
+		await _vm.SaveOrderAsync();
+
+		_orders.Verify( s => s.SaveOrderAsync(
+			It.IsAny<StockOrderModel>(),
+			It.Is<IEnumerable<StockOrderLineModel>>( lines => lines.Single().RealRowTotal == 5.6 ),
+			It.IsAny<IEnumerable<int>>(),
+			It.Is<IEnumerable<ProductSupplierModel>>( ps => ps.Single().ProductSupplierId == 70 && ps.Single().Price == 1.4 ) ),
+			Times.Once );
+	}
+
+	[TestMethod]
+	public async Task DeleteLine_WithReceipts_IsRefused()
+	{
+		var line = SavedLine( 4, 2 );
+		await LoadSavedOrderAsync( line );
+		_vm.SelectedOrderLine = line;
+
+		_vm.DeleteSelectedOrderLine();
+
+		Assert.AreEqual( 1, _vm.OrderLines.Count );
+		CollectionAssert.Contains( _messages, Lang.StockOrderLineHasReceipts );
+	}
+
+	[TestMethod]
+	public async Task DeleteLine_SavedLine_IsDeletedOnSave()
+	{
+		var line = SavedLine( 4, 0 );
+		await LoadSavedOrderAsync( line );
+		_vm.SelectedOrderLine = line;
+
+		_vm.DeleteSelectedOrderLine();
+		await _vm.SaveOrderAsync();
+
+		_orders.Verify( s => s.SaveOrderAsync(
+			It.IsAny<StockOrderModel>(),
+			It.Is<IEnumerable<StockOrderLineModel>>( lines => !lines.Any() ),
+			It.Is<IEnumerable<int>>( ids => ids.Single() == 40 ),
+			It.IsAny<IEnumerable<ProductSupplierModel>>() ),
+			Times.Once );
+	}
+	#endregion
+
+	#region Save, switch and delete
+	[TestMethod]
+	public async Task Save_ReloadsTheSavedOrderAndClearsChanges()
+	{
+		var saved = new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132" };
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { saved } );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 6, 0 ) } );
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+
+		await _vm.SaveOrderAsync();
+
+		Assert.IsFalse( _vm.IsNewOrder );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+		Assert.AreSame( saved, _vm.SelectedOrder );
+		Assert.AreEqual( 40, _vm.OrderLines.Single().Id );
+		_products.Verify( s => s.GetAllProductsAsync(), Times.AtLeast( 2 ), "Stock figures are reloaded after saving." );
+	}
+
+	[TestMethod]
+	public async Task SwitchingOrder_WithUnsavedChanges_AndNotConfirmed_KeepsTheChanges()
+	{
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+		_confirmAnswer = false;
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30, OrderNumber = "OTHER" };
+
+		Assert.AreEqual( 1, _vm.OrderLines.Count );
+		Assert.IsTrue( _vm.HasUnsavedChanges );
+		_orders.Verify( s => s.GetOrderLinesAsync( 30 ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task NewOrder_WithUnsavedChanges_AndConfirmed_StartsEmpty()
+	{
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+
+		_vm.NewOrderCommand.Execute( null );
+
+		Assert.AreEqual( 0, _vm.OrderLines.Count );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+		Assert.AreEqual( 0d, Row( 5 ).PendingInOrder );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrder_WithReceipts_IsRefused()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 2 ) );
+
+		await _vm.DeleteOrderCommand.ExecuteAsync( null );
+
+		CollectionAssert.Contains( _messages, Lang.StockOrderOrderHasReceipts );
+		_orders.Verify( s => s.DeleteOrderWithLinesAsync( It.IsAny<int>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrder_Confirmed_DeletesAndStartsNewOrder()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 4, 0 ) } );
+		_orders.Setup( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).Returns( Task.CompletedTask );
+
+		await _vm.DeleteOrderCommand.ExecuteAsync( null );
+
+		_orders.Verify( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ), Times.Once );
+		Assert.IsTrue( _vm.IsNewOrder );
 	}
 
 	[TestMethod]
 	public async Task SelectedOrder_WhenBackgroundLoadFails_StoresAsyncError()
 	{
+		await CreateAsync();
 		var expected = new InvalidOperationException( "order lines failed" );
-		_mockStockOrderService
-			.Setup( s => s.GetOrderLinesAsync( 25 ) )
-			.ThrowsAsync( expected );
+		_orders.Setup( s => s.GetOrderLinesAsync( 30 ) ).ThrowsAsync( expected );
 
-		_viewModel.SelectedOrder = new StockOrderModel { Id = 25, SupplierId = 11, OrderNumber = "SO-025" };
+		_vm.SelectedOrder = new StockOrderModel { Id = 30 };
 
-		await WaitUntilAsync( () => ReferenceEquals( expected, _viewModel.LastAsyncError ) );
-
-		Assert.AreSame( expected, _viewModel.LastAsyncError );
-	}
-
-	[TestMethod]
-	public void Orders_DefaultToOpenOnly_AndCanIncludeClosedOrders()
-	{
-		_viewModel.ReplaceOrdersForTest( new List<StockOrderModel>
-		{
-			new() { Id = 1, SupplierId = 5, OrderNumber = "SO-1", Closed = false },
-			new() { Id = 2, SupplierId = 8, OrderNumber = "SO-2", Closed = true }
-		} );
-
-		Assert.AreEqual( 1, _viewModel.Orders.Count );
-		Assert.IsFalse( _viewModel.Orders [ 0 ].Closed );
-
-		_viewModel.ShowClosedOrders = true;
-
-		Assert.AreEqual( 2, _viewModel.Orders.Count );
-		Assert.IsTrue( _viewModel.Orders.Any( o => o.Closed ) );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithPendingLine_UpdatesLineFromDialog()
-	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
-
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5
-		};
-
-		var line = new StockOrderLineModel
-		{
-			ProductId = 5,
-			SupplierId = 11,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set",
-			Amount = 2,
-			OpenAmount = 2,
-			Price = 12.5,
-			RealRowTotal = 25
-		};
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.AvailableProducts.Clear();
-		_viewModel.AvailableProducts.Add( product );
-		_viewModel.EditableOrder.SupplierId = 11;
-		_viewModel.PendingOrderLines.Add( line );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowProductDialog = vm =>
-		{
-			vm.Model.SupplierProductName = "Wheel Set Updated";
-			vm.Model.Amount = 4;
-			vm.Model.UnitPrice = 15;
-			return true;
-		};
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
-
-		Assert.AreEqual( "Wheel Set Updated", line.SupplierProductName );
-		Assert.AreEqual( 4d, line.Amount );
-		Assert.AreEqual( 4d, line.OpenAmount );
-		Assert.AreEqual( 15d, line.Price );
-		Assert.AreEqual( 60d, line.RealRowTotal );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithExistingLine_UpdatesLineAndPersists()
-	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
-
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5
-		};
-
-		var order = new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			OrderNumber = "SO-025"
-		};
-
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			SupplierId = 11,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set",
-			Amount = 5,
-			OpenAmount = 3,
-			Received = 2,
-			Price = 12.5,
-			RealRowTotal = 62.5
-		};
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.AvailableProducts.Clear();
-		_viewModel.AvailableProducts.Add( product );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowProductDialog = vm =>
-		{
-			vm.Model.SupplierProductName = "Wheel Set Updated";
-			vm.Model.Amount = 6;
-			vm.Model.UnitPrice = 15;
-			return true;
-		};
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync(
-			It.Is<StockOrderLineModel>( updated =>
-				updated.Id == 40 &&
-				updated.SupplierProductName == "Wheel Set Updated" &&
-				updated.Amount == 6d &&
-				updated.OpenAmount == 4d &&
-				updated.Price == 15d &&
-				updated.RealRowTotal == 90d ) ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithExistingLineAndLowerAmount_UpdatesLineWithoutStockCorrection()
-	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
-
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5
-		};
-
-		var order = new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			OrderNumber = "SO-025"
-		};
-
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			SupplierId = 11,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set",
-			Amount = 2,
-			OpenAmount = 2,
-			Received = 0,
-			Price = 12.5,
-			RealRowTotal = 25
-		};
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.AvailableProducts.Clear();
-		_viewModel.AvailableProducts.Add( product );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowProductDialog = vm =>
-		{
-			vm.Model.Amount = 1;
-			vm.Model.UnitPrice = 12.5;
-			return true;
-		};
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.UpdateOrderLineAsync(
-			It.Is<StockOrderLineModel>( updated => updated.Id == 40 && updated.Amount == 1d && updated.OpenAmount == 1d ) ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task AddSelectedProductAsync_WithExistingOrder_InsertsLineWithoutStockCorrection()
-	{
-		var supplier = new SupplierModel
-		{
-			Id = 11,
-			Name = "Supplier 11",
-			CurrencyId = 2
-		};
-
-		var product = new ProductModel
-		{
-			ProductId = 5,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			ProductPrice = 12.5
-		};
-
-		var order = new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			OrderNumber = "SO-025"
-		};
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( supplier );
-		_viewModel.AvailableProducts.Clear();
-		_viewModel.AvailableProducts.Add( product );
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel>() );
-		_viewModel.SelectedProduct = product;
-		_viewModel.ShowProductDialog = vm =>
-		{
-			vm.Model.Amount = 4;
-			vm.Model.UnitPrice = 15;
-			return true;
-		};
-
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		_mockStockOrderService
-			.Setup( s => s.InsertOrderLineAsync( It.IsAny<StockOrderLineModel>() ) )
-			.ReturnsAsync( 40 );
-
-		await _viewModel.AddSelectedProductAsync();
-
-		_mockStockOrderService.Verify( s => s.InsertOrderLineAsync(
-			It.Is<StockOrderLineModel>( line => line.SupplyOrderId == 25 && line.ProductId == 5 && line.Amount == 4d ) ),
-			Times.Once );
-	}
-
-	[TestMethod]
-	public async Task DeleteSelectedOrderLineAsync_WithPendingLine_RemovesLineFromMemoryOnly()
-	{
-		var line = new StockOrderLineModel
-		{
-			ProductId = 5,
-			SupplierId = 11,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set",
-			Amount = 2,
-			OpenAmount = 2,
-			Price = 12.5,
-			RealRowTotal = 25
-		};
-
-		_viewModel.PendingOrderLines.Add( line );
-		_viewModel.SelectedOrderLine = line;
-
-		await _viewModel.DeleteOrderLineCommand.ExecuteAsync( null );
-
-		Assert.AreEqual( 0, _viewModel.PendingOrderLines.Count );
-		Assert.IsNull( _viewModel.SelectedOrderLine );
-		_mockStockOrderService.Verify( s => s.DeleteOrderLineAsync( It.IsAny<int>() ), Times.Never );
-	}
-
-	[TestMethod]
-	public async Task DeleteSelectedOrderLineAsync_WithExistingLine_DeletesLineWithoutStockCorrection()
-	{
-		var order = new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			OrderNumber = "SO-025"
-		};
-
-		var line = new StockOrderLineModel
-		{
-			Id = 40,
-			SupplyOrderId = 25,
-			ProductId = 5,
-			SupplierId = 11,
-			ProductCode = "P-005",
-			ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set",
-			Amount = 2,
-			OpenAmount = 2,
-			Price = 12.5,
-			RealRowTotal = 25
-		};
-
-		_viewModel.ApplySelectedOrder( order, new List<StockOrderLineModel> { line } );
-		_viewModel.SelectedOrderLine = line;
-
-		await _viewModel.DeleteOrderLineCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.DeleteOrderLineAsync( 40 ),
-			Times.Once );
-		Assert.AreEqual( 0, _viewModel.OrderLines.Count );
-		Assert.IsNull( _viewModel.SelectedOrderLine );
-		Assert.AreEqual( 0d, _viewModel.EditableOrder.LinesTotal );
-	}
-
-	[TestMethod]
-	public async Task DeleteOrderAsync_WithExistingOrder_DeletesLinesAndOrderAndResetsScreen()
-	{
-		var order = new StockOrderModel
-		{
-			Id = 25,
-			SupplierId = 11,
-			OrderNumber = "SO-025"
-		};
-
-		var lines = new List<StockOrderLineModel>
-		{
-			new()
-			{
-				Id = 40,
-				SupplyOrderId = 25,
-				ProductId = 5,
-				Amount = 2,
-				OpenAmount = 2,
-				Price = 12.5,
-				RealRowTotal = 25
-			},
-			new()
-			{
-				Id = 41,
-				SupplyOrderId = 25,
-				ProductId = 8,
-				Amount = 3,
-				OpenAmount = 3,
-				Price = 10,
-				RealRowTotal = 30
-			}
-		};
-
-		_viewModel.ApplySelectedOrder( order, lines );
-		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
-
-		await _viewModel.DeleteOrderCommand.ExecuteAsync( null );
-
-		_mockStockOrderService.Verify( s => s.DeleteOrderWithLinesAsync(
-			25,
-			It.Is<IEnumerable<StockOrderLineModel>>( deletedLines =>
-				deletedLines.Count() == 2 &&
-				deletedLines.Any( line => line.Id == 40 && line.ProductId == 5 && line.Amount == 2d ) &&
-				deletedLines.Any( line => line.Id == 41 && line.ProductId == 8 && line.Amount == 3d ) ) ),
-			Times.Once );
-		Assert.IsTrue( _viewModel.IsNewOrder );
-		Assert.IsNull( _viewModel.SelectedOrder );
-		Assert.AreEqual( 0, _viewModel.OrderLines.Count );
-		Assert.AreEqual( 0, _viewModel.Orders.Count );
-		Assert.AreEqual( 0, _viewModel.EditableOrder.Id );
-	}
-
-	[TestMethod]
-	public void StockOrderViewModel_SaveOrderCommandIsGuardedAgainstParallelExecution()
-	{
-		var source = LoadSource( "Modelbouwer", "ViewModels", "StockOrderViewModel.cs" );
-
-		StringAssert.Contains( source, "[ObservableProperty] private bool _isSavingOrder;" );
-		StringAssert.Contains( source, "SaveOrderCommand = new AsyncRelayCommand( cancellationToken => SaveOrderAsync( cancellationToken ), CanSaveOrder );" );
-		StringAssert.Contains( source, "partial void OnIsSavingOrderChanged( bool value ) => SaveOrderCommand.NotifyCanExecuteChanged();" );
-		StringAssert.Contains( source, "private bool CanSaveOrder() => !IsSavingOrder;" );
-		AssertMethodContains( source, "private async Task SaveOrderCoreAsync", "if ( IsSavingOrder )" );
-		AssertMethodContains( source, "private async Task SaveOrderCoreAsync", "IsSavingOrder = true;" );
-		AssertMethodContains( source, "private async Task SaveOrderCoreAsync", "finally" );
-	}
-
-	[TestMethod]
-	public void StockOrderViewModel_LoadReferenceDataStartsIndependentServiceCallsBeforeAwaiting()
-	{
-		var source = LoadSource( "Modelbouwer", "ViewModels", "StockOrderViewModel.cs" );
-
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "var inventoryTask = _stockService.GetCompleteInventoryAsync();" );
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "var productsTask = _productService.GetAllProductsAsync();" );
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "var suppliersTask = _supplierService.GetAllSuppliersAsync();" );
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "var currenciesTask = _supplierService.GetAllCurrenciesAsync();" );
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "PerformanceTrace.MeasureAsync(" );
-		AssertMethodContains( source, "private async Task LoadReferenceDataAsync()", "Task.WhenAll( inventoryTask, productsTask, suppliersTask, currenciesTask )" );
-	}
-
-	[TestMethod]
-	public void StockOrderViewModel_OrderLineCommandsAreGuardedAgainstParallelExecution()
-	{
-		var source = LoadSource( "Modelbouwer", "ViewModels", "StockOrderViewModel.cs" );
-
-		StringAssert.Contains( source, "[ObservableProperty] private bool _isEditingOrderLine;" );
-		StringAssert.Contains( source, "partial void OnIsEditingOrderLineChanged( bool value ) => NotifyOrderLineCommandsCanExecuteChanged();" );
-		StringAssert.Contains( source, "private bool CanEditOrderLineCommand() => CanEditOrder && !IsEditingOrderLine;" );
-		AssertMethodContains( source, "public async Task AddSelectedProductAsync()", "if ( IsEditingOrderLine )" );
-		AssertMethodContains( source, "public async Task AddSelectedProductAsync()", "IsEditingOrderLine = true;" );
-		AssertMethodContains( source, "private async Task EditSelectedOrderLineAsync()", "if ( IsEditingOrderLine )" );
-		AssertMethodContains( source, "private async Task DeleteSelectedOrderLineAsync()", "if ( IsEditingOrderLine )" );
-		AssertMethodContains( source, "private async Task DeleteSelectedOrderLineAsync()", "finally" );
-	}
-
-	private static async Task WaitUntilAsync( Func<bool> condition )
-	{
-		for ( int attempt = 0; attempt < 40; attempt++ )
-		{
-			if ( condition() )
-				return;
-
+		for ( int i = 0; i < 40 && !ReferenceEquals( expected, _vm.LastAsyncError ); i++ )
 			await Task.Delay( 25 );
-		}
-
-		Assert.Fail( "Condition was not met before the timeout." );
-	}
-
-	private static string LoadSource( params string [ ] relativeSegments )
-	{
-		var directory = AppContext.BaseDirectory;
-		while ( directory != null && !File.Exists( Path.Combine( directory, "ModelbouwWerkbank.slnx" ) ) )
-		{
-			directory = Directory.GetParent( directory )?.FullName;
-		}
-
-		var repositoryRoot = directory ?? throw new DirectoryNotFoundException( "Could not locate repository root." );
-		var path = Path.Combine( [ repositoryRoot, .. relativeSegments ] );
-
-		return File.ReadAllText( path );
-	}
-
-	private static void AssertMethodContains( string source, string methodSignature, string expectedContent )
-	{
-		var methodStart = source.IndexOf( methodSignature, StringComparison.Ordinal );
-		Assert.IsTrue( methodStart >= 0, $"Method '{methodSignature}' was not found." );
-
-		var nextMethod = source.IndexOf( "\n\tprivate ", methodStart + methodSignature.Length, StringComparison.Ordinal );
-		if ( nextMethod < 0 )
-			nextMethod = source.Length;
-
-		var methodBody = source.Substring( methodStart, nextMethod - methodStart );
-		StringAssert.Contains( methodBody, expectedContent );
-	}
-
-	// KAN-100: order line changes only affect "in order", never the inventory.
-	private async Task<(ProductModel Product, StockManagementModel Inventory)> CreateViewModelWithInventoryAsync( IEnumerable<StockOrderLineModel> lines )
-	{
-		var product = new ProductModel { ProductId = 5, ProductCode = "P-005", ProductName = "Wheel Set", ProductPrice = 12.5 };
-		var inventory = new StockManagementModel { ProductId = 5, ProductInventory = 6, ProductInOrder = 2, ProductMinimalStock = 10 };
-
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel> { product } );
-		_mockStockService.Setup( s => s.GetCompleteInventoryAsync() ).ReturnsAsync( new List<StockManagementModel> { inventory } );
-		_mockStockOrderService.Setup( s => s.InsertOrderLineAsync( It.IsAny<StockOrderLineModel>() ) ).ReturnsAsync( 41 );
-		_mockSupplierService
-			.Setup( s => s.GetProductSupplierAsync( 11, 5 ) )
-			.ReturnsAsync( ( Modelbouwer.Model.ProductSupplierModel? ) null );
-		_mockSupplierService
-			.Setup( s => s.UpsertProductSupplierAsync( It.IsAny<Modelbouwer.Model.ProductSupplierModel>() ) )
-			.ReturnsAsync( 70 );
-
-		_viewModel = new StockOrderViewModel(
-			_mockStockOrderService.Object,
-			_mockProductService.Object,
-			_mockStockService.Object,
-			_mockSupplierService.Object );
-		await _viewModel.InitializeAsync();
-
-		_viewModel.Suppliers.Clear();
-		_viewModel.Suppliers.Add( new SupplierModel { Id = 11, Name = "Supplier 11", CurrencyId = 2 } );
-		_viewModel.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 11, OrderNumber = "SO-025" }, lines );
-
-		return (product, inventory);
+		Assert.AreSame( expected, _vm.LastAsyncError );
 	}
 
 	[TestMethod]
-	public async Task AddSelectedProductAsync_WithExistingOrder_RaisesInOrderButNotInventory()
+	public async Task Save_WhileSaving_IgnoresSecondSaveAndLocksTheScreen()
 	{
-		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel>() );
-		double productInventoryBefore = product.CurrentInventory;
-		double productInOrderBefore = product.InOrder;
-		_viewModel.SelectedProduct = product;
-		_viewModel.ShowProductDialog = vm =>
+		var gate = new TaskCompletionSource<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Returns( gate.Task );
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+
+		var firstSave = _vm.SaveOrderAsync();
+
+		Assert.IsTrue( _vm.IsWorking );
+		Assert.IsFalse( _vm.CanEditOrder, "Lines cannot be edited while saving." );
+		Assert.IsFalse( _vm.CanSwitchOrder );
+		Assert.IsFalse( _vm.SaveOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.NewOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.DeleteOrderCommand.CanExecute( null ) );
+
+		await _vm.SaveOrderAsync();
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Once );
+
+		gate.SetResult( 25 );
+		await firstSave;
+
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsTrue( _vm.SaveOrderCommand.CanExecute( null ), "A later save is possible again." );
+	}
+
+	[TestMethod]
+	public async Task Save_WhenReloadAfterCommitFails_NextSaveUpdatesTheSameOrder()
+	{
+		bool failOrderListOnce = false;
+		_orders.Setup( s => s.GetAllOrdersAsync() ).Returns( () =>
 		{
-			vm.Model.Amount = 4;
-			vm.Model.UnitPrice = 15;
+			if ( !failOrderListOnce )
+				return Task.FromResult( new List<StockOrderModel>() );
+
+			failOrderListOnce = false;
+			return Task.FromException<List<StockOrderModel>>( new InvalidOperationException( "connection lost" ) );
+		} );
+		var savedOrderIds = new List<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Callback<StockOrderModel, IEnumerable<StockOrderLineModel>, IEnumerable<int>, IEnumerable<ProductSupplierModel>>( ( order, _, _, _ ) => savedOrderIds.Add( order.Id ) )
+			.ReturnsAsync( 25 );
+		await CreateAsync();
+		await SelectSupplierAndAddAsync( 5 );
+		failOrderListOnce = true;
+
+		await AssertThrowsAsync<InvalidOperationException>( _vm.SaveOrderAsync );
+
+		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The commit is recorded before the reload." );
+		Assert.IsFalse( _vm.IsNewOrder );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+		Assert.IsFalse( _vm.IsWorking );
+
+		var storedOrder = new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today };
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { storedOrder } );
+
+		await _vm.SaveOrderAsync();
+
+		CollectionAssert.AreEqual( new List<int> { 0 }, savedOrderIds, "Without new changes the retry only reloads; nothing is written again." );
+		Assert.AreSame( storedOrder, _vm.SelectedOrder );
+
+		// After the reload, a real change is saved as an update of order 25.
+		_vm.EditableOrder.OrderNumber = "CW0201";
+		await _vm.SaveOrderAsync();
+		CollectionAssert.AreEqual( new List<int> { 0, 25 }, savedOrderIds );
+	}
+
+	[TestMethod]
+	public async Task Save_WhileAnotherOrderIsStillLoading_KeepsTheSavedOrderInTheEditor()
+	{
+		var slowLoad = new TaskCompletionSource<List<StockOrderLineModel>>();
+		_orders.Setup( s => s.GetOrderLinesAsync( 30 ) ).Returns( slowLoad.Task );
+		var saveGate = new TaskCompletionSource<int>();
+		_orders.Setup( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ) )
+			.Returns( saveGate.Task );
+		var orderA = new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall" };
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { orderA } );
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30, SupplierId = 2 };   // order B starts loading
+		var save = _vm.SaveOrderAsync();                                        // saving A starts before B arrives
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id, "The dropdown goes back to the order that is being saved." );
+		slowLoad.SetResult( [ new StockOrderLineModel { Id = 90, SupplyOrderId = 30, ProductId = 8, Amount = 1, OpenAmount = 1 } ] );
+		await Task.Delay( 50 );
+
+		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The late load of B does not replace the editor while A is saved." );
+		Assert.IsFalse( _vm.OrderLines.Any( line => line.Id == 90 ) );
+
+		saveGate.SetResult( 25 );
+		await save;
+		Assert.AreEqual( 25, _vm.EditableOrder.Id );
+	}
+
+	[TestMethod]
+	public async Task PendingSupplierData_IsKeptPerSupplier()
+	{
+		await CreateAsync();
+		int dialogs = 0;
+		_vm.ShowSupplierProductDialog = dialog =>
+		{
+			dialogs++;
+			dialog.Model.SupplierProductNumber = dialogs == 1 ? "CW-BR2" : "OT-BR2";
+			dialog.Model.UnitPrice = dialogs == 1 ? 2.4 : 3.1;
 			return true;
 		};
 
-		await _viewModel.AddSelectedProductAsync();
+		await SelectSupplierAndAddAsync( 8 );
+		_vm.SelectedOrderLine = _vm.OrderLines.Single();
+		_vm.DeleteSelectedOrderLine();
+		_vm.EditableOrder.SupplierId = 2;
+		_vm.SelectedProductRow = Row( 8 );
+		await _vm.AddSelectedProductAsync();
 
-		Assert.AreEqual( 6d, inventory.ProductInventory );
-		Assert.AreEqual( 6d, inventory.ProductInOrder );
-		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
-		Assert.AreEqual( productInOrderBefore + 4d, product.InOrder );
+		Assert.AreEqual( 2, dialogs, "The data entered for Cornwall is not used for the other supplier." );
+		Assert.AreEqual( "OT-BR2", _vm.OrderLines.Single().SupplierProductNumber );
+		Assert.AreEqual( 3.1, _vm.OrderLines.Single().Price );
+
+		await _vm.SaveOrderAsync();
+		_orders.Verify( s => s.SaveOrderAsync(
+			It.IsAny<StockOrderModel>(),
+			It.IsAny<IEnumerable<StockOrderLineModel>>(),
+			It.IsAny<IEnumerable<int>>(),
+			It.Is<IEnumerable<ProductSupplierModel>>( ps => ps.Single().SupplierId == 2 && ps.Single().ProductNumber == "OT-BR2" ) ),
+			Times.Once );
 	}
 
 	[TestMethod]
-	public async Task EditSelectedOrderLineAsync_WithExistingLine_ChangesInOrderButNotInventory()
+	public async Task AddProduct_ToLineWithoutSupplierData_AppliesConfirmedPriceToThatLine()
 	{
-		var line = new StockOrderLineModel
+		await CreateAsync();
+		var line = new StockOrderLineModel { Id = 41, SupplyOrderId = 25, SupplierId = 1, ProductId = 8, ProductCode = "P-008", ProductName = "Brass rod", Amount = 3, OpenAmount = 3, Price = 2, RealRowTotal = 6 };
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today }, [ line ] );
+		_vm.ShowSupplierProductDialog = dialog =>
 		{
-			Id = 40, SupplyOrderId = 25, ProductId = 5, SupplierId = 11, ProductCode = "P-005", ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set", Amount = 2, OpenAmount = 2, Price = 12.5, RealRowTotal = 25
-		};
-		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel> { line } );
-		double productInventoryBefore = product.CurrentInventory;
-		_viewModel.SelectedOrderLine = line;
-		_viewModel.ShowProductDialog = vm =>
-		{
-			vm.Model.Amount = 5;
-			vm.Model.UnitPrice = 12.5;
+			dialog.Model.SupplierProductNumber = "CW-BR2";
+			dialog.Model.SupplierProductName = "Brass rod 2mm";
+			dialog.Model.UnitPrice = 2.4;
 			return true;
 		};
 
-		await _viewModel.EditOrderLineCommand.ExecuteAsync( null );
+		_vm.SelectedProductRow = Row( 8 );
+		await _vm.AddSelectedProductAsync();
 
-		Assert.AreEqual( 6d, inventory.ProductInventory );
-		Assert.AreEqual( 5d, inventory.ProductInOrder );
-		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
+		Assert.AreEqual( 4d, line.Amount );
+		Assert.AreEqual( 2.4, line.Price );
+		Assert.AreEqual( "CW-BR2", line.SupplierProductNumber );
+		Assert.AreEqual( 9.6, line.RealRowTotal );
 	}
 
 	[TestMethod]
-	public async Task DeleteSelectedOrderLineAsync_WithExistingLine_LowersInOrderButNotInventory()
+	public async Task OnlyShortages_FollowsTheLinesOnScreen()
 	{
-		var line = new StockOrderLineModel
-		{
-			Id = 40, SupplyOrderId = 25, ProductId = 5, SupplierId = 11, ProductCode = "P-005", ProductName = "Wheel Set",
-			SupplierProductName = "Wheel Set", Amount = 2, OpenAmount = 2, Price = 12.5, RealRowTotal = 25
-		};
-		var (product, inventory) = await CreateViewModelWithInventoryAsync( new List<StockOrderLineModel> { line } );
-		double productInventoryBefore = product.CurrentInventory;
-		_viewModel.SelectedOrderLine = line;
+		await CreateAsync();
+		_vm.ShowOnlyShortages = true;
+		Assert.IsTrue( _vm.ProductRows.Any( row => row.ProductId == 5 ) );
 
-		await _viewModel.DeleteOrderLineCommand.ExecuteAsync( null );
+		await SelectSupplierAndAddAsync( 5 );
+		Assert.IsFalse( _vm.ProductRows.Any( row => row.ProductId == 5 ), "The shortage is covered by the new line." );
 
-		Assert.AreEqual( 6d, inventory.ProductInventory );
-		Assert.AreEqual( 0d, inventory.ProductInOrder );
-		Assert.AreEqual( productInventoryBefore, product.CurrentInventory );
+		_vm.SelectedOrderLine = _vm.OrderLines.Single();
+		_vm.DeleteSelectedOrderLine();
+		Assert.IsTrue( _vm.ProductRows.Any( row => row.ProductId == 5 ), "Removing the line brings the shortage back." );
 	}
+
+	[TestMethod]
+	public async Task SelectedOrder_WhenLoadFails_DropdownReturnsToTheOrderOnScreen()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		var failure = new InvalidOperationException( "order lines failed" );
+		_orders.Setup( s => s.GetOrderLinesAsync( 30 ) ).ThrowsAsync( failure );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30 };
+
+		for ( int i = 0; i < 40 && !ReferenceEquals( failure, _vm.LastAsyncError ); i++ )
+			await Task.Delay( 25 );
+		Assert.AreSame( failure, _vm.LastAsyncError );
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id );
+		Assert.AreEqual( 25, _vm.EditableOrder.Id );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrder_LocksTheScreenAndDeletesTheOrderItStartedWith()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		var gate = new TaskCompletionSource<List<StockOrderLineModel>>();
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).Returns( gate.Task );
+		_orders.Setup( s => s.DeleteOrderWithLinesAsync( It.IsAny<int>(), It.IsAny<IEnumerable<StockOrderLineModel>>() ) ).Returns( Task.CompletedTask );
+
+		var delete = _vm.DeleteOrderCommand.ExecuteAsync( null );
+		Assert.IsTrue( _vm.IsWorking );
+
+		_vm.SelectedOrder = new StockOrderModel { Id = 30 };
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id, "Switching order is refused while deleting." );
+
+		gate.SetResult( [ SavedLine( 4, 0 ) ] );
+		await delete;
+
+		_orders.Verify( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ), Times.Once );
+		_orders.Verify( s => s.GetOrderLinesAsync( 30 ), Times.Never );
+		Assert.IsFalse( _vm.IsWorking );
+	}
+
+	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
+	{
+		try
+		{
+			await action();
+		}
+		catch ( TException )
+		{
+			return;
+		}
+
+		Assert.Fail( $"Expected {typeof( TException ).Name}." );
+	}
+	#endregion
 }

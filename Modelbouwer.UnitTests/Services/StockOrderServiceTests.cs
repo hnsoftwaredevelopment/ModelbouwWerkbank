@@ -316,4 +316,22 @@ public class StockOrderServiceTests
 
 		Assert.IsTrue( hasOverload, $"{methodName} should expose a {parameterCount}-parameter overload ending in CancellationToken." );
 	}
+
+	[TestMethod]
+	[DataRow( 40, 0d, 2d, 0d, DisplayName = "Existing line keeps an explicit open amount of zero" )]
+	[DataRow( 40, 3d, 4d, 3d, DisplayName = "Existing line keeps a positive open amount" )]
+	[DataRow( 0, 0d, 4d, 4d, DisplayName = "New line without open amount starts at the ordered amount" )]
+	public async Task UpdateOrderLine_StoresTheOpenAmountOfExistingLines( int lineId, double openAmount, double amount, double expectedOpenAmount )
+	{
+		Dictionary<string, object>? stored = null;
+		_mockDataService
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), CancellationToken.None ) )
+			.Callback<string, Dictionary<string, object>, CancellationToken>( ( _, parameters, _ ) => stored = parameters )
+			.ReturnsAsync( 0u );
+
+		// Partly received line: 2 of 4 received, then the ordered amount is lowered to what was received.
+		await _service.UpdateOrderLineAsync( new StockOrderLineModel { Id = lineId, Amount = amount, OpenAmount = openAmount, Closed = false } );
+
+		Assert.AreEqual( expectedOpenAmount, ( double ) stored! [ $"@{DBNames.OrderLineFieldNameOpenAmount}" ] );
+	}
 }

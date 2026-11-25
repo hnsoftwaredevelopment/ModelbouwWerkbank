@@ -4746,6 +4746,69 @@ PowerShell:
   <data name="OrderSelectorNoOrders" xml:space="preserve">
     <value>No orders</value>
   </data>
+  <data name="StockOrderGroupSupplierProducts" xml:space="preserve">
+    <value>At this supplier</value>
+  </data>
+  <data name="StockOrderGroupOtherProducts" xml:space="preserve">
+    <value>Other products</value>
+  </data>
+  <data name="StockOrderGroupAllProducts" xml:space="preserve">
+    <value>Products</value>
+  </data>
+  <data name="StockOrderMenuAddToOrder" xml:space="preserve">
+    <value>Add to order lines</value>
+  </data>
+  <data name="StockOrderMenuDeleteLine" xml:space="preserve">
+    <value>Delete line</value>
+  </data>
+  <data name="StockOrderOnlyShortages" xml:space="preserve">
+    <value>Shortages only</value>
+  </data>
+  <data name="StockOrderAddShortages" xml:space="preserve">
+    <value>Add shortages of this supplier</value>
+  </data>
+  <data name="StockOrderNoShortages" xml:space="preserve">
+    <value>There are no shortages at this supplier that are not on the order yet.</value>
+  </data>
+  <data name="StockOrderSelectSupplierFirst" xml:space="preserve">
+    <value>Select a supplier first.</value>
+  </data>
+  <data name="StockOrderSupplierRequired" xml:space="preserve">
+    <value>Select a supplier.</value>
+  </data>
+  <data name="StockOrderOrderDateRequired" xml:space="preserve">
+    <value>Enter an order date.</value>
+  </data>
+  <data name="StockOrderAmountBelowReceived" xml:space="preserve">
+    <value>The quantity cannot be lower than already received ({0}).</value>
+  </data>
+  <data name="StockOrderAmountMustBePositive" xml:space="preserve">
+    <value>The quantity must be greater than 0.</value>
+  </data>
+  <data name="StockOrderLineHasReceipts" xml:space="preserve">
+    <value>This line already has receipts and cannot be deleted. Use &quot;Cancel remainder&quot; in Receipts.</value>
+  </data>
+  <data name="StockOrderOrderHasReceipts" xml:space="preserve">
+    <value>This order already has receipts and cannot be deleted.</value>
+  </data>
+  <data name="StockOrderDeleteOrderConfirm" xml:space="preserve">
+    <value>Delete order {0} from {1} with all its lines?</value>
+  </data>
+  <data name="StockOrderDiscardChangesConfirm" xml:space="preserve">
+    <value>This order has unsaved changes. Discard the changes?</value>
+  </data>
+  <data name="StockOrderSupplierLockedTooltip" xml:space="preserve">
+    <value>The supplier is fixed once the order has lines.</value>
+  </data>
+  <data name="StockOrderUnsavedChanges" xml:space="preserve">
+    <value>Not saved</value>
+  </data>
+  <data name="StockOrderProductGridHeaderSuggested" xml:space="preserve">
+    <value>Suggested</value>
+  </data>
+  <data name="StockOrderLinesGroupTitle" xml:space="preserve">
+    <value>Order lines</value>
+  </data>
   <data name="DialogInvalidNumber" xml:space="preserve">
     <value>One or more fields do not contain a valid number. Correct the input marked in red.</value>
   </data>

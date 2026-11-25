@@ -232,6 +232,15 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Een of meer velden bevatten geen geldig getal. Pas de rood gemarkeerde invoer aan..
+        /// </summary>
+        public static string DialogInvalidNumber {
+            get {
+                return ResourceManager.GetString("DialogInvalidNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Merken.
         /// </summary>
         public static string ExportBrandFileName {
@@ -10735,6 +10744,51 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to afgesloten.
+        /// </summary>
+        public static string OrderSelectorClosed {
+            get {
+                return ResourceManager.GetString("OrderSelectorClosed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order.
+        /// </summary>
+        public static string OrderSelectorLabel {
+            get {
+                return ResourceManager.GetString("OrderSelectorLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {0} regels open.
+        /// </summary>
+        public static string OrderSelectorLinesOpen {
+            get {
+                return ResourceManager.GetString("OrderSelectorLinesOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Geen orders.
+        /// </summary>
+        public static string OrderSelectorNoOrders {
+            get {
+                return ResourceManager.GetString("OrderSelectorNoOrders", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to 1 regel open.
+        /// </summary>
+        public static string OrderSelectorOneLineOpen {
+            get {
+                return ResourceManager.GetString("OrderSelectorOneLineOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Bestelling.
         /// </summary>
         public static string OrderTabItemHeaderGeneral {
@@ -11829,6 +11883,33 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Tekorten van deze leverancier toevoegen.
+        /// </summary>
+        public static string StockOrderAddShortages {
+            get {
+                return ResourceManager.GetString("StockOrderAddShortages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Het aantal kan niet lager zijn dan al ontvangen ({0})..
+        /// </summary>
+        public static string StockOrderAmountBelowReceived {
+            get {
+                return ResourceManager.GetString("StockOrderAmountBelowReceived", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Het aantal moet groter zijn dan 0..
+        /// </summary>
+        public static string StockOrderAmountMustBePositive {
+            get {
+                return ResourceManager.GetString("StockOrderAmountMustBePositive", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Gesloten.
         /// </summary>
         public static string StockOrderClosedLabel {
@@ -11847,6 +11928,24 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Order {0} van {1} met alle bestelregels verwijderen?.
+        /// </summary>
+        public static string StockOrderDeleteOrderConfirm {
+            get {
+                return ResourceManager.GetString("StockOrderDeleteOrderConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Er zijn niet-opgeslagen wijzigingen in deze order. Wijzigingen weggooien?.
+        /// </summary>
+        public static string StockOrderDiscardChangesConfirm {
+            get {
+                return ResourceManager.GetString("StockOrderDiscardChangesConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Regel wijzigen.
         /// </summary>
         public static string StockOrderEditLineButton {
@@ -11861,6 +11960,33 @@ namespace Modelbouwer.Resources.Languages {
         public static string StockOrderExistingOrdersGroupTitle {
             get {
                 return ResourceManager.GetString("StockOrderExistingOrdersGroupTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Producten.
+        /// </summary>
+        public static string StockOrderGroupAllProducts {
+            get {
+                return ResourceManager.GetString("StockOrderGroupAllProducts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Overige producten.
+        /// </summary>
+        public static string StockOrderGroupOtherProducts {
+            get {
+                return ResourceManager.GetString("StockOrderGroupOtherProducts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bij deze leverancier.
+        /// </summary>
+        public static string StockOrderGroupSupplierProducts {
+            get {
+                return ResourceManager.GetString("StockOrderGroupSupplierProducts", resourceCulture);
             }
         }
         
@@ -11906,6 +12032,78 @@ namespace Modelbouwer.Resources.Languages {
         public static string StockOrderLineGridHeaderRowTotal {
             get {
                 return ResourceManager.GetString("StockOrderLineGridHeaderRowTotal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deze regel heeft al ontvangsten en kan niet worden verwijderd. Gebruik bij Ontvangsten &quot;Restant annuleren&quot;..
+        /// </summary>
+        public static string StockOrderLineHasReceipts {
+            get {
+                return ResourceManager.GetString("StockOrderLineHasReceipts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bestelregels.
+        /// </summary>
+        public static string StockOrderLinesGroupTitle {
+            get {
+                return ResourceManager.GetString("StockOrderLinesGroupTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Voeg toe aan bestelregels.
+        /// </summary>
+        public static string StockOrderMenuAddToOrder {
+            get {
+                return ResourceManager.GetString("StockOrderMenuAddToOrder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Regel verwijderen.
+        /// </summary>
+        public static string StockOrderMenuDeleteLine {
+            get {
+                return ResourceManager.GetString("StockOrderMenuDeleteLine", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Er zijn geen tekorten bij deze leverancier die nog niet in de order staan..
+        /// </summary>
+        public static string StockOrderNoShortages {
+            get {
+                return ResourceManager.GetString("StockOrderNoShortages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Alleen tekorten.
+        /// </summary>
+        public static string StockOrderOnlyShortages {
+            get {
+                return ResourceManager.GetString("StockOrderOnlyShortages", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Vul een besteldatum in..
+        /// </summary>
+        public static string StockOrderOrderDateRequired {
+            get {
+                return ResourceManager.GetString("StockOrderOrderDateRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Deze order heeft al ontvangsten en kan niet worden verwijderd..
+        /// </summary>
+        public static string StockOrderOrderHasReceipts {
+            get {
+                return ResourceManager.GetString("StockOrderOrderHasReceipts", resourceCulture);
             }
         }
         
@@ -12252,11 +12450,29 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Voorstel.
+        /// </summary>
+        public static string StockOrderProductGridHeaderSuggested {
+            get {
+                return ResourceManager.GetString("StockOrderProductGridHeaderSuggested", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Producten.
         /// </summary>
         public static string StockOrderProductsGroupTitle {
             get {
                 return ResourceManager.GetString("StockOrderProductsGroupTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kies eerst een leverancier..
+        /// </summary>
+        public static string StockOrderSelectSupplierFirst {
+            get {
+                return ResourceManager.GetString("StockOrderSelectSupplierFirst", resourceCulture);
             }
         }
         
@@ -12270,11 +12486,38 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to De leverancier ligt vast zodra de order bestelregels heeft..
+        /// </summary>
+        public static string StockOrderSupplierLockedTooltip {
+            get {
+                return ResourceManager.GetString("StockOrderSupplierLockedTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kies een leverancier..
+        /// </summary>
+        public static string StockOrderSupplierRequired {
+            get {
+                return ResourceManager.GetString("StockOrderSupplierRequired", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Totaal.
         /// </summary>
         public static string StockOrderTotalLabel {
             get {
                 return ResourceManager.GetString("StockOrderTotalLabel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Niet opgeslagen.
+        /// </summary>
+        public static string StockOrderUnsavedChanges {
+            get {
+                return ResourceManager.GetString("StockOrderUnsavedChanges", resourceCulture);
             }
         }
         
@@ -14202,54 +14445,6 @@ namespace Modelbouwer.Resources.Languages {
         public static string toolbarVisibleRowLabelUnit {
             get {
                 return ResourceManager.GetString("toolbarVisibleRowLabelUnit", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to Order.
-        /// </summary>
-        public static string OrderSelectorLabel {
-            get {
-                return ResourceManager.GetString("OrderSelectorLabel", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to afgesloten.
-        /// </summary>
-        public static string OrderSelectorClosed {
-            get {
-                return ResourceManager.GetString("OrderSelectorClosed", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to 1 regel open.
-        /// </summary>
-        public static string OrderSelectorOneLineOpen {
-            get {
-                return ResourceManager.GetString("OrderSelectorOneLineOpen", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to {0} regels open.
-        /// </summary>
-        public static string OrderSelectorLinesOpen {
-            get {
-                return ResourceManager.GetString("OrderSelectorLinesOpen", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to Geen orders.
-        /// </summary>
-        public static string OrderSelectorNoOrders {
-            get {
-                return ResourceManager.GetString("OrderSelectorNoOrders", resourceCulture);
-            }
-        }
-        /// <summary>
-        ///   Looks up a localized string similar to Een of meer velden bevatten geen geldig getal. Pas de rood gemarkeerde invoer aan..
-        /// </summary>
-        public static string DialogInvalidNumber {
-            get {
-                return ResourceManager.GetString("DialogInvalidNumber", resourceCulture);
             }
         }
     }
