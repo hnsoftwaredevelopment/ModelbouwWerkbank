@@ -315,17 +315,9 @@ public class StockOrderServiceTests
 	}
 
 	[TestMethod]
-	public async Task DeleteOrderSteps_ReceiptRecordedDuringTheDelete_StopsBeforeTheOrderIsDeleted()
+	public void DeleteOrderStocklogQuery_NeverDeletesReceipts()
 	{
-		var counts = new Queue<long>( [ 0L, 1L ] );
-		var executed = new List<string>();
-
-		await AssertThrowsAsync<OrderHasReceiptsException>( () => _service.DeleteOrderStepsAsync( 25,
-			( _, _ ) => Task.FromResult( counts.Dequeue() ),
-			( query, _ ) => { executed.Add( query ); return Task.CompletedTask; } ) );
-
-		CollectionAssert.DoesNotContain( executed, _service.DeleteOrderQuery, "The transaction is rolled back before the order goes." );
-		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0", "Receipts are never deleted." );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0" );
 	}
 
 	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception

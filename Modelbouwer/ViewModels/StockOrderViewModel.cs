@@ -27,6 +27,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	private StockOrderModel? _trackedEditableOrder;
 	private StockOrderModel? _loadedOrder;
 	private int? _reloadPendingOrderId;
+	private int? _staleOrderId;
 	private IRelayCommand? _clearSearchCommand;
 
 	private List<StockOrderModel> _allOrders = [];
@@ -211,6 +212,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		_suppressSelectedOrderChange = false;
 		_loadedOrder = order;
 		_reloadPendingOrderId = null;
+		_staleOrderId = null;
 
 		EditableOrder = new StockOrderModel
 		{
@@ -259,6 +261,7 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		_suppressSelectedOrderChange = false;
 		_loadedOrder = null;
 		_reloadPendingOrderId = null;
+		_staleOrderId = null;
 		_selectionLoadVersion++;
 
 		ReplaceLines( [] );
@@ -839,8 +842,10 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 		// The last save was committed but reading it back failed. Without new changes there is nothing to
 		// write again; only the reload is repeated, so changes stored elsewhere are not overwritten.
-		if ( _reloadPendingOrderId is int pendingOrderId && !HasUnsavedChanges )
+		// An order whose delete was refused is stale in any case: only the reload is allowed.
+		if ( _staleOrderId.HasValue || ( _reloadPendingOrderId.HasValue && !HasUnsavedChanges ) )
 		{
+			int pendingOrderId = _staleOrderId ?? _reloadPendingOrderId!.Value;
 			IsSavingOrder = true;
 			try
 			{
@@ -938,8 +943,10 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		catch ( OrderHasReceiptsException )
 		{
 			// A receipt was booked after the order was loaded (for example on another device). The editor still
-			// holds the old open amounts; reload the stored order so a later save cannot write them back.
-			IsDeletingOrder = false;
+			// holds the old open amounts, so it is replaced by the stored order; the screen stays locked until that
+			// is done. Unsaved edits of an order the user chose to delete are dropped. When the reload fails, the
+			// order stays marked stale and Save only retries the reload, so old amounts are never written back.
+			_staleOrderId = orderId;
 			Message( Lang.StockOrderOrderHasReceipts );
 			await ReloadSavedOrderAsync( orderId, null );
 			return;

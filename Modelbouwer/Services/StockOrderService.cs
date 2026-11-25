@@ -436,9 +436,9 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	/// Deletes an order with everything that belongs to it: its lines and the old correction rows in the stocklog.
 	/// An order with receipts is refused with <see cref="OrderHasReceiptsException"/>. The check reads the database
 	/// right before deleting, in the same transaction, so a receipt booked after the screen loaded the order is
-	/// seen. It takes no locks; a receipt recorded in the moment between check and delete is never deleted itself
-	/// (see <see cref="DeleteOrderStocklogQuery"/>) and a second check before deleting the order rolls the whole
-	/// delete back. The lines are taken from the database, the
+	/// seen. It takes no locks, so a receipt committed in the very moment between check and delete is not
+	/// refused; it is never deleted itself either (see <see cref="DeleteOrderStocklogQuery"/>), so its stock is
+	/// kept. For a single-user application that window is accepted. The lines are taken from the database, the
 	/// <paramref name="lines"/> argument is kept for callers only.
 	/// </summary>
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines, CancellationToken cancellationToken )
@@ -463,11 +463,6 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 
 		await executeAsync( DeleteOrderStocklogQuery, parameters );
 		await executeAsync( DeleteOrderLinesOfOrderQuery, parameters );
-
-		// A receipt recorded during the delete is still in the stocklog (it is never deleted): roll back.
-		if ( await countAsync( CountOrderReceiptsQuery, parameters ) > 0 )
-			throw new OrderHasReceiptsException( orderId );
-
 		await executeAsync( DeleteOrderQuery, new Dictionary<string, object>
 		{
 			{ $"@{DBNames.OrderFieldNameId}", orderId }

@@ -438,6 +438,31 @@ public class StockOrderViewModelTests
 	}
 
 	[TestMethod]
+	public async Task DeleteOrder_RefusedAndReloadFails_SaveOnlyRetriesTheReload()
+	{
+		var line = SavedLine( 4, 0 );
+		await LoadSavedOrderAsync( line );
+		line.Price = 1.4;   // a draft change on the order that was about to be deleted
+		bool failOrderList = true;
+		_orders.Setup( s => s.GetAllOrdersAsync() ).Returns( () => failOrderList
+			? Task.FromException<List<StockOrderModel>>( new InvalidOperationException( "connection lost" ) )
+			: Task.FromResult( new List<StockOrderModel> { new() { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today } } ) );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( () => new List<StockOrderLineModel> { SavedLine( 4, 2 ) } );
+		_orders.Setup( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ) )
+			.ThrowsAsync( new OrderHasReceiptsException( 25 ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( () => _vm.DeleteOrderCommand.ExecuteAsync( null ) );
+		Assert.IsFalse( _vm.IsWorking );
+
+		failOrderList = false;
+		await _vm.SaveOrderAsync();
+
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Never,
+			"The stale editor is never written back." );
+		Assert.AreEqual( 2d, _vm.OrderLines.Single().Received, "Save reloaded the stored order instead." );
+	}
+
+	[TestMethod]
 	public async Task DeleteOrder_Confirmed_DeletesAndStartsNewOrder()
 	{
 		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
