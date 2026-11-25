@@ -527,6 +527,7 @@ public class StockOrderViewModelTests
 
 		_vm.SelectedOrder = new StockOrderModel { Id = 30, SupplierId = 2 };   // order B starts loading
 		var save = _vm.SaveOrderAsync();                                        // saving A starts before B arrives
+		Assert.AreEqual( 25, _vm.SelectedOrder?.Id, "The dropdown goes back to the order that is being saved." );
 		slowLoad.SetResult( [ new StockOrderLineModel { Id = 90, SupplyOrderId = 30, ProductId = 8, Amount = 1, OpenAmount = 1 } ] );
 		await Task.Delay( 50 );
 

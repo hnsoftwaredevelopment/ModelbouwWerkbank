@@ -863,8 +863,12 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 		IsSavingOrder = true;
 
-		// A load of another order that started before this save must not replace the editor while saving.
+		// A load of another order that started before this save must not replace the editor while saving, and the
+		// dropdown goes back to the order that is being saved, also when the save fails.
 		_selectionLoadVersion++;
+		_suppressSelectedOrderChange = true;
+		SelectedOrder = _loadedOrder;
+		_suppressSelectedOrderChange = false;
 		try
 		{
 			var lines = OrderLines.ToList();

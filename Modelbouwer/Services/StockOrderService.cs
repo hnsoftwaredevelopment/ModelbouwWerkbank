@@ -511,7 +511,7 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 			{ $"@{DBNames.OrderLineFieldNameProductId}", line.ProductId },
 			{ $"@{DBNames.OrderLineFieldNameSupplierProductName}", line.SupplierProductName ?? string.Empty },
 			{ $"@{DBNames.OrderLineFieldNameAmount}", line.Amount },
-			{ $"@{DBNames.OrderLineFieldNameOpenAmount}", line.OpenAmount > 0 || line.Closed ? line.OpenAmount : line.Amount },
+			{ $"@{DBNames.OrderLineFieldNameOpenAmount}", line.Id > 0 || line.Closed || line.OpenAmount > 0 ? line.OpenAmount : line.Amount },   // only a new line without an open amount starts at the ordered amount
 			{ $"@{DBNames.OrderLineFieldNamePrice}", line.Price },
 			{ $"@{DBNames.OrderLineFieldNameRealRowTotal}", line.RealRowTotal },
 			{ $"@{DBNames.OrderLineFieldNameClosed}", line.Closed },
