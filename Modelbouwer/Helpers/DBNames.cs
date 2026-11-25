@@ -50,57 +50,10 @@ public class DBNames
 	#endregion
 
 	#region Stored Procedures
-	public static readonly string SPDeleteProductId = "DeleteProductId";
-	public static readonly string SPDeleteProductIdInputParameter = "p_ProductId";
-	public static readonly string SPDeleteProductIdOutputParameter = "result";
-
-	public static readonly string SPGetLatestAddedRecord = "GetlatestAddedRecord";
-	public static readonly string SPGetLatestAddedRecordInputParameterTable = "?tableName";
-	public static readonly string SPGetLatestAddedRecordInputParameterId = "?IdColumn";
-
-	public static readonly string SPGeProjectEndDate = "GetProjectEndDate";
-	public static readonly string SPProjectEndDateInputParameter = "p_ProductId";
-
-	public static readonly string SPResetDefaultSupplier = "ResetDefaultSupplier";
-	public static readonly string SPResetDefaultSupplierInputParameterProductId = "p_ProductId";
-	public static readonly string SPResetDefaultSupplierInputParameterSupplierId = "p_SupplierId";
-
-	public static readonly string SPSetDefaultSupplier = "SetDefaultSupplier";
-	public static readonly string SPSetDefaultSupplierInputParameterProductId = "p_ProductId";
-	public static readonly string SPSetDefaultSupplierInputParameterSupplierId = "p_SupplierId";
-
-	public static readonly string SPGeProjectMaterialCosts = "GetTotalCostByProjectId";
-	public static readonly string SPProjectMaterialCostsInputParameter = "p_ProjectId";
-
-	public static readonly string SPGeProjectTimeSpent = "GetTotalMinutesByProjectId";
-	public static readonly string SPProjectTimeSpentParameter = "p_ProjectId";
-
-	public static readonly string SPGetShortListProductsBySupplier = "GetShortListProductsBySupplier";
-	public static readonly string SPGetShortListProductsBySupplierInputParameter = "?SelectedSupplierId"; // The ? is added to work correctly
 
 	public static readonly string SPGetProductsUsageByProject = "GetProductsByProject";
 	public static readonly string SPGetProductsUsageByProjectInputParameter = "?SelectedProjectId"; // The ? is added to work correctly
 
-
-	public static readonly string SPGetAllProductsUsage = "GetProductsUsage";
-
-	public static readonly string SPGetOrderHistoryBySupplier = "GetOrderHistoryBySupplier";
-	public static readonly string SPGetOrderHistoryBySupplierInputParameter = "?SupplierId"; // The ? is added to work correctly
-
-	public static readonly string SPGetStockOverviewByProduct = "GetProductStockMovements";
-	public static readonly string SPGetStockOverviewByProductInputParameter = "?SelectedProductId"; // The ? is added to work correctly
-
-	public static readonly string SPChartsWorkedHoursPerDayModel = "GetDaylyWorkedHours";
-	public static readonly string SPChartsWorkedHoursPerDayModelInputParameter = "?SelectedProjectId";
-
-	public static readonly string SPChartsWorkedHoursPerMonthModel = "GetMonthlyWorkedHours";
-	public static readonly string SPChartsWorkedHoursPerMonthModelInputParameter = "?SelectedProjectId";
-
-	public static readonly string SPChartsWorkedHoursPerYearModel = "GetYearlyWorkedHours";
-	public static readonly string SPChartsWorkedHoursPerYearModelInputParameter = "?SelectedProjectId";
-
-	public static readonly string SPChartsWorkedHoursPerWorktype = "GetWorkedHoursByWorktype";
-	public static readonly string SPChartsWorkedHoursPerWorktypeInputParameter = "?SelectedProjectId";
 	#endregion
 
 	#region Database
@@ -172,7 +125,6 @@ public class DBNames
 	#region Country table
 
 	public static readonly string CountryTable = "country";
-	public static readonly string CountryView = "view_country";
 	public static readonly string CountryFieldNameId = "Id";
 	public static readonly string CountryFieldTypeId = "int";
 	public static readonly string CountryFieldNameCode = "Code";
@@ -220,105 +172,30 @@ public class DBNames
 	public static readonly string ProductFieldTypeStorageId = "int";
 	public static readonly string ProductFieldTypeUnitId = "int";
 	public static readonly string ProductTable = "product";
-	public static readonly string ProductView = "view_product";
 
 	#endregion Product table
 
 	#region Product Inventory table and view
-	public static readonly string ProductInventoryView = "view_productinventory";
 	public static readonly string ProductInventoryViewFieldNameProductId = "Product_Id";
-	public static readonly string ProductInventoryViewFieldTypeProductId = "int";
 	public static readonly string ProductInventoryViewFieldNameProductCode = "Code";
-	public static readonly string ProductInventoryViewFieldTypeProductCode = "string";
 	public static readonly string ProductInventoryViewFieldNameProductName = "Name";
-	public static readonly string ProductInventoryViewFieldTypeProductName = "string";
 	public static readonly string ProductInventoryViewFieldNameProductPrice = "Price";
-	public static readonly string ProductInventoryViewFieldTypeProductPrice = "string";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalStock = "MinimalStock";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalStock = "double";
 	public static readonly string ProductInventoryViewFieldNameProductCategory = "Category";
-	public static readonly string ProductInventoryViewFieldTypeProductCategory = "string";
 	public static readonly string ProductInventoryViewFieldNameProductStorage = "Location";
-	public static readonly string ProductInventoryViewFieldTypeProductStorage = "string";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalInventory = "InventoryOrder";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalInventory = "double";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalValue = "Value";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalValue = "string";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalOrder = "InOrder";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalOrder = "double";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalVirtualInventory = "VirtualInventory";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalVirtualInventory = "double";
 	public static readonly string ProductInventoryViewFieldNameProductMinimalVirtualValue = "VirtualValue";
-	public static readonly string ProductInventoryViewFieldTypeProductMinimalVirtualValue = "string";
 	public static readonly string ProductInventoryViewFieldNameProductShort = "Short";
-	public static readonly string ProductInventoryViewFieldTypeProductShort = "double";
 	public static readonly string ProductInventoryViewFieldNameProductTempShort = "TempShort";
-	public static readonly string ProductInventoryViewFieldTypeProductTempShort = "double";
 
-	public static readonly string ProductInventoryOrderProcedure = "GetProductsBySupplier";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductId = "Product_Id";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductId = "int";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductCode = "Code";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductCode = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductName = "Name";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductName = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductPrice = "Price";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductPrice = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductMinimalStock = "MinimalStock";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductMinimalStock = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductCategory = "Category";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductCategory = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductMinimalInventory = "InventoryOrder";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductMinimalInventory = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductMinimalValue = "Value";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductMinimalValue = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductMinimalOrder = "InOrder";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductMinimalOrder = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductOrderPer = "OrderPer";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductOrderPer = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductToOrder = "ToOrder";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductToOrder = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductShort = "Short";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductShort = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameSupplierProductNumber = "SupplierProductNumber";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeSupplierProductNumber = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameSupplierProductName = "SupplierProductName";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeSupplierProductName = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameSupplierPrice = "SupplierPrice";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeSupplierPrice = "double";
-	public static readonly string ProductInventoryOrderProcedureFieldNameSupplierCurrencyId = "SupplierCurrencyId";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeSupplierCurrencyId = "int";
-	public static readonly string ProductInventoryOrderProcedureFieldNameSupplierCurrencySymbol = "SupplierCurrencySymbol";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeSupplierCurrencySymbol = "string";
-	public static readonly string ProductInventoryOrderProcedureFieldNameProductFromSupplier = "ProductFromSupplier";
-	public static readonly string ProductInventoryOrderProcedureFieldTypeProductFromSupplier = "string";
-
-	public static readonly string ProductInventoryReceiptsProcedure = "GetSupplyOrderDetails";
-	public static readonly string ProductInventoryReceiptsView = "view_supplyopenorderdetails";
-	public static readonly string ProductInventoryReceiptsProcedureFieldNameOrderId = "Order_Id";
-	public static readonly string ProductInventoryReceiptsProcedureFieldTypeOrderId = "int";
-	public static readonly string ProductInventoryReceiptsProcedureFieldNameOrderLineId = "OrderLine_Id";
-	public static readonly string ProductInventoryReceiptsProcedureFieldTypeOrderLineId = "int";
-	public static readonly string ProductInventoryReceiptsProcedureFieldNameProductId = "Product_Id";
-	public static readonly string ProductInventoryReceiptsProcedureFieldTypeProductId = "int";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameProductNumber = "SupplierProductNumber";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeProductNumber = "string";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameProductName = "SupplierProductName";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeProductName = "string";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameOrdered = "Ordered";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeOrdered = "double";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameWaitFor = "WaitFor";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeWaitFor = "double";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameStockLogRecieved = "StockLogRecieved";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeStockLogRecieved = "double";
-	public static readonly string ProductInventoryReceiptProcedureFieldNameStockInStock = "InStock";
-	public static readonly string ProductInventoryReceiptProcedureFieldTypeStockInStock = "double";
 	#endregion
 
 	#region ProductSupplier table
 
 	public static readonly string ProductSupplierTable = "productsupplier";
-	public static readonly string ProductSupplierView = "view_productsupplier";
 	public static readonly string ProductSupplierFieldNameId = "Id";
 	public static readonly string ProductSupplierFieldTypeId = "int";
 	public static readonly string ProductSupplierFieldNameProductId = "Product_Id";
@@ -367,41 +244,6 @@ public class DBNames
 	public static readonly string ProjectFieldNameImage = "Image";
 	public static readonly string ProjectFieldTypeImage = "blob";
 
-	public static readonly string ProjectCostsView = "view_projectcosts";
-	public static readonly string ProjectCostsViewFieldNameProjectName = "ProjectName";
-	public static readonly string ProjectCostsViewFieldTypeProjectName = "string";
-	public static readonly string ProjectCostsViewFieldNameCategoryName = "Category";
-	public static readonly string ProjectCostsViewFieldTypeCategoryName = "string";
-	public static readonly string ProjectCostsViewFieldNameProductName = "_productName";
-	public static readonly string ProjectCostsViewFieldTypeProductName = "string";
-	public static readonly string ProjectCostsViewFieldNameAmountUsed = "AmountUsed";
-	public static readonly string ProjectCostsViewFieldTypeAmountUsed = "int";
-	public static readonly string ProjectCostsViewFieldNamePrice = "Price";
-	public static readonly string ProjectCostsViewFieldTypePrice = "double";
-	public static readonly string ProjectCostsViewFieldNameTotal = "Total";
-	public static readonly string ProjectCostsViewFieldTypeTotal = "double";
-
-	public static readonly string ProjectExportView = "view_projectexport";
-
-	public static readonly string ProjectTotalsView = "view_projecttotals";
-	public static readonly string ProjectTotalssViewFieldNameId = "Id";
-	public static readonly string ProjectTotalssViewFieldNameCode = "Code";
-	public static readonly string ProjectTotalssViewFieldNameName = "Name";
-	public static readonly string ProjectTotalssViewFieldNameStartDate = "StartDate";
-	public static readonly string ProjectTotalssViewFieldNameEndDate = "EndDate";
-	public static readonly string ProjectTotalssViewFieldNameExpectedTime = "ExpectedTime";
-	public static readonly string ProjectTotalssViewFieldNameImage = "Image";
-	public static readonly string ProjectTotalssViewFieldNameImageRotationAngle = "ImageRotationAngle";
-	public static readonly string ProjectTotalssViewFieldNameMemo = "Memo";
-	public static readonly string ProjectTotalssViewFieldNameTotalTimeInHours = "TotalTimeInHours";
-	public static readonly string ProjectTotalssViewFieldNameShortestWorkday = "ShortestWorkday";
-	public static readonly string ProjectTotalssViewFieldNameAverageHoursPerDay = "AverageHoursPerDay";
-	public static readonly string ProjectTotalssViewFieldNameHoursShortestWorkday = "HoursShortestWorkday";
-	public static readonly string ProjectTotalssViewFieldNameLongestWorkday = "LongestWorkday";
-	public static readonly string ProjectTotalssViewFieldNameHoursLongestWorkday = "HoursLongestWorkday";
-	public static readonly string ProjectTotalssViewFieldNameWorkingDays = "WorkingDays";
-	public static readonly string ProjectTotalssViewFieldNameIsClosed = "IsClosed";
-
 	public static readonly string SPProjectExpectedEndDate = "GetProjectEndDate";
 	#endregion Project table
 
@@ -432,19 +274,6 @@ public class DBNames
 	public static readonly string StocklogFieldTypeLogDate = "date";
 	#endregion Stocklog table
 
-	#region Products in stock
-	public static readonly string ProductsInStockView = "view_instock";
-	public static readonly string ProductsInStockFieldNameProduct_Id = "Product_Id";
-	public static readonly string ProductsInStockFieldTypeProduct_Id = "int";
-	public static readonly string ProductsInStockFieldNameReceived = "AmountReceived";
-	public static readonly string ProductsInStockFieldTypeReceived = "double";
-	public static readonly string ProductsInStockFieldNameUsed = "AmountUsed";
-	public static readonly string ProductsInStockFieldTypeUsed = "double";
-	public static readonly string ProductsInStockFieldNameCorrection = "AmountCorrection";
-	public static readonly string ProductsInStockFieldTypeCorrection = "double";
-	public static readonly string ProductsInStockFieldNameAmount = "Amount";
-	public static readonly string ProductsInStockFieldTypeAmount = "double";
-	#endregion
 	#endregion
 
 	#region Storage table
@@ -465,7 +294,6 @@ public class DBNames
 	#region Supplier table
 
 	public static readonly string SupplierTable = "supplier";
-	public static readonly string SupplierView = "view_supplier";
 	public static readonly string SupplierFieldNameId = "Id";
 	public static readonly string SupplierFieldTypeId = "int";
 	public static readonly string SupplierFieldNameCode = "Code";
@@ -504,7 +332,6 @@ public class DBNames
 
 	#region SupplierContact Table
 	public static readonly string SupplierContactTable = "suppliercontact";
-	public static readonly string SupplierContactView = "view_suppliercontact";
 	public static readonly string SupplierContactFieldNameId = "Id";
 	public static readonly string SupplierContactFieldTypeId = "int";
 	public static readonly string SupplierContactFieldNameSupplierId = "Supplier_Id";
@@ -521,23 +348,6 @@ public class DBNames
 	public static readonly string SupplierContactFieldTypeMail = "string";
 	#endregion SupplierContact Table
 
-	#region Supplier Order History
-	public static readonly string SupplierOrderHistorySupplierId = "SupplierId";
-	public static readonly string SupplierOrderHistoryOrderId = "OrderId";
-	public static readonly string SupplierOrderHistoryOrderNumber= "OrderNumber";
-	public static readonly string SupplierOrderHistoryOrderDate= "OrderDate";
-	public static readonly string SupplierOrderHistoryOrderCosts= "OrderCosts";
-	public static readonly string SupplierOrderHistoryShippingCosts= "ShippingCosts";
-	public static readonly string SupplierOrderHistoryCurrencyConversionRate= "CurrencyConversionRate";
-	public static readonly string SupplierOrderHistoryReceived= "Received";
-	public static readonly string SupplierOrderHistoryProductId= "Product_Id";
-	public static readonly string SupplierOrderHistoryProductNumber= "ProductNumber";
-	public static readonly string SupplierOrderHistoryProductDescription= "Description";
-	public static readonly string SupplierOrderHistoryPrice= "Price";
-	public static readonly string SupplierOrderHistoryAmount= "Amount";
-	public static readonly string SupplierOrderHistoryRowTotal= "RowTotal";
-	public static readonly string SupplierOrderHistoryOrderTotal= "OrderTotal";
-	#endregion
 	#endregion Supplier tables
 
 	#region Time
@@ -594,12 +404,6 @@ public class DBNames
 	public static readonly string TimeViewFieldNameSortIndex = "SortIndex";
 	public static readonly string TimeViewFieldTypeSortIndex = "string";
 
-	public static readonly string TimeReportView = "view_timereport";
-	public static readonly string TimeViewFieldNameWorkedMinutes = "WorkedMinutes";
-	public static readonly string TimeViewFieldTypeWorkedMinutes = "int";
-
-	public static readonly string TimeExportView = "view_timeexport";
-
 	#endregion Time
 
 	#region ProductUsage
@@ -620,41 +424,17 @@ public class DBNames
 	public static readonly string ProductUsageFieldNameComment = "Comment";
 	public static readonly string ProductUsageFieldTypeComment = "string";
 
-	public static readonly string ProductUsageView = "view_productusage";
-	public static readonly string ProductUsageViewFieldNameId = "Id";
-	public static readonly string ProductUsageViewFieldTypeId = "int";
-	public static readonly string ProductUsageViewFieldNameProjectId = "ProjectId";
-	public static readonly string ProductUsageViewFieldTypeProjectId = "int";
-	public static readonly string ProductUsageViewFieldNameProductId = "_productId";
-	public static readonly string ProductUsageViewFieldTypeProductId = "int";
-	public static readonly string ProductUsageViewFieldNameStorageId = "StorageId";
-	public static readonly string ProductUsageViewFieldTypeStorageId = "int";
-	public static readonly string ProductUsageViewFieldNameCategoryId = "CategoryId";
-	public static readonly string ProductUsageViewFieldTypeCategoryId = "int";
-	public static readonly string ProductUsageViewFieldNameProjectName = "ProjectName";
-	public static readonly string ProductUsageViewFieldTypeProjectName = "string";
 	public static readonly string ProductUsageViewFieldNameProductName = "_productName";
-	public static readonly string ProductUsageViewFieldTypeProductName = "string";
-	public static readonly string ProductUsageViewFieldNameStorageName = "StorageName";
-	public static readonly string ProductUsageViewFieldTypeStorageName = "string";
-	public static readonly string ProductUsageViewFieldNameCategoryName = "CategoryName";
 	public static readonly string ProductUsageViewFieldTypeCategoryName = "string";
 	public static readonly string ProductUsageViewFieldNameAmountUsed = "AmountUsed";
-	public static readonly string ProductUsageViewFieldTypeAmountUsed = "double";
-	public static readonly string ProductUsageViewFieldNameUsageDate = "UsageDate";
-	public static readonly string ProductUsageViewFieldTypeUsageDate = "date";
 	public static readonly string ProductUsageViewFieldNamePrice = "Price";
-	public static readonly string ProductUsageViewFieldTypePrice = "double";
 	public static readonly string ProductUsageViewFieldNameTotalCosts = "TotalCost";
-	public static readonly string ProductUsageViewFieldTypeTotalCosts = "double";
 	public static readonly string ProductUsageViewFieldNameComment = "Comment";
-	public static readonly string ProductUsageViewFieldTypeComment = "string";
 
 	#endregion ProductUsage
 
 	#region Order table and view
 	public static readonly string OrderTable = "supplyorder";
-	public static readonly string OpenOrderView = "view_supplyopenorder";
 	public static readonly string OrderFieldNameId = "Id";
 	public static readonly string OrderFieldTypeId = "int";
 	public static readonly string OrderFieldNameClosed = "Closed";
@@ -727,7 +507,6 @@ public class DBNames
 	public static readonly string OrderViewFieldTypeHasStockLog = "int";
 
 	public static readonly string OrderLineTable = "supplyorderline";
-	public static readonly string OpenOrderLineView = "view_supplyopenorderline";
 	public static readonly string OrderLineFieldNameId = "Id";
 	public static readonly string OrderLineFieldTypeId = "int";
 	public static readonly string OrderLineFieldNameSupplierOrderId = "SupplyOrder_Id";
@@ -757,70 +536,16 @@ public class DBNames
 	public static readonly string OrderLineFieldNameClosedDate = "ClosedDate";
 	public static readonly string OrderLineFieldTypeClosedDate = "date";
 
-	public static readonly string OpenOrderLineFieldNameSupplyOrderId = "Supplyorder_Id";
-	public static readonly string OpenOrderLineFieldTypeSupplyOrderId = "int";
-
-	public static readonly string OrderLineShortView = "view_supplyorderlineshort";
-	public static readonly string OrderLineShortFieldNameId = "Id";
-	public static readonly string OrderLineShortFieldTypeId = "int";
-	public static readonly string OrderLineShortFieldNameProductId = "Product_Id";
-	public static readonly string OrderLineShortFieldTypeProductId = "int";
-	public static readonly string OrderLineShortFieldNameOrderId = "supplyorder_Id";
-	public static readonly string OrderLineShortFieldTypeOrderId = "int";
-	public static readonly string OrderLineShortFieldNameAmount = "Amount";
-	public static readonly string OrderLineShortFieldTypeAmount = "double";
-	public static readonly string OrderLineShortFieldNamePrice = "Price";
-	public static readonly string OrderLineShortFieldTypePrice = "double";
-
-	public static readonly string OrderLineView = "view_supplyorderline";
 	public static readonly string OrderLineViewFieldNameOrderId = "Order_Id";
-	public static readonly string OrderLineViewFieldTypeOrderId = "int";
-	public static readonly string OrderLineViewFieldNameOrderNumber = "Ordernumber";
-	public static readonly string OrderLineViewFieldTypeOrderNumber = "string";
-	public static readonly string OrderLineViewFieldNameOrderDate = "OrderDate";
-	public static readonly string OrderLineViewFieldTypeOrderDate = "date";
 	public static readonly string OrderLineViewFieldNameSupplierId = "SupplierId";
-	public static readonly string OrderLineViewFieldTypeSupplierId = "int";
-	public static readonly string OrderLineViewFieldNameSupplierName = "Supplier";
-	public static readonly string OrderLineViewFieldTypeSupplierName = "string";
 	public static readonly string OrderLineViewFieldNameProductId = "ProductId";
-	public static readonly string OrderLineViewFieldTypeProductId = "int";
 	public static readonly string OrderLineViewFieldNameProductCode = "ProductCode";
-	public static readonly string OrderLineViewFieldTypeProductCode = "string";
 	public static readonly string OrderLineViewFieldNameProductName = "ProductName";
-	public static readonly string OrderLineViewFieldTypeProductName = "string";
-	public static readonly string OrderLineViewFieldNameUnitPrice = "UnitPrice";
-	public static readonly string OrderLineViewFieldTypeUnitPrice = "double";
-	public static readonly string OrderLineViewFieldNameOrdered = "Ordered";
-	public static readonly string OrderLineViewFieldTypeOrdered = "double";
 	public static readonly string OrderLineViewFieldNameReceived = "Received";
-	public static readonly string OrderLineViewFieldTypeReceived = "double";
 	public static readonly string OrderLineViewFieldNameExpected = "Expect";
-	public static readonly string OrderLineViewFieldTypeExpected = "double";
 	public static readonly string OrderLineViewFieldNameClosed = "Closed";
-	public static readonly string OrderLineViewFieldTypeClosed = "int";
 	public static readonly string OrderLineViewFieldNameClosedDate = "ClosedDate";
-	public static readonly string OrderLineViewFieldTypeClosedDate = "date";
 
-	public static readonly string ReceiptsReportView = "view_receiptsreport";
-	public static readonly string ReceiptsReportFieldNameOrderDate = "OrderDate";
-	public static readonly string ReceiptsReportFieldTypeOrderDate = "date";
-	public static readonly string ReceiptsReportFieldNameOrderNumber = "OrderNumber";
-	public static readonly string ReceiptsReportFieldTypeOrderNumber = "string";
-	public static readonly string ReceiptsReportFieldNameSupplier = "Supplier";
-	public static readonly string ReceiptsReportFieldTypeSupplier = "string";
-	public static readonly string ReceiptsReportFieldNameShortName = "Shortname";
-	public static readonly string ReceiptsReportFieldTypeShortName = "string";
-	public static readonly string ReceiptsReportFieldNameDescription = "Description";
-	public static readonly string ReceiptsReportFieldTypeDescription = "string";
-	public static readonly string ReceiptsReportFieldNameOrderedAmount = "Ordered";
-	public static readonly string ReceiptsReportFieldTypeOrderedAmount = "double";
-	public static readonly string ReceiptsReportFieldNameReceivedDate = "ReceivedDate";
-	public static readonly string ReceiptsReportFieldTypeReceivedDate = "date";
-	public static readonly string ReceiptsReportFieldNameReceivedAmount = "Received";
-	public static readonly string ReceiptsReportFieldTypeReceivedAmount = "double";
-	public static readonly string ReceiptsReportFieldNameIsOrderLine = "IsOrderLine";
-	public static readonly string ReceiptsReportFieldTypeIsOrderLine = "int";
 	#endregion
 
 	#region Unit Table
@@ -844,22 +569,5 @@ public class DBNames
 	public static readonly string WorktypeFieldNameFullpath = "FullPath";
 	public static readonly string WorktypeFieldTypeFullpath = "string";
 
-	public static readonly string WorktypeGroupTotalsView = "view_groupedtimetotals";
-	public static readonly string WorktypeGroupTotalsNameProjectId = "ProjectId";
-	public static readonly string WorktypeGroupTotalsTypeProjectId = "int";
-	public static readonly string WorktypeGroupTotalsNameProjectName = "ProjectName";
-	public static readonly string WorktypeGroupTotalsTypeProjectName = "string";
-	public static readonly string WorktypeGroupTotalsNameWorktypeParentId = "WorktypeParentId";
-	public static readonly string WorktypeGroupTotalsTypeWorktypeParentId = "int";
-	public static readonly string WorktypeGroupTotalsNameWorktypeId = "WorktypeId";
-	public static readonly string WorktypeGroupTotalsTypeWorktypeId = "int";
-	public static readonly string WorktypeGroupTotalsNameWorktypeName = "WorktypeName";
-	public static readonly string WorktypeGroupTotalsTypeWorktypeName = "string";
-	public static readonly string WorktypeGroupTotalsNameMinutes = "TotalElapsedMinutes";
-	public static readonly string WorktypeGroupTotalsTypeMinutes = "decimal";
-	public static readonly string WorktypeGroupTotalsNameHours = "TotalElapsedHours";
-	public static readonly string WorktypeGroupTotalsTypeHours = "time";
-	public static readonly string WorktypeGroupTotalsNameSortOrder = "SortOrder";
-	public static readonly string WorktypeGroupTotalsTypeSortOrder = "bigint";
 	#endregion
 }
