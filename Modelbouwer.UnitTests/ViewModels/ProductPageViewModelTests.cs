@@ -11,6 +11,7 @@ public class ProductPageViewModelTests
 	private ProductPageViewModel _viewModel = null!;
 	private Mock<IStorageLocationService> _mockStorageLocationService = null!;
 	private Mock<ISupplierService> _mockSupplierService = null!;
+	private Mock<IStockService> _mockStockService = null!;
 
 	[TestInitialize]
 	public void Setup()
@@ -22,6 +23,8 @@ public class ProductPageViewModelTests
 		_mockStorageLocationService = new Mock<IStorageLocationService>();
 		_mockSupplierService = new Mock<ISupplierService>();
 		_mockValidator = new Mock<IEntityValidator<ProductModel>>();
+		_mockStockService = new Mock<IStockService>();
+		_mockStockService.Setup( s => s.GetStockHistoryAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockHistoryItemModel>() );
 
 		// Setup default returns for async methods
 		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>() );
@@ -39,6 +42,7 @@ public class ProductPageViewModelTests
 			_mockCategoryService.Object,
 			_mockStorageLocationService.Object,
 			_mockSupplierService.Object,
+			_mockStockService.Object,
 			_mockValidator.Object );
 	}
 
@@ -50,6 +54,36 @@ public class ProductPageViewModelTests
 		Assert.IsNotNull( _viewModel.ProductUnit );
 		Assert.IsNotNull( _viewModel.ProductCategory );
 		Assert.IsNotNull( _viewModel.Products );
+	}
+
+	[TestMethod]
+	public async Task SelectingProduct_LoadsStockHistoryNewestFirstWithCurrentStock()
+	{
+		_mockStockService.Setup( s => s.GetStockHistoryAsync( 5 ) ).ReturnsAsync( new List<StockHistoryItemModel>
+		{
+			new() { Date = new DateTime( 2026, 3, 1 ), KindText = "Correctie", Balance = 4 },
+			new() { Date = new DateTime( 2026, 3, 5 ), KindText = "Ontvangst", Balance = 10 },
+			new() { Date = new DateTime( 2026, 3, 9 ), KindText = "Verbruik", Balance = 8 }
+		} );
+
+		_viewModel.SelectedItem = new ProductModel { ProductId = 5, ProductName = "Walnut dowel" };
+
+		for ( int i = 0; i < 40 && _viewModel.StockHistory.Count < 3; i++ )
+			await Task.Delay( 25 );
+		CollectionAssert.AreEqual( new[] { "Verbruik", "Ontvangst", "Correctie" }, _viewModel.StockHistory.Select( item => item.KindText ).ToArray() );
+		Assert.AreEqual( 8d, _viewModel.CurrentStock );
+		Assert.IsTrue( _viewModel.HasStockHistory );
+	}
+
+	[TestMethod]
+	public async Task SelectingProduct_WithoutMovements_ShowsEmptyHistory()
+	{
+		_viewModel.SelectedItem = new ProductModel { ProductId = 8, ProductName = "Brass rod" };
+		await Task.Delay( 50 );
+
+		Assert.AreEqual( 0, _viewModel.StockHistory.Count );
+		Assert.AreEqual( 0d, _viewModel.CurrentStock );
+		Assert.IsFalse( _viewModel.HasStockHistory );
 	}
 
 	[TestMethod]
@@ -539,7 +573,15 @@ public class ProductPageViewModelTests
 			categoryService ?? defaultCategoryService.Object,
 			storageLocationService ?? defaultStorageLocationService.Object,
 			supplierService ?? defaultSupplierService.Object,
+			DefaultStockService(),
 			validator.Object );
+	}
+
+	private static IStockService DefaultStockService()
+	{
+		var stockService = new Mock<IStockService>();
+		stockService.Setup( s => s.GetStockHistoryAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockHistoryItemModel>() );
+		return stockService.Object;
 	}
 
 	private static string LoadSource( params string [ ] relativeSegments )
