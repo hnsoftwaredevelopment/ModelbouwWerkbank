@@ -422,7 +422,10 @@ public class StockOrderViewModelTests
 	{
 		// A receipt booked elsewhere after the order was loaded: the screen still shows no receipts.
 		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
-		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 4, 0 ) } );
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel> { new() { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderDate = DateTime.Today } } );
+		_orders.SetupSequence( s => s.GetOrderLinesAsync( 25 ) )
+			.ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 4, 0 ) } )    // read by the delete
+			.ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 4, 2 ) } );   // stored state after the receipt
 		_orders.Setup( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ) )
 			.ThrowsAsync( new OrderHasReceiptsException( 25 ) );
 
@@ -430,6 +433,7 @@ public class StockOrderViewModelTests
 
 		CollectionAssert.Contains( _messages, Lang.StockOrderOrderHasReceipts );
 		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The order stays on screen." );
+		Assert.AreEqual( 2d, _vm.OrderLines.Single().Received, "The stored receipt is reloaded, so a later save cannot overwrite it." );
 		Assert.IsFalse( _vm.IsWorking );
 	}
 

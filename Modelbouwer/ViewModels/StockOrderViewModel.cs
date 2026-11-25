@@ -937,8 +937,11 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		}
 		catch ( OrderHasReceiptsException )
 		{
-			// A receipt was booked after the order was loaded (for example on another device).
+			// A receipt was booked after the order was loaded (for example on another device). The editor still
+			// holds the old open amounts; reload the stored order so a later save cannot write them back.
+			IsDeletingOrder = false;
 			Message( Lang.StockOrderOrderHasReceipts );
+			await ReloadSavedOrderAsync( orderId, null );
 			return;
 		}
 		finally

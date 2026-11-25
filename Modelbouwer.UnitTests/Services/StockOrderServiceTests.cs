@@ -288,6 +288,61 @@ public class StockOrderServiceTests
 	}
 
 	[TestMethod]
+	public async Task DeleteOrderSteps_WithReceipts_ThrowsAndDeletesNothing()
+	{
+		var executed = new List<string>();
+
+		await AssertThrowsAsync<OrderHasReceiptsException>( () => _service.DeleteOrderStepsAsync( 25,
+			( _, _ ) => Task.FromResult( 2L ),
+			( query, _ ) => { executed.Add( query ); return Task.CompletedTask; } ) );
+
+		Assert.AreEqual( 0, executed.Count );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderSteps_WithoutReceipts_DeletesStocklogLinesOfTheOrderAndTheOrder()
+	{
+		var executed = new List<(string Query, Dictionary<string, object> Parameters)>();
+
+		await _service.DeleteOrderStepsAsync( 25,
+			( _, _ ) => Task.FromResult( 0L ),
+			( query, parameters ) => { executed.Add( (query, parameters) ); return Task.CompletedTask; } );
+
+		CollectionAssert.AreEqual(
+			new[] { StockOrderService.DeleteOrderStocklogQuery, StockOrderService.DeleteOrderLinesOfOrderQuery, _service.DeleteOrderQuery },
+			executed.Select( step => step.Query ).ToArray() );
+		Assert.AreEqual( 25, executed [ 1 ].Parameters [ "@OrderId" ], "All lines of the order are deleted by order id, not only the lines on screen." );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderSteps_ReceiptRecordedDuringTheDelete_StopsBeforeTheOrderIsDeleted()
+	{
+		var counts = new Queue<long>( [ 0L, 1L ] );
+		var executed = new List<string>();
+
+		await AssertThrowsAsync<OrderHasReceiptsException>( () => _service.DeleteOrderStepsAsync( 25,
+			( _, _ ) => Task.FromResult( counts.Dequeue() ),
+			( query, _ ) => { executed.Add( query ); return Task.CompletedTask; } ) );
+
+		CollectionAssert.DoesNotContain( executed, _service.DeleteOrderQuery, "The transaction is rolled back before the order goes." );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0", "Receipts are never deleted." );
+	}
+
+	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception
+	{
+		try
+		{
+			await action();
+		}
+		catch ( TException )
+		{
+			return;
+		}
+
+		Assert.Fail( $"Expected {typeof( TException ).Name}." );
+	}
+
+	[TestMethod]
 	public void OrderHasReceiptsException_CarriesTheMessageAndOrder()
 	{
 		var exception = new OrderHasReceiptsException( 25 );
