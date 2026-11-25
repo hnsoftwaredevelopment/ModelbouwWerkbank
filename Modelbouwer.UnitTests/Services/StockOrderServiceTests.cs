@@ -262,6 +262,42 @@ public class StockOrderServiceTests
 			Times.Once );
 	}
 
+	#region KAN-137: an order with receipts cannot be deleted
+	[TestMethod]
+	public void DeleteOrderQueries_CheckReceiptsAndRemoveEverythingOfTheOrder()
+	{
+		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.StocklogFieldNameAmountReceived} <> 0" );
+		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderId} = @OrderId" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderlineId} IN (" );
+		StringAssert.Contains( StockOrderService.DeleteOrderLinesOfOrderQuery, $"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId" );
+	}
+
+	[TestMethod]
+	public async Task DeleteOrderAsync_GoesThroughTheGuardedTransaction()
+	{
+		_mockDataService
+			.Setup( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ) )
+			.Returns( Task.CompletedTask );
+
+		await _service.DeleteOrderAsync( 25 );
+
+		_mockDataService.Verify( s => s.ExecuteInTransactionAsync( It.IsAny<Func<MySqlConnection, MySqlTransaction, Task>>(), CancellationToken.None ), Times.Once );
+		_mockDataService.Verify( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ), Times.Never,
+			"The order is not deleted outside the receipt check." );
+	}
+
+	[TestMethod]
+	public void OrderHasReceiptsException_CarriesTheMessageAndOrder()
+	{
+		var exception = new OrderHasReceiptsException( 25 );
+
+		Assert.AreEqual( Lang.StockOrderOrderHasReceipts, exception.Message );
+		Assert.AreEqual( 25, exception.OrderId );
+		Assert.IsInstanceOfType<EntityInUseException>( exception );
+	}
+	#endregion
+
 	[TestMethod]
 	public async Task DeleteOrderWithLinesAsync_UsesTransactionalDataService()
 	{

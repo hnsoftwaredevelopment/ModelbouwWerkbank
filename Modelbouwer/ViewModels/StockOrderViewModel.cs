@@ -935,6 +935,12 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			var lines = await _stockOrderService.GetOrderLinesAsync( orderId );
 			await _stockOrderService.DeleteOrderWithLinesAsync( orderId, lines );
 		}
+		catch ( OrderHasReceiptsException )
+		{
+			// A receipt was booked after the order was loaded (for example on another device).
+			Message( Lang.StockOrderOrderHasReceipts );
+			return;
+		}
 		finally
 		{
 			IsDeletingOrder = false;

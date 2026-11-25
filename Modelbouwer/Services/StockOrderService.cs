@@ -395,12 +395,10 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return DeleteOrderAsync( orderId, CancellationToken.None );
 	}
 
+	/// <summary>Deleting an order always goes through the guarded delete, so receipts are never orphaned.</summary>
 	public Task DeleteOrderAsync( int orderId, CancellationToken cancellationToken )
 	{
-		return _dataService.ExecuteScalarAsync<uint>( DeleteOrderQuery, new Dictionary<string, object>
-		{
-			{ $"@{DBNames.OrderFieldNameId}", orderId }
-		}, cancellationToken );
+		return DeleteOrderWithLinesAsync( orderId, [ ], cancellationToken );
 	}
 
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines )
@@ -408,29 +406,55 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		return DeleteOrderWithLinesAsync( orderId, lines, CancellationToken.None );
 	}
 
+	#region Delete an order (KAN-137)
+	private static readonly string OrderLineIdsOfOrder =
+		$"SELECT {DBNames.OrderLineFieldNameId} FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId";
+
+	/// <summary>Receipts in the stocklog or received amounts on the lines of the order.</summary>
+	public static readonly string CountOrderReceiptsQuery =
+		$"SELECT " +
+		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.StocklogTable} " +
+		$" WHERE {DBNames.StocklogFieldNameAmountReceived} <> 0 " +
+		$"   AND ({DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder}))) + " +
+		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$" WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId " +
+		$"   AND {DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0);";
+
+	/// <summary>Stocklog rows of an order without receipts: the corrections orders wrote before KAN-100.</summary>
+	public static readonly string DeleteOrderStocklogQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.StocklogTable} " +
+		$"WHERE {DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder});";
+
+	public static readonly string DeleteOrderLinesOfOrderQuery =
+		$"DELETE FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
+		$"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId;";
+
+	/// <summary>
+	/// Deletes an order with everything that belongs to it: its lines and the old correction rows in the stocklog.
+	/// An order with receipts is refused with <see cref="OrderHasReceiptsException"/>; the check runs in the same
+	/// transaction, so a receipt booked meanwhile is never orphaned. The lines are taken from the database, the
+	/// <paramref name="lines"/> argument is kept for callers only.
+	/// </summary>
 	public Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines, CancellationToken cancellationToken )
 	{
-		List<StockOrderLineModel> lineList = lines.ToList();
-
 		return _dataService.ExecuteInTransactionAsync( async ( connection, transaction ) =>
 		{
-			foreach ( var line in lineList )
-			{
-				if ( line.Id > 0 )
-				{
-					await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderLineQuery, new Dictionary<string, object>
-					{
-						{ $"@{DBNames.OrderLineFieldNameId}", line.Id }
-					}, cancellationToken );
-				}
-			}
+			var parameters = new Dictionary<string, object> { { "@OrderId", orderId } };
 
+			long receipts = await ExecuteScalarInTransactionAsync<long>( connection, transaction, CountOrderReceiptsQuery, parameters, cancellationToken );
+			if ( receipts > 0 )
+				throw new OrderHasReceiptsException( orderId );
+
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderStocklogQuery, parameters, cancellationToken );
+			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderLinesOfOrderQuery, parameters, cancellationToken );
 			await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderQuery, new Dictionary<string, object>
 			{
 				{ $"@{DBNames.OrderFieldNameId}", orderId }
 			}, cancellationToken );
 		}, cancellationToken );
 	}
+	#endregion
 
 	public async Task<int> InsertOrderLineAsync( StockOrderLineModel line )
 	{

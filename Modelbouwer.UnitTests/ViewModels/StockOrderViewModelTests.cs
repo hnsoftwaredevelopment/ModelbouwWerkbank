@@ -418,6 +418,22 @@ public class StockOrderViewModelTests
 	}
 
 	[TestMethod]
+	public async Task DeleteOrder_WhenServiceFindsReceipts_ShowsMessageAndKeepsTheOrder()
+	{
+		// A receipt booked elsewhere after the order was loaded: the screen still shows no receipts.
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( new List<StockOrderLineModel> { SavedLine( 4, 0 ) } );
+		_orders.Setup( s => s.DeleteOrderWithLinesAsync( 25, It.IsAny<IEnumerable<StockOrderLineModel>>() ) )
+			.ThrowsAsync( new OrderHasReceiptsException( 25 ) );
+
+		await _vm.DeleteOrderCommand.ExecuteAsync( null );
+
+		CollectionAssert.Contains( _messages, Lang.StockOrderOrderHasReceipts );
+		Assert.AreEqual( 25, _vm.EditableOrder.Id, "The order stays on screen." );
+		Assert.IsFalse( _vm.IsWorking );
+	}
+
+	[TestMethod]
 	public async Task DeleteOrder_Confirmed_DeletesAndStartsNewOrder()
 	{
 		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
