@@ -819,8 +819,44 @@
                 Image="{StaticResource Storage}"
                 ImageWidth="17"
                 ImageHeight="17">
-                <Grid>
+                <!-- KAN-80: receipts, usage and corrections of the selected product, newest first -->
+                <Grid Margin="15,8,15,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
 
+                    <TextBlock Grid.Row="0" Margin="0,0,0,6" FontSize="14" FontWeight="Bold">
+                        <Run Text="{x:Static language:Language.StockHistoryCurrentStock}" />
+                        <Run Text=": " />
+                        <Run Text="{Binding CurrentStock, Mode=OneWay, StringFormat={}{0:0.##}}" />
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="1"
+                               Margin="5"
+                               Foreground="Gray"
+                               FontStyle="Italic"
+                               Text="{x:Static language:Language.StockHistoryEmpty}"
+                               Visibility="{Binding HasStockHistory, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}" />
+
+                    <syncfusion:SfDataGrid
+                        x:Name="StockHistoryGrid"
+                        Grid.Row="1"
+                        AllowEditing="False"
+                        AllowSorting="True"
+                        AutoGenerateColumns="False"
+                        ColumnSizer="Star"
+                        ItemsSource="{Binding StockHistory}"
+                        Visibility="{Binding HasStockHistory, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <syncfusion:SfDataGrid.Columns>
+                            <syncfusion:GridDateTimeColumn MappingName="Date" HeaderText="{x:Static language:Language.StockHistoryHeaderDate}" Pattern="ShortDate" Width="100" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="KindText" HeaderText="{x:Static language:Language.StockHistoryHeaderKind}" Width="100" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="Description" HeaderText="{x:Static language:Language.StockHistoryHeaderDescription}" />
+                            <syncfusion:GridNumericColumn MappingName="AmountIn" HeaderText="{x:Static language:Language.StockHistoryHeaderIn}" NumberDecimalDigits="2" AllowNullValue="True" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="AmountOut" HeaderText="{x:Static language:Language.StockHistoryHeaderOut}" NumberDecimalDigits="2" AllowNullValue="True" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="Balance" HeaderText="{x:Static language:Language.StockHistoryHeaderBalance}" NumberDecimalDigits="2" Width="90" ColumnSizer="Auto" />
+                        </syncfusion:SfDataGrid.Columns>
+                    </syncfusion:SfDataGrid>
                 </Grid>
             </syncfusion:TabItemExt>
             <!--#endregion-->

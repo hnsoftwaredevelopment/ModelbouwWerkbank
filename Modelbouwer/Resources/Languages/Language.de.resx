@@ -4812,4 +4812,43 @@ PowerShell:
   <data name="DialogInvalidNumber" xml:space="preserve">
     <value>Ein oder mehrere Felder enthalten keine gültige Zahl. Korrigieren Sie die rot markierte Eingabe.</value>
   </data>
+  <data name="StockHistoryKindReceipt" xml:space="preserve">
+    <value>Wareneingang</value>
+  </data>
+  <data name="StockHistoryKindUsage" xml:space="preserve">
+    <value>Verbrauch</value>
+  </data>
+  <data name="StockHistoryKindCorrection" xml:space="preserve">
+    <value>Korrektur</value>
+  </data>
+  <data name="StockHistoryOrderCorrection" xml:space="preserve">
+    <value>Zu Bestellung {0}</value>
+  </data>
+  <data name="StockHistoryHeaderDate" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="StockHistoryHeaderKind" xml:space="preserve">
+    <value>Art</value>
+  </data>
+  <data name="StockHistoryHeaderDescription" xml:space="preserve">
+    <value>Bestellung / Projekt</value>
+  </data>
+  <data name="StockHistoryHeaderIn" xml:space="preserve">
+    <value>Zugang</value>
+  </data>
+  <data name="StockHistoryHeaderOut" xml:space="preserve">
+    <value>Abgang</value>
+  </data>
+  <data name="StockHistoryHeaderBalance" xml:space="preserve">
+    <value>Bestand</value>
+  </data>
+  <data name="StockHistoryCurrentStock" xml:space="preserve">
+    <value>Aktueller Bestand</value>
+  </data>
+  <data name="StockHistoryEmpty" xml:space="preserve">
+    <value>Für dieses Produkt gibt es noch keine Bestandsbewegungen.</value>
+  </data>
+  <data name="StockHistoryOrderDeleted" xml:space="preserve">
+    <value>Bestellung nicht mehr vorhanden</value>
+  </data>
 </root>

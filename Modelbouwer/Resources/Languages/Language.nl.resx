@@ -4812,4 +4812,43 @@ PowerShell:
   <data name="DialogInvalidNumber" xml:space="preserve">
     <value>Een of meer velden bevatten geen geldig getal. Pas de rood gemarkeerde invoer aan.</value>
   </data>
+  <data name="StockHistoryKindReceipt" xml:space="preserve">
+    <value>Ontvangst</value>
+  </data>
+  <data name="StockHistoryKindUsage" xml:space="preserve">
+    <value>Verbruik</value>
+  </data>
+  <data name="StockHistoryKindCorrection" xml:space="preserve">
+    <value>Correctie</value>
+  </data>
+  <data name="StockHistoryOrderCorrection" xml:space="preserve">
+    <value>Bij order {0}</value>
+  </data>
+  <data name="StockHistoryHeaderDate" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="StockHistoryHeaderKind" xml:space="preserve">
+    <value>Soort</value>
+  </data>
+  <data name="StockHistoryHeaderDescription" xml:space="preserve">
+    <value>Order / project</value>
+  </data>
+  <data name="StockHistoryHeaderIn" xml:space="preserve">
+    <value>Bij</value>
+  </data>
+  <data name="StockHistoryHeaderOut" xml:space="preserve">
+    <value>Af</value>
+  </data>
+  <data name="StockHistoryHeaderBalance" xml:space="preserve">
+    <value>Voorraad</value>
+  </data>
+  <data name="StockHistoryCurrentStock" xml:space="preserve">
+    <value>Huidige voorraad</value>
+  </data>
+  <data name="StockHistoryEmpty" xml:space="preserve">
+    <value>Er zijn nog geen voorraadmutaties voor dit product.</value>
+  </data>
+  <data name="StockHistoryOrderDeleted" xml:space="preserve">
+    <value>Order niet meer aanwezig</value>
+  </data>
 </root>
