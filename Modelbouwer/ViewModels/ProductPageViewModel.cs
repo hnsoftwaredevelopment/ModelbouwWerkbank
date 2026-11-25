@@ -28,6 +28,12 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 	private async Task LoadStockHistoryAsync( ProductModel? product )
 	{
 		int version = ++_stockHistoryVersion;
+
+		// The previous product's figures must not be shown as this product's while it loads.
+		StockHistory.Clear();
+		CurrentStock = 0d;
+		HasStockHistory = false;
+
 		List<StockHistoryItemModel> history = product == null || product.ProductId <= 0
 			? [ ]
 			: await _stockService.GetStockHistoryAsync( product.ProductId );

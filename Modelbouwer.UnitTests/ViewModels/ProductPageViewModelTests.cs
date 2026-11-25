@@ -76,12 +76,42 @@ public class ProductPageViewModelTests
 	}
 
 	[TestMethod]
-	public async Task SelectingProduct_WithoutMovements_ShowsEmptyHistory()
+	public async Task SelectingProduct_WithoutMovements_ReplacesThePreviousHistoryWithAnEmptyOne()
 	{
-		_viewModel.SelectedItem = new ProductModel { ProductId = 8, ProductName = "Brass rod" };
-		await Task.Delay( 50 );
+		_mockStockService.Setup( s => s.GetStockHistoryAsync( 5 ) ).ReturnsAsync( new List<StockHistoryItemModel>
+		{
+			new() { Date = new DateTime( 2026, 3, 1 ), KindText = "Correctie", Balance = 4 }
+		} );
+		_viewModel.SelectedItem = new ProductModel { ProductId = 5, ProductName = "Walnut dowel" };
+		for ( int i = 0; i < 40 && !_viewModel.HasStockHistory; i++ )
+			await Task.Delay( 25 );
+		Assert.AreEqual( 4d, _viewModel.CurrentStock );
 
+		_viewModel.SelectedItem = new ProductModel { ProductId = 8, ProductName = "Brass rod" };
+		for ( int i = 0; i < 40 && _viewModel.HasStockHistory; i++ )
+			await Task.Delay( 25 );
+
+		_mockStockService.Verify( s => s.GetStockHistoryAsync( 8 ), Times.Once );
 		Assert.AreEqual( 0, _viewModel.StockHistory.Count );
+		Assert.AreEqual( 0d, _viewModel.CurrentStock );
+		Assert.IsFalse( _viewModel.HasStockHistory );
+	}
+
+	[TestMethod]
+	public void SelectingProduct_ClearsThePreviousHistoryBeforeTheNewOneArrives()
+	{
+		var pending = new TaskCompletionSource<List<StockHistoryItemModel>>();
+		_mockStockService.Setup( s => s.GetStockHistoryAsync( 5 ) ).ReturnsAsync( new List<StockHistoryItemModel>
+		{
+			new() { Date = new DateTime( 2026, 3, 1 ), KindText = "Correctie", Balance = 10 }
+		} );
+		_mockStockService.Setup( s => s.GetStockHistoryAsync( 8 ) ).Returns( pending.Task );
+		_viewModel.SelectedItem = new ProductModel { ProductId = 5, ProductName = "Walnut dowel" };
+		Assert.AreEqual( 10d, _viewModel.CurrentStock );
+
+		_viewModel.SelectedItem = new ProductModel { ProductId = 8, ProductName = "Brass rod" };
+
+		Assert.AreEqual( 0, _viewModel.StockHistory.Count, "Stock of product 5 is not shown as stock of product 8." );
 		Assert.AreEqual( 0d, _viewModel.CurrentStock );
 		Assert.IsFalse( _viewModel.HasStockHistory );
 	}
