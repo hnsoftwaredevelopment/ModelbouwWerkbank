@@ -144,6 +144,33 @@ WHERE {DBNames.OrderLineFieldNameId} = @{DBNames.OrderLineFieldNameId};";
 DELETE FROM {DBNames.Database}.{DBNames.OrderLineTable}
 WHERE {DBNames.OrderLineFieldNameId} = @{DBNames.OrderLineFieldNameId};";
 
+	public string InsertProductSupplierQuery = $@"
+INSERT INTO {DBNames.Database}.{DBNames.ProductSupplierTable} (
+	{DBNames.ProductSupplierFieldNameProductId},
+	{DBNames.ProductSupplierFieldNameSupplierId},
+	{DBNames.ProductSupplierFieldNameProductNumber},
+	{DBNames.ProductSupplierFieldNameProductName},
+	{DBNames.ProductSupplierFieldNamePrice},
+	{DBNames.ProductSupplierFieldNameProductUrl}
+) VALUES (
+	@{DBNames.ProductSupplierFieldNameProductId},
+	@{DBNames.ProductSupplierFieldNameSupplierId},
+	@{DBNames.ProductSupplierFieldNameProductNumber},
+	@{DBNames.ProductSupplierFieldNameProductName},
+	@{DBNames.ProductSupplierFieldNamePrice},
+	@{DBNames.ProductSupplierFieldNameProductUrl}
+);
+{DBNames.SqlSelectLastId}";
+
+	public string UpdateProductSupplierQuery = $@"
+UPDATE {DBNames.Database}.{DBNames.ProductSupplierTable}
+SET
+	{DBNames.ProductSupplierFieldNameProductNumber} = @{DBNames.ProductSupplierFieldNameProductNumber},
+	{DBNames.ProductSupplierFieldNameProductName} = @{DBNames.ProductSupplierFieldNameProductName},
+	{DBNames.ProductSupplierFieldNamePrice} = @{DBNames.ProductSupplierFieldNamePrice},
+	{DBNames.ProductSupplierFieldNameProductUrl} = @{DBNames.ProductSupplierFieldNameProductUrl}
+WHERE {DBNames.ProductSupplierFieldNameId} = @{DBNames.ProductSupplierFieldNameId};";
+
 	public string InsertStocklogReceiptQuery = $@"
 INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	{DBNames.StocklogFieldNameProductId},
@@ -158,6 +185,103 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	@{DBNames.StocklogFieldNameAmountReceived},
 	@{DBNames.StocklogFieldNameLogDate}
 );";
+
+	public Task<int> SaveOrderAsync( StockOrderModel order, IEnumerable<StockOrderLineModel> lines, IEnumerable<int> deletedLineIds, IEnumerable<Modelbouwer.Model.ProductSupplierModel> productSuppliers )
+	{
+		return SaveOrderAsync( order, lines, deletedLineIds, productSuppliers, CancellationToken.None );
+	}
+
+	/// <summary>
+	/// Saves order, lines, deleted lines and supplier data in one transaction. Generated ids are written back to
+	/// the lines and supplier data only after the commit, so a rolled back attempt leaves them unchanged and a
+	/// retry inserts again instead of updating rows that do not exist.
+	/// </summary>
+	public async Task<int> SaveOrderAsync( StockOrderModel order, IEnumerable<StockOrderLineModel> lines, IEnumerable<int> deletedLineIds, IEnumerable<Modelbouwer.Model.ProductSupplierModel> productSuppliers, CancellationToken cancellationToken )
+	{
+		List<StockOrderLineModel> lineList = lines.ToList();
+		List<int> deletedIds = deletedLineIds.Where( id => id > 0 ).Distinct().ToList();
+		List<Modelbouwer.Model.ProductSupplierModel> supplierList = productSuppliers.ToList();
+		Dictionary<StockOrderLineModel, int> insertedLineIds = new( ReferenceEqualityComparer.Instance );
+		Dictionary<Modelbouwer.Model.ProductSupplierModel, int> insertedProductSupplierIds = new( ReferenceEqualityComparer.Instance );
+
+		int savedOrderId = await _dataService.ExecuteInTransactionAsync<int>( async ( connection, transaction ) =>
+		{
+			insertedLineIds.Clear();
+			insertedProductSupplierIds.Clear();
+
+			int orderId = order.Id;
+			if ( orderId <= 0 )
+			{
+				orderId = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderQuery, BuildOrderParameters( order, includeId: false ), cancellationToken );
+			}
+			else
+			{
+				await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateOrderQuery, BuildOrderParameters( order, includeId: true ), cancellationToken );
+			}
+
+			foreach ( int lineId in deletedIds )
+			{
+				await ExecuteNonQueryInTransactionAsync( connection, transaction, DeleteOrderLineQuery, new Dictionary<string, object>
+				{
+					{ $"@{DBNames.OrderLineFieldNameId}", lineId }
+				}, cancellationToken );
+			}
+
+			foreach ( var line in lineList )
+			{
+				if ( line.Id <= 0 )
+				{
+					var parameters = BuildOrderLineParameters( line, includeId: false );
+					parameters [ $"@{DBNames.OrderLineFieldNameSupplierOrderId}" ] = orderId;
+					insertedLineIds [ line ] = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertOrderLineQuery, parameters, cancellationToken );
+				}
+				else if ( line.IsDirty || line.SupplyOrderId != orderId )
+				{
+					var parameters = BuildOrderLineParameters( line, includeId: true );
+					parameters [ $"@{DBNames.OrderLineFieldNameSupplierOrderId}" ] = orderId;
+					await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateOrderLineQuery, parameters, cancellationToken );
+				}
+			}
+
+			foreach ( var productSupplier in supplierList )
+			{
+				var parameters = new Dictionary<string, object>
+				{
+					{ $"@{DBNames.ProductSupplierFieldNameProductId}", productSupplier.ProductId },
+					{ $"@{DBNames.ProductSupplierFieldNameSupplierId}", productSupplier.SupplierId },
+					{ $"@{DBNames.ProductSupplierFieldNameProductNumber}", productSupplier.ProductNumber ?? string.Empty },
+					{ $"@{DBNames.ProductSupplierFieldNameProductName}", productSupplier.ProductName ?? string.Empty },
+					{ $"@{DBNames.ProductSupplierFieldNamePrice}", productSupplier.Price },
+					{ $"@{DBNames.ProductSupplierFieldNameProductUrl}", productSupplier.URL ?? string.Empty }
+				};
+
+				if ( productSupplier.ProductSupplierId > 0 )
+				{
+					parameters.Add( $"@{DBNames.ProductSupplierFieldNameId}", productSupplier.ProductSupplierId );
+					await ExecuteNonQueryInTransactionAsync( connection, transaction, UpdateProductSupplierQuery, parameters, cancellationToken );
+				}
+				else
+				{
+					insertedProductSupplierIds [ productSupplier ] = ( int ) await ExecuteScalarInTransactionAsync<uint>( connection, transaction, InsertProductSupplierQuery, parameters, cancellationToken );
+				}
+			}
+
+			return orderId;
+		}, cancellationToken );
+
+		// Committed: now the generated ids are real.
+		foreach ( var line in lineList )
+		{
+			line.SupplyOrderId = savedOrderId;
+			if ( insertedLineIds.TryGetValue( line, out int lineId ) )
+				line.Id = lineId;
+		}
+
+		foreach ( var (productSupplier, productSupplierId) in insertedProductSupplierIds )
+			productSupplier.ProductSupplierId = productSupplierId;
+
+		return savedOrderId;
+	}
 
 	public Task<List<StockOrderModel>> GetAllOrdersAsync()
 	{
@@ -387,7 +511,7 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 			{ $"@{DBNames.OrderLineFieldNameProductId}", line.ProductId },
 			{ $"@{DBNames.OrderLineFieldNameSupplierProductName}", line.SupplierProductName ?? string.Empty },
 			{ $"@{DBNames.OrderLineFieldNameAmount}", line.Amount },
-			{ $"@{DBNames.OrderLineFieldNameOpenAmount}", line.OpenAmount > 0 || line.Closed ? line.OpenAmount : line.Amount },
+			{ $"@{DBNames.OrderLineFieldNameOpenAmount}", line.Id > 0 || line.Closed || line.OpenAmount > 0 ? line.OpenAmount : line.Amount },   // only a new line without an open amount starts at the ordered amount
 			{ $"@{DBNames.OrderLineFieldNamePrice}", line.Price },
 			{ $"@{DBNames.OrderLineFieldNameRealRowTotal}", line.RealRowTotal },
 			{ $"@{DBNames.OrderLineFieldNameClosed}", line.Closed },
