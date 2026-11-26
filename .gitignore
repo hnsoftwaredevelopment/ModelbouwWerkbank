@@ -367,3 +367,13 @@ FodyWeavers.xsd
 # Local secrets (KAN-78): never commit license keys or credentials
 docs/[Ss]yncfusion[Ll]icense.txt
 Tools/root.txt
+
+# Repository cleanup (KAN-79)
+# IDE settings of JetBrains Rider and Visual Studio favorites
+.idea/
+favorites.json
+# Exported translations (ResXManager); the .resx files are the source
+language.csv
+# Database dumps with data never go into git; Database/ holds structure scripts only
+Database/dump-*.sql
+*.dump.sql
