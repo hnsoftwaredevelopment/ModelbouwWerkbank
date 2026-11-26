@@ -229,6 +229,49 @@
         <GeometryDrawing Brush="#FF000080" Geometry="{StaticResource RtfUndoGeometry}" />
     </DrawingGroup>
     <DrawingImage x:Key="RtfUndo" Drawing="{StaticResource RtfUndoDrawingGroup}" />
+
+    <!-- Reopen order (KAN-95): the undo arrow in green when it can be used, grey when it cannot. -->
+    <DrawingImage x:Key="ReopenOrderActive">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Brush="#FF2E9E3A" Geometry="{StaticResource RtfUndoGeometry}" />
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <DrawingImage x:Key="ReopenOrderInactive">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Brush="#FFB0B0B0" Geometry="{StaticResource RtfUndoGeometry}" />
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <!-- Close order (KAN-95): a padlock in red when it can be used, grey when it cannot. -->
+    <Geometry x:Key="CloseOrderLockBodyGeometry">M3,9 H17 V19 H3 Z</Geometry>
+    <Geometry x:Key="CloseOrderLockShackleGeometry">M6,9 V6 A4,4 0 0 1 14,6 V9</Geometry>
+    <Geometry x:Key="CloseOrderLockKeyholeGeometry">M9,12.5 A1,1 0 1 1 11,12.5 A1,1 0 1 1 9,12.5 Z M9.4,13 H10.6 V16 H9.4 Z</Geometry>
+    <DrawingImage x:Key="CloseOrderActive">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource CloseOrderLockShackleGeometry}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFC62828" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFC62828" Geometry="{StaticResource CloseOrderLockBodyGeometry}" />
+                <GeometryDrawing Brush="White" Geometry="{StaticResource CloseOrderLockKeyholeGeometry}" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+    <DrawingImage x:Key="CloseOrderInactive">
+        <DrawingImage.Drawing>
+            <DrawingGroup>
+                <GeometryDrawing Geometry="{StaticResource CloseOrderLockShackleGeometry}">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="#FFB0B0B0" Thickness="2" />
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+                <GeometryDrawing Brush="#FFB0B0B0" Geometry="{StaticResource CloseOrderLockBodyGeometry}" />
+                <GeometryDrawing Brush="White" Geometry="{StaticResource CloseOrderLockKeyholeGeometry}" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
     <!--#endregion-->
 
     <!-- #region Redo -->

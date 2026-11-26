@@ -4905,4 +4905,22 @@ PowerShell:
   <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
     <value>Sleep om het detailgedeelte hoger of lager te maken</value>
   </data>
+  <data name="StockOrderReopenOrderTooltip" xml:space="preserve">
+    <value>Gesloten order heropenen</value>
+  </data>
+  <data name="StockOrderReopenOrderConfirm" xml:space="preserve">
+    <value>Order {0} van {1} weer openen? Ontvangen regels blijven gesloten en de voorraad verandert niet. Je kunt daarna regels toevoegen.</value>
+  </data>
+  <data name="StockOrderCloseOrderTooltip" xml:space="preserve">
+    <value>Order sluiten</value>
+  </data>
+  <data name="StockOrderCloseOrderConfirm" xml:space="preserve">
+    <value>Order {0} van {1} sluiten?</value>
+  </data>
+  <data name="StockOrderCloseOrderWithOpenLinesConfirm" xml:space="preserve">
+    <value>Order {0} van {1} sluiten? {2} regel(s) staan nog open. Het restant daarvan wordt geannuleerd: besteld wordt gelijk aan ontvangen en het restant telt niet meer als &apos;in bestelling&apos;. De voorraad verandert niet.</value>
+  </data>
+  <data name="StockOrderCloseOrderSaveFirst" xml:space="preserve">
+    <value>Sla eerst de wijzigingen van deze order op, daarna kun je de order sluiten.</value>
+  </data>
 </root>

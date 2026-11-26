@@ -67,6 +67,34 @@
 
     </Style>
 
+    <Style x:Key="ToolBarReopenIcon" TargetType="Image">
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="Source" Value="{StaticResource ReopenOrderActive}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Source" Value="{StaticResource ReopenOrderInactive}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <Style x:Key="ToolBarCloseOrderIcon" TargetType="Image">
+        <Setter Property="Height" Value="20" />
+        <Setter Property="Width" Value="20" />
+        <Setter Property="Stretch" Value="Uniform" />
+        <Setter Property="Source" Value="{StaticResource CloseOrderActive}" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Source" Value="{StaticResource CloseOrderInactive}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
     <Style x:Key="ToolBarRotateIcon" TargetType="Image">
         <Setter Property="Height" Value="20" />
         <Setter Property="Margin" Value="5,0,0,0" />

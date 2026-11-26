@@ -475,6 +475,178 @@ public class StockOrderViewModelTests
 		Assert.IsTrue( _vm.IsNewOrder );
 	}
 
+	// Reopen a closed order (KAN-95)
+	private async Task LoadClosedOrderAsync()
+	{
+		await CreateAsync();
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132", OrderDate = DateTime.Today, Closed = true, ClosedDate = DateTime.Today }, [ SavedLine( 4, 4 ) ] );
+	}
+
+	private void SetupStoredOrder( bool closed )
+	{
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( () => new List<StockOrderModel>
+		{
+			new() { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132", OrderDate = DateTime.Today, Closed = closed, ClosedDate = closed ? DateTime.Today : null }
+		} );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( () => new List<StockOrderLineModel> { SavedLine( 4, 4 ) } );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_OnlyAvailableForAStoredClosedOrder()
+	{
+		await CreateAsync();
+		Assert.IsFalse( _vm.ReopenOrderCommand.CanExecute( null ), "A new order cannot be reopened." );
+
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 25, SupplierId = 1, OrderDate = DateTime.Today }, [ SavedLine( 4, 0 ) ] );
+		Assert.IsFalse( _vm.ReopenOrderCommand.CanExecute( null ), "An open order is already open." );
+
+		_vm.ApplySelectedOrder( new StockOrderModel { Id = 26, SupplierId = 1, OrderDate = DateTime.Today, Closed = true }, [ SavedLine( 4, 4 ) ] );
+		Assert.IsTrue( _vm.ReopenOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.CanEditOrder );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_Confirmed_OpensOrderAndKeepsReceivedLinesClosed()
+	{
+		await LoadClosedOrderAsync();
+		SetupStoredOrder( closed: false );
+		_orders.Setup( s => s.ReopenOrderAsync( 25 ) ).Returns( Task.CompletedTask );
+
+		await _vm.ReopenOrderCommand.ExecuteAsync( null );
+
+		_orders.Verify( s => s.ReopenOrderAsync( 25 ), Times.Once );
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Never,
+			"Reopening writes only the order header, not the lines." );
+		Assert.IsFalse( _vm.EditableOrder.Closed );
+		Assert.IsNull( _vm.EditableOrder.ClosedDate );
+		Assert.IsTrue( _vm.CanEditOrder, "Lines can be added again." );
+		Assert.IsTrue( _vm.OrderLines.Single().Closed, "The received line stays closed." );
+		Assert.AreEqual( 4d, _vm.OrderLines.Single().Received );
+		Assert.IsFalse( _vm.ReopenOrderCommand.CanExecute( null ) );
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsFalse( _vm.HasUnsavedChanges );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_NotConfirmed_DoesNothing()
+	{
+		await LoadClosedOrderAsync();
+		_confirmAnswer = false;
+
+		await _vm.ReopenOrderCommand.ExecuteAsync( null );
+
+		_orders.Verify( s => s.ReopenOrderAsync( It.IsAny<int>() ), Times.Never );
+		Assert.IsTrue( _vm.EditableOrder.Closed );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_WhenServiceFails_OrderStaysClosedAndScreenIsReleased()
+	{
+		await LoadClosedOrderAsync();
+		_orders.Setup( s => s.ReopenOrderAsync( 25 ) ).ThrowsAsync( new InvalidOperationException( "connection lost" ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( () => _vm.ReopenOrderCommand.ExecuteAsync( null ) );
+
+		Assert.IsTrue( _vm.EditableOrder.Closed );
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsTrue( _vm.ReopenOrderCommand.CanExecute( null ), "The user can try again." );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_WhenReloadFails_SaveOnlyRetriesTheReload()
+	{
+		await LoadClosedOrderAsync();
+		_orders.Setup( s => s.ReopenOrderAsync( 25 ) ).Returns( Task.CompletedTask );
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ThrowsAsync( new InvalidOperationException( "connection lost" ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( () => _vm.ReopenOrderCommand.ExecuteAsync( null ) );
+		Assert.IsFalse( _vm.IsWorking );
+
+		SetupStoredOrder( closed: false );
+		await _vm.SaveOrderAsync();
+
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Never );
+		Assert.IsFalse( _vm.EditableOrder.Closed, "Save reloaded the reopened order." );
+	}
+
+	// Close an order by hand (KAN-95)
+	[TestMethod]
+	public async Task CloseOrder_OnlyAvailableForAStoredOpenOrder()
+	{
+		await CreateAsync();
+		Assert.IsFalse( _vm.CloseOrderCommand.CanExecute( null ), "A new order cannot be closed." );
+
+		await LoadClosedOrderAsync();
+		Assert.IsFalse( _vm.CloseOrderCommand.CanExecute( null ), "A closed order is already closed." );
+
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		Assert.IsTrue( _vm.CloseOrderCommand.CanExecute( null ) );
+	}
+
+	[TestMethod]
+	public async Task CloseOrder_WithOpenLines_AsksWithLineCountAndClosesTheOrder()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 1 ) );
+		string? asked = null;
+		_vm.ConfirmAction = message => { asked = message; return true; };
+		var closedLine = SavedLine( 1, 1 );
+		_orders.Setup( s => s.CloseOrderAsync( 25, DateTime.Today ) ).Returns( Task.CompletedTask );
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( () => new List<StockOrderModel>
+		{
+			new() { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132", OrderDate = DateTime.Today, Closed = true, ClosedDate = DateTime.Today }
+		} );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( () => new List<StockOrderLineModel> { closedLine } );
+
+		await _vm.CloseOrderCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( string.Format( Lang.StockOrderCloseOrderWithOpenLinesConfirm, "CW0132", "Cornwall", 1 ), asked );
+		_orders.Verify( s => s.CloseOrderAsync( 25, DateTime.Today ), Times.Once );
+		Assert.IsTrue( _vm.EditableOrder.Closed );
+		Assert.IsFalse( _vm.CanEditOrder );
+		Assert.IsTrue( _vm.ReopenOrderCommand.CanExecute( null ), "A closed order can be reopened again." );
+		Assert.IsFalse( _vm.IsWorking );
+	}
+
+	[TestMethod]
+	public async Task CloseOrder_WithoutOpenLines_AsksSimpleQuestion()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 4 ) );
+		string? asked = null;
+		_vm.ConfirmAction = message => { asked = message; return false; };
+
+		await _vm.CloseOrderCommand.ExecuteAsync( null );
+
+		Assert.AreEqual( string.Format( Lang.StockOrderCloseOrderConfirm, "CW0132", "Cornwall" ), asked );
+		_orders.Verify( s => s.CloseOrderAsync( It.IsAny<int>(), It.IsAny<DateTime>() ), Times.Never, "Not confirmed." );
+	}
+
+	[TestMethod]
+	public async Task CloseOrder_WithUnsavedChanges_AsksToSaveFirst()
+	{
+		var line = SavedLine( 4, 0 );
+		await LoadSavedOrderAsync( line );
+		line.Amount = 6;
+		Assert.IsTrue( _vm.HasUnsavedChanges );
+
+		await _vm.CloseOrderCommand.ExecuteAsync( null );
+
+		CollectionAssert.Contains( _messages, Lang.StockOrderCloseOrderSaveFirst );
+		_orders.Verify( s => s.CloseOrderAsync( It.IsAny<int>(), It.IsAny<DateTime>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task CloseOrder_WhenServiceFails_OrderStaysOpenAndScreenIsReleased()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		_orders.Setup( s => s.CloseOrderAsync( 25, It.IsAny<DateTime>() ) ).ThrowsAsync( new InvalidOperationException( "connection lost" ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( () => _vm.CloseOrderCommand.ExecuteAsync( null ) );
+
+		Assert.IsFalse( _vm.EditableOrder.Closed );
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsTrue( _vm.CloseOrderCommand.CanExecute( null ) );
+	}
+
 	[TestMethod]
 	public async Task SelectedOrder_WhenBackgroundLoadFails_StoresAsyncError()
 	{

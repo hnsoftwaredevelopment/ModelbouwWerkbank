@@ -12045,6 +12045,42 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Order {0} van {1} sluiten?.
+        /// </summary>
+        public static string StockOrderCloseOrderConfirm {
+            get {
+                return ResourceManager.GetString("StockOrderCloseOrderConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sla eerst de wijzigingen van deze order op, daarna kun je de order sluiten..
+        /// </summary>
+        public static string StockOrderCloseOrderSaveFirst {
+            get {
+                return ResourceManager.GetString("StockOrderCloseOrderSaveFirst", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order sluiten.
+        /// </summary>
+        public static string StockOrderCloseOrderTooltip {
+            get {
+                return ResourceManager.GetString("StockOrderCloseOrderTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order {0} van {1} sluiten? {2} regel(s) staan nog open. Het restant daarvan wordt geannuleerd: besteld wordt gelijk aan ontvangen en het restant telt niet meer als &apos;in bestelling&apos;. De voorraad verandert niet..
+        /// </summary>
+        public static string StockOrderCloseOrderWithOpenLinesConfirm {
+            get {
+                return ResourceManager.GetString("StockOrderCloseOrderWithOpenLinesConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Regel verwijderen.
         /// </summary>
         public static string StockOrderDeleteLineButton {
@@ -12590,6 +12626,24 @@ namespace Modelbouwer.Resources.Languages {
         public static string StockOrderProductsGroupTitle {
             get {
                 return ResourceManager.GetString("StockOrderProductsGroupTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Order {0} van {1} weer openen? Ontvangen regels blijven gesloten en de voorraad verandert niet. Je kunt daarna regels toevoegen..
+        /// </summary>
+        public static string StockOrderReopenOrderConfirm {
+            get {
+                return ResourceManager.GetString("StockOrderReopenOrderConfirm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gesloten order heropenen.
+        /// </summary>
+        public static string StockOrderReopenOrderTooltip {
+            get {
+                return ResourceManager.GetString("StockOrderReopenOrderTooltip", resourceCulture);
             }
         }
         

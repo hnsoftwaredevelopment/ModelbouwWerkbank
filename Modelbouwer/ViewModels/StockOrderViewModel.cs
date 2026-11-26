@@ -51,14 +51,16 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	[ObservableProperty] private bool _hasUnsavedChanges;
 	[ObservableProperty] private bool _isSavingOrder;
 	[ObservableProperty] private bool _isDeletingOrder;
+	[ObservableProperty] private bool _isReopeningOrder;
+	[ObservableProperty] private bool _isClosingOrder;
 	[ObservableProperty] private bool _isEditingOrderLine;
 	[ObservableProperty] private bool _showClosedOrders;
 	[ObservableProperty] private bool _showOnlyShortages;
 	[ObservableProperty] private string? _searchText;
 
 	public bool IsClosedOrder => EditableOrder.Closed;
-	/// <summary>Saving or deleting is in progress: the order on screen must not change until it is done.</summary>
-	public bool IsWorking => IsSavingOrder || IsDeletingOrder;
+	/// <summary>Saving, deleting, reopening or closing is in progress: the order on screen must not change until it is done.</summary>
+	public bool IsWorking => IsSavingOrder || IsDeletingOrder || IsReopeningOrder || IsClosingOrder;
 	public bool CanSwitchOrder => !IsWorking;
 	public bool CanEditOrder => !EditableOrder.Closed && !IsWorking;
 
@@ -73,6 +75,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	public IRelayCommand NewOrderCommand { get; }
 	public IAsyncRelayCommand SaveOrderCommand { get; }
 	public IAsyncRelayCommand DeleteOrderCommand { get; }
+	public IAsyncRelayCommand ReopenOrderCommand { get; }
+	public IAsyncRelayCommand CloseOrderCommand { get; }
 	public IAsyncRelayCommand AddProductToOrderCommand { get; }
 	public IAsyncRelayCommand AddShortagesCommand { get; }
 	public IAsyncRelayCommand EditLineSupplierDataCommand { get; }
@@ -93,6 +97,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		NewOrderCommand = new RelayCommand( RequestNewOrder, () => !IsWorking );
 		SaveOrderCommand = new AsyncRelayCommand( cancellationToken => SaveOrderAsync( cancellationToken ), CanSaveOrder );
 		DeleteOrderCommand = new AsyncRelayCommand( DeleteOrderAsync, () => !IsWorking );
+		ReopenOrderCommand = new AsyncRelayCommand( ReopenOrderAsync, CanReopenOrder );
+		CloseOrderCommand = new AsyncRelayCommand( CloseOrderAsync, CanCloseOrder );
 		AddProductToOrderCommand = new AsyncRelayCommand( AddSelectedProductAsync, CanAddProduct );
 		AddShortagesCommand = new AsyncRelayCommand( AddShortagesAsync, CanEditOrderLineCommand );
 		EditLineSupplierDataCommand = new AsyncRelayCommand( EditSelectedLineSupplierDataAsync, () => CanEditOrderLineCommand() && SelectedOrderLine != null );
@@ -105,6 +111,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	}
 
 	private bool CanSaveOrder() => !IsWorking;
+	private bool CanReopenOrder() => !IsWorking && !IsNewOrder && EditableOrder.Id > 0 && EditableOrder.Closed;
+	private bool CanCloseOrder() => !IsWorking && !IsNewOrder && EditableOrder.Id > 0 && !EditableOrder.Closed;
 	private bool CanEditOrderLineCommand() => CanEditOrder && !IsEditingOrderLine;
 	private bool CanAddProduct() => CanEditOrderLineCommand() && SelectedProductRow != null;
 
@@ -118,6 +126,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 
 	partial void OnIsSavingOrderChanged( bool value ) => OnWorkingChanged();
 	partial void OnIsDeletingOrderChanged( bool value ) => OnWorkingChanged();
+	partial void OnIsReopeningOrderChanged( bool value ) => OnWorkingChanged();
+	partial void OnIsClosingOrderChanged( bool value ) => OnWorkingChanged();
 
 	private void OnWorkingChanged()
 	{
@@ -128,6 +138,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		SaveOrderCommand.NotifyCanExecuteChanged();
 		NewOrderCommand.NotifyCanExecuteChanged();
 		DeleteOrderCommand.NotifyCanExecuteChanged();
+		ReopenOrderCommand.NotifyCanExecuteChanged();
+		CloseOrderCommand.NotifyCanExecuteChanged();
 		NotifyOrderLineCommandsCanExecuteChanged();
 	}
 	partial void OnIsEditingOrderLineChanged( bool value ) => NotifyOrderLineCommandsCanExecuteChanged();
@@ -299,6 +311,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		OnPropertyChanged( nameof( IsClosedOrder ) );
 		OnPropertyChanged( nameof( CanEditOrder ) );
 		OnPropertyChanged( nameof( CanChangeSupplier ) );
+		ReopenOrderCommand.NotifyCanExecuteChanged();
+		CloseOrderCommand.NotifyCanExecuteChanged();
 		NotifyOrderLineCommandsCanExecuteChanged();
 	}
 	#endregion
@@ -959,6 +973,84 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		ResetToNewOrder();
 		await LoadReferenceDataAsync();
 		await LoadOrdersAsync( null );
+	}
+
+	/// <summary>
+	/// Opens a closed order again (KAN-95), for example to add a line for a later delivery. Only the order header
+	/// changes: received lines stay closed and the stock does not change. Receipts are corrected on the receipt
+	/// screen, which reopens the order itself when a line is open again.
+	/// </summary>
+	private async Task ReopenOrderAsync()
+	{
+		if ( !CanReopenOrder() )
+			return;
+
+		if ( !Confirm( string.Format( Lang.StockOrderReopenOrderConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName ) ) )
+			return;
+
+		// Fixed before the first await. A load of another order that started earlier must not replace the editor.
+		int orderId = EditableOrder.Id;
+		IsReopeningOrder = true;
+		_selectionLoadVersion++;
+		_suppressSelectedOrderChange = true;
+		SelectedOrder = _loadedOrder;
+		_suppressSelectedOrderChange = false;
+		try
+		{
+			await _stockOrderService.ReopenOrderAsync( orderId );
+
+			// Stored. When reading it back fails, Save repeats only the reload.
+			_reloadPendingOrderId = orderId;
+			await ReloadSavedOrderAsync( orderId, null );
+		}
+		finally
+		{
+			IsReopeningOrder = false;
+		}
+	}
+
+	/// <summary>
+	/// Closes an order by hand (KAN-95), for example a reopened order whose late delivery is in, or an order of
+	/// which the rest will not come. Open lines are closed like "cancel remainder" on the receipt screen: the ordered
+	/// amount becomes the received amount, so nothing stays on order. Unsaved changes must be saved first.
+	/// </summary>
+	private async Task CloseOrderAsync()
+	{
+		if ( !CanCloseOrder() )
+			return;
+
+		if ( HasUnsavedChanges || _staleOrderId.HasValue || _reloadPendingOrderId.HasValue )
+		{
+			Message( Lang.StockOrderCloseOrderSaveFirst );
+			return;
+		}
+
+		int openLines = OrderLines.Count( line => !line.Closed );
+		string message = openLines > 0
+			? string.Format( Lang.StockOrderCloseOrderWithOpenLinesConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName, openLines )
+			: string.Format( Lang.StockOrderCloseOrderConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName );
+		if ( !Confirm( message ) )
+			return;
+
+		// Fixed before the first await. A load of another order that started earlier must not replace the editor.
+		int orderId = EditableOrder.Id;
+		IsClosingOrder = true;
+		_selectionLoadVersion++;
+		_suppressSelectedOrderChange = true;
+		SelectedOrder = _loadedOrder;
+		_suppressSelectedOrderChange = false;
+		try
+		{
+			await _stockOrderService.CloseOrderAsync( orderId, DateTime.Today );
+
+			// Stored. When reading it back fails, Save repeats only the reload.
+			_reloadPendingOrderId = orderId;
+			await ReloadSavedOrderAsync( orderId, null );
+		}
+		finally
+		{
+			IsClosingOrder = false;
+		}
 	}
 
 	/// <summary>The save is committed: the editor now holds a stored order with stored lines and supplier data.</summary>
