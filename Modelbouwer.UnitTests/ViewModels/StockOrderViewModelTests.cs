@@ -635,6 +635,63 @@ public class StockOrderViewModelTests
 	}
 
 	[TestMethod]
+	public async Task CloseOrder_WhenAnotherOrderLoadsDuringTheDialog_DoesNothing()
+	{
+		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );
+		_vm.ConfirmAction = _ =>
+		{
+			// A selection load that was already running finishes while the dialog is open.
+			_vm.ApplySelectedOrder( new StockOrderModel { Id = 26, SupplierId = 1, OrderDate = DateTime.Today }, [ SavedLine( 2, 0 ) ] );
+			return true;
+		};
+
+		await _vm.CloseOrderCommand.ExecuteAsync( null );
+
+		_orders.Verify( s => s.CloseOrderAsync( It.IsAny<int>(), It.IsAny<DateTime>() ), Times.Never, "Order 26 was never confirmed." );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrder_WhenAnotherOrderLoadsDuringTheDialog_DoesNothing()
+	{
+		await LoadClosedOrderAsync();
+		_vm.ConfirmAction = _ =>
+		{
+			_vm.ApplySelectedOrder( new StockOrderModel { Id = 26, SupplierId = 1, OrderDate = DateTime.Today, Closed = true }, [ SavedLine( 2, 2 ) ] );
+			return true;
+		};
+
+		await _vm.ReopenOrderCommand.ExecuteAsync( null );
+
+		_orders.Verify( s => s.ReopenOrderAsync( It.IsAny<int>() ), Times.Never );
+	}
+
+	[TestMethod]
+	public async Task CloseOrder_WhenReloadFails_BlocksEditingAndSaveOnlyReloads()
+	{
+		var line = SavedLine( 4, 1 );
+		await LoadSavedOrderAsync( line );
+		_orders.Setup( s => s.CloseOrderAsync( 25, It.IsAny<DateTime>() ) ).Returns( Task.CompletedTask );
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ThrowsAsync( new InvalidOperationException( "connection lost" ) );
+
+		await AssertThrowsAsync<InvalidOperationException>( () => _vm.CloseOrderCommand.ExecuteAsync( null ) );
+
+		Assert.IsFalse( _vm.IsWorking );
+		Assert.IsFalse( _vm.CanEditOrder, "The editor still shows the open lines; they must not be edited." );
+		Assert.IsFalse( _vm.AddShortagesCommand.CanExecute( null ) );
+
+		_orders.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( () => new List<StockOrderModel>
+		{
+			new() { Id = 25, SupplierId = 1, SupplierName = "Cornwall", OrderNumber = "CW0132", OrderDate = DateTime.Today, Closed = true, ClosedDate = DateTime.Today }
+		} );
+		_orders.Setup( s => s.GetOrderLinesAsync( 25 ) ).ReturnsAsync( () => new List<StockOrderLineModel> { SavedLine( 1, 1 ) } );
+		await _vm.SaveOrderAsync();
+
+		_orders.Verify( s => s.SaveOrderAsync( It.IsAny<StockOrderModel>(), It.IsAny<IEnumerable<StockOrderLineModel>>(), It.IsAny<IEnumerable<int>>(), It.IsAny<IEnumerable<ProductSupplierModel>>() ), Times.Never,
+			"The open lines are never written back over the closed ones." );
+		Assert.IsTrue( _vm.EditableOrder.Closed, "Save reloaded the closed order." );
+	}
+
+	[TestMethod]
 	public async Task CloseOrder_WhenServiceFails_OrderStaysOpenAndScreenIsReleased()
 	{
 		await LoadSavedOrderAsync( SavedLine( 4, 0 ) );

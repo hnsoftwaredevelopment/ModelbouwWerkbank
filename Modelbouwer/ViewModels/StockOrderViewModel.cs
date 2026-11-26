@@ -62,7 +62,8 @@ public partial class StockOrderViewModel : AsyncObservableObject
 	/// <summary>Saving, deleting, reopening or closing is in progress: the order on screen must not change until it is done.</summary>
 	public bool IsWorking => IsSavingOrder || IsDeletingOrder || IsReopeningOrder || IsClosingOrder;
 	public bool CanSwitchOrder => !IsWorking;
-	public bool CanEditOrder => !EditableOrder.Closed && !IsWorking;
+	/// <summary>Not while the editor is stale: a stored change (delete refused, close, reopen) was not read back yet.</summary>
+	public bool CanEditOrder => !EditableOrder.Closed && !IsWorking && !_staleOrderId.HasValue;
 
 	/// <summary>The supplier decides article numbers and prices, so it is fixed once the order has lines.</summary>
 	public bool CanChangeSupplier => CanEditOrder && OrderLines.Count == 0;
@@ -985,11 +986,16 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		if ( !CanReopenOrder() )
 			return;
 
+		// Fixed before the dialog: a load of another order can finish while it is open. The action only runs on the
+		// order the user confirmed.
+		int orderId = EditableOrder.Id;
 		if ( !Confirm( string.Format( Lang.StockOrderReopenOrderConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName ) ) )
 			return;
 
-		// Fixed before the first await. A load of another order that started earlier must not replace the editor.
-		int orderId = EditableOrder.Id;
+		if ( EditableOrder.Id != orderId || !CanReopenOrder() )
+			return;
+
+		// A load of another order that started earlier must not replace the editor.
 		IsReopeningOrder = true;
 		_selectionLoadVersion++;
 		_suppressSelectedOrderChange = true;
@@ -999,8 +1005,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		{
 			await _stockOrderService.ReopenOrderAsync( orderId );
 
-			// Stored. When reading it back fails, Save repeats only the reload.
-			_reloadPendingOrderId = orderId;
+			// Stored. The editor is stale until the reload succeeds: editing is blocked and Save only repeats the
+			// reload, so the old header is never written back. A successful load clears it.
+			_staleOrderId = orderId;
 			await ReloadSavedOrderAsync( orderId, null );
 		}
 		finally
@@ -1025,6 +1032,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 			return;
 		}
 
+		// Fixed before the dialog: a load of another order can finish while it is open. The action only runs on the
+		// order the user confirmed.
+		int orderId = EditableOrder.Id;
 		int openLines = OrderLines.Count( line => !line.Closed );
 		string message = openLines > 0
 			? string.Format( Lang.StockOrderCloseOrderWithOpenLinesConfirm, EditableOrder.OrderNumber, EditableOrder.SupplierName, openLines )
@@ -1032,8 +1042,10 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		if ( !Confirm( message ) )
 			return;
 
-		// Fixed before the first await. A load of another order that started earlier must not replace the editor.
-		int orderId = EditableOrder.Id;
+		if ( EditableOrder.Id != orderId || !CanCloseOrder() || HasUnsavedChanges )
+			return;
+
+		// A load of another order that started earlier must not replace the editor.
 		IsClosingOrder = true;
 		_selectionLoadVersion++;
 		_suppressSelectedOrderChange = true;
@@ -1043,8 +1055,9 @@ public partial class StockOrderViewModel : AsyncObservableObject
 		{
 			await _stockOrderService.CloseOrderAsync( orderId, DateTime.Today );
 
-			// Stored. When reading it back fails, Save repeats only the reload.
-			_reloadPendingOrderId = orderId;
+			// Stored. The editor is stale until the reload succeeds: editing is blocked and Save only repeats the
+			// reload, so the open lines are never written back over the closed ones. A successful load clears it.
+			_staleOrderId = orderId;
 			await ReloadSavedOrderAsync( orderId, null );
 		}
 		finally
