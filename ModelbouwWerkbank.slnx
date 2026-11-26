@@ -3,23 +3,6 @@
     <Platform Name="Any CPU" />
     <Platform Name="ARM64" />
   </Configurations>
-  <Folder Name="/Models/">
-    <File Path="Modelbouwer.UnitTests/Models/ProductModelTests.cs" />
-    <File Path="Modelbouwer.UnitTests/Models/ProductUsageModelTests.cs" />
-  </Folder>
-  <Folder Name="/Services/">
-    <File Path="Modelbouwer.UnitTests/Services/ProductServiceTests.cs" />
-    <File Path="Modelbouwer.UnitTests/Services/ProjectServiceTests.cs" />
-    <File Path="Modelbouwer.UnitTests/Services/UnitService.cs" />
-  </Folder>
-  <Folder Name="/Validators/">
-    <File Path="Modelbouwer.UnitTests/Validators/ProductValidatorTests.cs" />
-  </Folder>
-  <Folder Name="/ViewModels/">
-    <File Path="Modelbouwer.UnitTests/ViewModels/NavigationViewModelTests.cs" />
-    <File Path="Modelbouwer.UnitTests/ViewModels/ProductPageViewModelTests.cs" />
-    <File Path="Modelbouwer.UnitTests/ViewModels/SupplierPageViewModelTests.cs" />
-  </Folder>
   <Project Path="Modelbouwer.Mobile/Modelbouwer.Mobile.csproj">
     <Platform Solution="*|ARM64" Project="ARM64" />
     <Deploy />
