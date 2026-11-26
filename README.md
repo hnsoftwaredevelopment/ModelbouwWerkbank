@@ -15,6 +15,12 @@ Tracks hours worked on model building projects, split into tasks, and keeps the 
 | `Tools` | `Update-Database.ps1` runs the update scripts with a backup first |
 | `docs` | Design notes and reference material |
 
+## Database
+
+- The table scripts in `Database/` describe the structure only, generated from the local database with collation `utf8mb4_general_ci`. That collation works on both MySQL 8 and MariaDB 10.3 (NAS).
+- The database has **no foreign keys**. They were removed deliberately with `Database/drop_all_foreign_keys.sql`. The application keeps related data consistent itself: for example, an order with receipts cannot be deleted, and usage and receipts are written to the stocklog in the same transaction. Whether foreign keys come back is tracked in KAN-145.
+- Structure changes go through numbered `KAN-*` scripts, which run with `Tools/Update-Database.ps1`.
+
 ## Branches and workflow
 
 - `master` is the main branch. There is no `main` branch.
