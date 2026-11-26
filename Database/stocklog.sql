@@ -19,5 +19,5 @@ CREATE TABLE IF NOT EXISTS `stocklog` (
   KEY `stocklog_productusage_FK` (`productusage_Id`),
   KEY `stocklog_supplyorder_FK` (`supplyorder_Id`),
   KEY `stocklog_supplyorderline_FK` (`supplyorderline_Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Registartion of ordered and received goods';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Registartion of ordered and received goods';
 /*!40101 SET character_set_client = @saved_cs_client */;

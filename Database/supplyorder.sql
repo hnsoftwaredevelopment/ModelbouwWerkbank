@@ -6,13 +6,13 @@ CREATE TABLE IF NOT EXISTS `supplyorder` (
   `Id` int NOT NULL AUTO_INCREMENT,
   `Supplier_Id` int DEFAULT '0',
   `Currency_Id` int DEFAULT '0',
-  `OrderNumber` varchar(50) DEFAULT NULL,
+  `OrderNumber` varchar(50) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `OrderDate` date DEFAULT NULL,
-  `CurrencySymbol` varchar(2) DEFAULT '€',
+  `CurrencySymbol` varchar(2) COLLATE utf8mb4_general_ci DEFAULT '€',
   `CurrencyConversionRate` double(6,4) DEFAULT '0.0000',
   `ShippingCosts` double DEFAULT '0',
   `OrderCosts` double DEFAULT '0',
-  `Memo` longtext,
+  `Memo` longtext COLLATE utf8mb4_general_ci,
   `Closed` tinyint DEFAULT '0',
   `ClosedDate` date DEFAULT NULL,
   `Created` datetime DEFAULT CURRENT_TIMESTAMP,
@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS `supplyorder` (
   KEY `OrderNumber` (`OrderNumber`),
   KEY `FK_Order_Supplier_Id` (`Supplier_Id`),
   KEY `supplyorder_currency_FK` (`Currency_Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;

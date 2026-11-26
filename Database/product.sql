@@ -4,20 +4,20 @@
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE IF NOT EXISTS `product` (
   `Id` int NOT NULL AUTO_INCREMENT,
-  `Code` varchar(30) DEFAULT NULL,
-  `Name` varchar(150) DEFAULT NULL,
-  `Dimensions` varchar(150) DEFAULT '',
+  `Code` varchar(30) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `Name` varchar(150) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `Dimensions` varchar(150) COLLATE utf8mb4_general_ci DEFAULT '',
   `Price` double DEFAULT '0',
   `MinimalStock` double DEFAULT '0',
   `StandardOrderQuantity` double DEFAULT '0',
   `ProjectCosts` int DEFAULT '0',
   `Unit_Id` int DEFAULT NULL,
-  `ImageRotationAngle` varchar(4) DEFAULT '0',
+  `ImageRotationAngle` varchar(4) COLLATE utf8mb4_general_ci DEFAULT '0',
   `Image` longblob,
   `Brand_Id` int DEFAULT NULL,
   `Category_Id` int DEFAULT NULL,
   `Storage_Id` int DEFAULT '1',
-  `Memo` longtext,
+  `Memo` longtext COLLATE utf8mb4_general_ci,
   `Hide` tinyint(1) DEFAULT '0',
   `Created` datetime DEFAULT CURRENT_TIMESTAMP,
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -27,5 +27,5 @@ CREATE TABLE IF NOT EXISTS `product` (
   KEY `Category_Id` (`Category_Id`),
   KEY `Unit_Id` (`Unit_Id`),
   KEY `Storage_Id` (`Storage_Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

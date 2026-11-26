@@ -5,11 +5,11 @@
 CREATE TABLE IF NOT EXISTS `category` (
   `Id` int NOT NULL AUTO_INCREMENT,
   `ParentId` int DEFAULT NULL,
-  `Name` varchar(55) DEFAULT NULL,
+  `Name` varchar(55) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `Created` datetime DEFAULT CURRENT_TIMESTAMP,
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `Name` (`Name`),
   KEY `category_category_FK` (`ParentId`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

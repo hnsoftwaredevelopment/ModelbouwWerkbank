@@ -9,11 +9,11 @@ CREATE TABLE IF NOT EXISTS `time` (
   `WorkDate` date NOT NULL,
   `StartTime` time DEFAULT NULL,
   `EndTime` time DEFAULT NULL,
-  `Comment` varchar(1050) NOT NULL DEFAULT '',
+  `Comment` varchar(1050) COLLATE utf8mb4_general_ci NOT NULL DEFAULT '',
   `Created` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `Modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`),
   KEY `FK_TimeProject_Id` (`project_Id`),
   KEY `FK_TimeWorktype_Id` (`worktype_Id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='Store the working time as entered in the Time Management page';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Store the working time as entered in the Time Management page';
 /*!40101 SET character_set_client = @saved_cs_client */;

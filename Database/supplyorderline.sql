@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS `supplyorderline` (
   `Id` int NOT NULL AUTO_INCREMENT,
   `Supplyorder_Id` int DEFAULT '0',
   `Product_Id` int DEFAULT '0',
-  `SupplierProductName` varchar(150) DEFAULT '',
+  `SupplierProductName` varchar(150) COLLATE utf8mb4_general_ci DEFAULT '',
   `Amount` double DEFAULT '0',
   `OpenAmount` double DEFAULT '0',
   `Price` decimal(11,6) DEFAULT '0.000000',
@@ -18,5 +18,5 @@ CREATE TABLE IF NOT EXISTS `supplyorderline` (
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `FK_OrderRow_Supplyorder_Id` (`Supplyorder_Id`),
   KEY `FK_OrderRow_Product_Id` (`Product_Id`) USING BTREE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci ROW_FORMAT=DYNAMIC;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
