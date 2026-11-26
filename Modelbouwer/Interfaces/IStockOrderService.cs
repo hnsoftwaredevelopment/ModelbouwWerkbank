@@ -23,6 +23,15 @@ public interface IStockOrderService
 	Task DeleteOrderAsync( int orderId, CancellationToken cancellationToken );
 	Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines );
 	Task DeleteOrderWithLinesAsync( int orderId, IEnumerable<StockOrderLineModel> lines, CancellationToken cancellationToken );
+	/// <summary>Opens a closed order again (KAN-95). Only the order header changes; lines, receipts and stock stay as they are.</summary>
+	Task ReopenOrderAsync( int orderId );
+	Task ReopenOrderAsync( int orderId, CancellationToken cancellationToken );
+	/// <summary>
+	/// Closes an order by hand (KAN-95), in one transaction. Open lines are closed like "cancel remainder": the
+	/// ordered amount becomes the received amount, so nothing stays on order. Receipts and stock do not change.
+	/// </summary>
+	Task CloseOrderAsync( int orderId, DateTime closedDate );
+	Task CloseOrderAsync( int orderId, DateTime closedDate, CancellationToken cancellationToken );
 	Task<int> InsertOrderLineAsync( StockOrderLineModel line );
 	Task<int> InsertOrderLineAsync( StockOrderLineModel line, CancellationToken cancellationToken );
 	Task UpdateOrderLineAsync( StockOrderLineModel line );

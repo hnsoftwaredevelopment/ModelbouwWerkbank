@@ -41,7 +41,24 @@
                         ToolTip="{x:Static language:Language.toolbarButtonActionDelete}">
                     <Image Style="{DynamicResource ToolBarDeleteIcon}" />
                 </Button>
-                <controls:OrderSelector Margin="16,0,0,0" IsEnabled="{Binding CanSwitchOrder}" />
+                <controls:OrderSelector Margin="16,0,0,0" IsEnabled="{Binding CanSwitchOrder}">
+                    <controls:OrderSelector.SelectedOrderActions>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Style="{StaticResource ActionBarButtonStyle}"
+                                    Command="{Binding ReopenOrderCommand}"
+                                    ToolTip="{x:Static language:Language.StockOrderReopenOrderTooltip}"
+                                    ToolTipService.ShowOnDisabled="True">
+                                <Image Style="{DynamicResource ToolBarReopenIcon}" />
+                            </Button>
+                            <Button Style="{StaticResource ActionBarButtonStyle}"
+                                    Command="{Binding CloseOrderCommand}"
+                                    ToolTip="{x:Static language:Language.StockOrderCloseOrderTooltip}"
+                                    ToolTipService.ShowOnDisabled="True">
+                                <Image Style="{DynamicResource ToolBarCloseOrderIcon}" />
+                            </Button>
+                        </StackPanel>
+                    </controls:OrderSelector.SelectedOrderActions>
+                </controls:OrderSelector>
             </StackPanel>
             <TextBlock DockPanel.Dock="Right"
                        HorizontalAlignment="Right"

@@ -104,6 +104,38 @@ SET
 	{DBNames.OrderFieldNameClosedDate} = @{DBNames.OrderFieldNameClosedDate}
 WHERE {DBNames.OrderFieldNameId} = @{DBNames.OrderFieldNameId};";
 
+	/// <summary>Opens a closed order again (KAN-95). Only the order header changes; lines and stocklog are not touched.</summary>
+	public static readonly string ReopenOrderQuery = $@"
+UPDATE {DBNames.Database}.{DBNames.OrderTable}
+SET
+	{DBNames.OrderFieldNameClosed} = 0,
+	{DBNames.OrderFieldNameClosedDate} = NULL
+WHERE {DBNames.OrderFieldNameId} = @{DBNames.OrderFieldNameId};";
+
+	/// <summary>
+	/// Closes the open lines of an order (KAN-95), like "cancel remainder" on the receipt screen: the ordered amount
+	/// becomes what was received, the line total follows and nothing stays on order. MySQL and MariaDB assign
+	/// left to right, so the row total and the open amount use the new ordered amount.
+	/// </summary>
+	public static readonly string CloseOpenOrderLinesQuery = $@"
+UPDATE {DBNames.Database}.{DBNames.OrderLineTable}
+SET
+	{DBNames.OrderLineFieldNameAmount} = {DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount},
+	{DBNames.OrderLineFieldNameRealRowTotal} = ROUND({DBNames.OrderLineFieldNamePrice} * {DBNames.OrderLineFieldNameAmount}, 2),
+	{DBNames.OrderLineFieldNameOpenAmount} = 0,
+	{DBNames.OrderLineFieldNameClosed} = 1,
+	{DBNames.OrderLineFieldNameClosedDate} = @ClosedDate
+WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId
+  AND {DBNames.OrderLineFieldNameClosed} = 0;";
+
+	/// <summary>Closes the order header (KAN-95).</summary>
+	public static readonly string CloseOrderQuery = $@"
+UPDATE {DBNames.Database}.{DBNames.OrderTable}
+SET
+	{DBNames.OrderFieldNameClosed} = 1,
+	{DBNames.OrderFieldNameClosedDate} = @ClosedDate
+WHERE {DBNames.OrderFieldNameId} = @OrderId;";
+
 	public string DeleteOrderQuery = $@"
 DELETE FROM {DBNames.Database}.{DBNames.OrderTable}
 WHERE {DBNames.OrderFieldNameId} = @{DBNames.OrderFieldNameId};";
@@ -477,6 +509,46 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 		} );
 	}
 	#endregion
+
+	public Task ReopenOrderAsync( int orderId )
+	{
+		return ReopenOrderAsync( orderId, CancellationToken.None );
+	}
+
+	public Task ReopenOrderAsync( int orderId, CancellationToken cancellationToken )
+	{
+		return _dataService.ExecuteScalarAsync<uint>( ReopenOrderQuery, new Dictionary<string, object>
+		{
+			{ $"@{DBNames.OrderFieldNameId}", orderId }
+		}, cancellationToken );
+	}
+
+	public Task CloseOrderAsync( int orderId, DateTime closedDate )
+	{
+		return CloseOrderAsync( orderId, closedDate, CancellationToken.None );
+	}
+
+	public Task CloseOrderAsync( int orderId, DateTime closedDate, CancellationToken cancellationToken )
+	{
+		return _dataService.ExecuteInTransactionAsync( ( connection, transaction ) => CloseOrderStepsAsync(
+			orderId,
+			closedDate,
+			( query, parameters ) => ExecuteNonQueryInTransactionAsync( connection, transaction, query, parameters, cancellationToken ) ),
+			cancellationToken );
+	}
+
+	/// <summary>The statements of closing an order, separate from the connection so tests can run them.</summary>
+	public static async Task CloseOrderStepsAsync( int orderId, DateTime closedDate, Func<string, Dictionary<string, object>, Task> executeAsync )
+	{
+		var parameters = new Dictionary<string, object>
+		{
+			{ "@OrderId", orderId },
+			{ "@ClosedDate", closedDate.Date }
+		};
+
+		await executeAsync( CloseOpenOrderLinesQuery, parameters );
+		await executeAsync( CloseOrderQuery, parameters );
+	}
 
 	public async Task<int> InsertOrderLineAsync( StockOrderLineModel line )
 	{

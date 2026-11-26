@@ -5,6 +5,19 @@ namespace Modelbouwer.Controls;
 /// </summary>
 public partial class OrderSelector : UserControl
 {
+	/// <summary>Optional content shown directly to the right of the dropdown, such as an action for the selected order.</summary>
+	public static readonly DependencyProperty SelectedOrderActionsProperty = DependencyProperty.Register(
+		nameof( SelectedOrderActions ),
+		typeof( object ),
+		typeof( OrderSelector ),
+		new PropertyMetadata( null ) );
+
+	public object? SelectedOrderActions
+	{
+		get => GetValue( SelectedOrderActionsProperty );
+		set => SetValue( SelectedOrderActionsProperty, value );
+	}
+
 	public OrderSelector()
 	{
 		InitializeComponent();

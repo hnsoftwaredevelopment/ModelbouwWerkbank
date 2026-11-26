@@ -37,6 +37,63 @@ public class StockOrderServiceTests
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.UpdateOrderLineAsync ), 2 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.RegisterReceiptAsync ), 4 );
 		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.DeleteOrderLineAsync ), 2 );
+		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.ReopenOrderAsync ), 2 );
+		AssertHasCancellationTokenOverload( methods, nameof( IStockOrderService.CloseOrderAsync ), 3 );
+	}
+
+	[TestMethod]
+	public async Task CloseOrderStepsAsync_ClosesOpenLinesFirstThenTheOrder()
+	{
+		var executed = new List<(string Query, Dictionary<string, object> Parameters)>();
+
+		await StockOrderService.CloseOrderStepsAsync( 25, new DateTime( 2026, 11, 26, 14, 30, 0 ), ( query, parameters ) =>
+		{
+			executed.Add( (query, parameters) );
+			return Task.CompletedTask;
+		} );
+
+		Assert.AreEqual( 2, executed.Count );
+		Assert.AreEqual( StockOrderService.CloseOpenOrderLinesQuery, executed [ 0 ].Query );
+		Assert.AreEqual( StockOrderService.CloseOrderQuery, executed [ 1 ].Query );
+		Assert.AreEqual( 25, executed [ 0 ].Parameters [ "@OrderId" ] );
+		Assert.AreEqual( new DateTime( 2026, 11, 26 ), executed [ 0 ].Parameters [ "@ClosedDate" ], "Only the date is stored." );
+	}
+
+	[TestMethod]
+	public void CloseOpenOrderLinesQuery_CancelsTheRemainderOfOpenLinesOnly()
+	{
+		string query = StockOrderService.CloseOpenOrderLinesQuery;
+		string amount = DBNames.OrderLineFieldNameAmount;
+		string open = DBNames.OrderLineFieldNameOpenAmount;
+
+		// Assignments run left to right: the row total and open amount must come after the new ordered amount.
+		int amountAt = query.IndexOf( $"{amount} = {amount} - {open}", StringComparison.Ordinal );
+		int totalAt = query.IndexOf( $"{DBNames.OrderLineFieldNameRealRowTotal} = ROUND(", StringComparison.Ordinal );
+		int openAt = query.IndexOf( $"{open} = 0", StringComparison.Ordinal );
+		Assert.IsTrue( amountAt >= 0 && totalAt > amountAt && openAt > totalAt, query );
+		StringAssert.Contains( query, $"AND {DBNames.OrderLineFieldNameClosed} = 0" );
+		Assert.IsFalse( query.Contains( DBNames.StocklogTable ), "Stock is not touched." );
+	}
+
+	[TestMethod]
+	public async Task ReopenOrderAsync_ClearsClosedFlagAndDateOfThatOrderOnly()
+	{
+		string? query = null;
+		Dictionary<string, object>? parameters = null;
+		_mockDataService
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), CancellationToken.None ) )
+			.Callback<string, Dictionary<string, object>, CancellationToken>( ( q, p, _ ) => { query = q; parameters = p; } )
+			.ReturnsAsync( 0u );
+
+		await _service.ReopenOrderAsync( 25 );
+
+		Assert.AreEqual( StockOrderService.ReopenOrderQuery, query );
+		StringAssert.Contains( query, $"{DBNames.OrderFieldNameClosed} = 0" );
+		StringAssert.Contains( query, $"{DBNames.OrderFieldNameClosedDate} = NULL" );
+		StringAssert.Contains( query, $"WHERE {DBNames.OrderFieldNameId} = @{DBNames.OrderFieldNameId}" );
+		Assert.IsFalse( query!.Contains( DBNames.OrderLineTable ), "Lines are not touched." );
+		Assert.IsFalse( query.Contains( DBNames.StocklogTable ), "Stock is not touched." );
+		Assert.AreEqual( 25, parameters! [ $"@{DBNames.OrderFieldNameId}" ] );
 	}
 
 	[TestMethod]

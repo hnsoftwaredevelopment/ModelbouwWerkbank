@@ -4905,4 +4905,22 @@ PowerShell:
   <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
     <value>Ziehen, um den Detailbereich höher oder niedriger zu machen</value>
   </data>
+  <data name="StockOrderReopenOrderTooltip" xml:space="preserve">
+    <value>Geschlossene Bestellung wieder öffnen</value>
+  </data>
+  <data name="StockOrderReopenOrderConfirm" xml:space="preserve">
+    <value>Bestellung {0} von {1} wieder öffnen? Erhaltene Positionen bleiben geschlossen und der Bestand ändert sich nicht. Danach können Positionen hinzugefügt werden.</value>
+  </data>
+  <data name="StockOrderCloseOrderTooltip" xml:space="preserve">
+    <value>Bestellung schließen</value>
+  </data>
+  <data name="StockOrderCloseOrderConfirm" xml:space="preserve">
+    <value>Bestellung {0} von {1} schließen?</value>
+  </data>
+  <data name="StockOrderCloseOrderWithOpenLinesConfirm" xml:space="preserve">
+    <value>Bestellung {0} von {1} schließen? {2} Position(en) sind noch offen. Der Rest wird storniert: bestellt wird gleich erhalten und der Rest zählt nicht mehr als &apos;in Bestellung&apos;. Der Bestand ändert sich nicht.</value>
+  </data>
+  <data name="StockOrderCloseOrderSaveFirst" xml:space="preserve">
+    <value>Speichern Sie zuerst die Änderungen dieser Bestellung, danach können Sie sie schließen.</value>
+  </data>
 </root>

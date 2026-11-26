@@ -4905,4 +4905,22 @@ PowerShell:
   <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
     <value>Drag to make the detail section taller or shorter</value>
   </data>
+  <data name="StockOrderReopenOrderTooltip" xml:space="preserve">
+    <value>Reopen closed order</value>
+  </data>
+  <data name="StockOrderReopenOrderConfirm" xml:space="preserve">
+    <value>Reopen order {0} from {1}? Received lines stay closed and the stock does not change. You can add lines afterwards.</value>
+  </data>
+  <data name="StockOrderCloseOrderTooltip" xml:space="preserve">
+    <value>Close order</value>
+  </data>
+  <data name="StockOrderCloseOrderConfirm" xml:space="preserve">
+    <value>Close order {0} from {1}?</value>
+  </data>
+  <data name="StockOrderCloseOrderWithOpenLinesConfirm" xml:space="preserve">
+    <value>Close order {0} from {1}? {2} line(s) are still open. Their remainder is cancelled: ordered becomes received and the remainder no longer counts as &apos;on order&apos;. The stock does not change.</value>
+  </data>
+  <data name="StockOrderCloseOrderSaveFirst" xml:space="preserve">
+    <value>Save the changes of this order first, then you can close it.</value>
+  </data>
 </root>
