@@ -19,15 +19,13 @@
         <Grid.RowDefinitions>
             <!-- 0. Header -->
             <RowDefinition Height="85" />
-            <!-- 1. Detail section -->
-            <RowDefinition Height="325" />
-            <!-- 2. Spacer -->
-            <RowDefinition Height="2" />
-            <!-- 3. Toolbar -->
-            <RowDefinition Height="40" />
-            <!-- 4. DataGrid -->
-            <RowDefinition Height="*" />
-            <!-- 5. Footer -->
+            <!-- 1. Detail section (resizable with the splitter in row 2) -->
+            <RowDefinition Height="325" MinHeight="150" />
+            <!-- 2. Splitter between details and the supplier list -->
+            <RowDefinition Height="Auto" />
+            <!-- 3. Toolbar + DataGrid -->
+            <RowDefinition Height="*" MinHeight="150" />
+            <!-- 4. Footer -->
             <RowDefinition Height="25" />
         </Grid.RowDefinitions>
 
@@ -836,8 +834,26 @@
         </syncfusion:TabControlExt>
         <!--#endregion-->
 
+        <GridSplitter
+            Grid.Row="2"
+            Height="6"
+            Margin="0,1"
+            HorizontalAlignment="Stretch"
+            ResizeDirection="Rows"
+            ResizeBehavior="PreviousAndNext"
+            Background="LightGray"
+            ToolTip="{x:Static language:Language.SupplierDetailSplitterTooltip}" />
+
+        <Grid Grid.Row="3">
+        <Grid.RowDefinitions>
+            <!-- 0. Toolbar -->
+            <RowDefinition Height="40" />
+            <!-- 1. DataGrid -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
         <!--#region Toolbar section-->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="0"
               Margin="15,2,15,2"
               VerticalAlignment="Center">
 
@@ -978,7 +994,7 @@
         <!--#region Datagrid-->
         <syncfusion:SfDataGrid
             x:Name="SfDataGrid"
-            Grid.Row="4"
+            Grid.Row="1"
             Margin="15,3,15,5"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Top"
@@ -1073,5 +1089,6 @@
             </syncfusion:SfDataGrid.Columns>
         </syncfusion:SfDataGrid>
         <!--#endregion-->
+        </Grid>
     </Grid>
 </UserControl>

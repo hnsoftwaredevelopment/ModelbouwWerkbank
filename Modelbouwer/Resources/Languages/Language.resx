@@ -4902,4 +4902,7 @@ PowerShell:
   <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
     <value>Sleep om de verdeling tussen orders en orderregels te wijzigen</value>
   </data>
+  <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
+    <value>Sleep om het detailgedeelte hoger of lager te maken</value>
+  </data>
 </root>

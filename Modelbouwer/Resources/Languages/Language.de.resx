@@ -4902,4 +4902,7 @@ PowerShell:
   <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
     <value>Ziehen, um die Aufteilung zwischen Bestellungen und Positionen zu ändern</value>
   </data>
+  <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
+    <value>Ziehen, um den Detailbereich höher oder niedriger zu machen</value>
+  </data>
 </root>

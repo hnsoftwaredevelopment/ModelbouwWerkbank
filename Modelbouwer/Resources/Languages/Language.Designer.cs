@@ -13062,6 +13062,15 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Sleep om het detailgedeelte hoger of lager te maken.
+        /// </summary>
+        public static string SupplierDetailSplitterTooltip {
+            get {
+                return ResourceManager.GetString("SupplierDetailSplitterTooltip", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Er zijn nog geen orders bij deze leverancier..
         /// </summary>
         public static string SupplierOrderHistoryEmpty {

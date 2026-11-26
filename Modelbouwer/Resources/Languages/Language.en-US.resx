@@ -4902,4 +4902,7 @@ PowerShell:
   <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
     <value>Drag to change the split between orders and order lines</value>
   </data>
+  <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
+    <value>Drag to make the detail section taller or shorter</value>
+  </data>
 </root>
