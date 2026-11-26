@@ -30,7 +30,13 @@ SELECT
 	{DBNames.OrderViewFieldNameHasStockLog},
 	(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} ol
 	 WHERE ol.{DBNames.OrderLineFieldNameSupplierOrderId} = o.{DBNames.OrderViewFieldNameId}
-	   AND ol.{DBNames.OrderLineFieldNameClosed} = 0) AS OpenLineCount
+	   AND ol.{DBNames.OrderLineFieldNameClosed} = 0) AS OpenLineCount,
+	(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} ol
+	 WHERE ol.{DBNames.OrderLineFieldNameSupplierOrderId} = o.{DBNames.OrderViewFieldNameId}) AS LineCount,
+	(SELECT IFNULL(SUM(CASE WHEN IFNULL(ol.{DBNames.OrderLineFieldNameRealRowTotal}, 0) <> 0 THEN ol.{DBNames.OrderLineFieldNameRealRowTotal}
+	                        ELSE IFNULL(ol.{DBNames.OrderLineFieldNamePrice}, 0) * IFNULL(ol.{DBNames.OrderLineFieldNameAmount}, 0) END), 0)
+	 FROM {DBNames.Database}.{DBNames.OrderLineTable} ol
+	 WHERE ol.{DBNames.OrderLineFieldNameSupplierOrderId} = o.{DBNames.OrderViewFieldNameId}) AS LinesTotal
 FROM {DBNames.Database}.{DBNames.OrderView} o
 ORDER BY {DBNames.OrderViewFieldNameOrderDate} DESC, {DBNames.OrderViewFieldNameId} DESC;";
 
@@ -307,7 +313,9 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 				ClosedDate = GetNullableDateTime( reader [ DBNames.OrderViewFieldNameClosedDate ] ),
 				Memo = DatabaseValueConverter.GetString( reader [ DBNames.OrderViewFieldNameOrderMemo ] ),
 				HasStockLog = DatabaseValueConverter.GetSByte( reader [ DBNames.OrderViewFieldNameHasStockLog ] ) == 1,
-				OpenLineCount = DatabaseValueConverter.GetInt( reader [ "OpenLineCount" ] )
+				OpenLineCount = DatabaseValueConverter.GetInt( reader [ "OpenLineCount" ] ),
+				LineCount = DatabaseValueConverter.GetInt( reader [ "LineCount" ] ),
+				LinesTotal = DatabaseValueConverter.GetDouble( reader [ "LinesTotal" ] )
 			};
 		}, null, cancellationToken );
 	}

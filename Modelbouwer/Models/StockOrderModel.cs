@@ -16,6 +16,9 @@ public partial class StockOrderModel : ObservableObject
 	[ObservableProperty] private DateTime? _closedDate;
 	[ObservableProperty] private bool _hasStockLog;
 
+	/// <summary>Number of lines of a stored order (order history, KAN-81).</summary>
+	[ObservableProperty] private int _lineCount;
+
 	[ObservableProperty]
 	[NotifyPropertyChangedFor( nameof( OpenLinesText ) )]
 	private int _openLineCount;

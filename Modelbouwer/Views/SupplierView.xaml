@@ -19,15 +19,13 @@
         <Grid.RowDefinitions>
             <!-- 0. Header -->
             <RowDefinition Height="85" />
-            <!-- 1. Detail section -->
-            <RowDefinition Height="325" />
-            <!-- 2. Spacer -->
-            <RowDefinition Height="2" />
-            <!-- 3. Toolbar -->
-            <RowDefinition Height="40" />
-            <!-- 4. DataGrid -->
-            <RowDefinition Height="*" />
-            <!-- 5. Footer -->
+            <!-- 1. Detail section (resizable with the splitter in row 2) -->
+            <RowDefinition Height="325" MinHeight="150" />
+            <!-- 2. Splitter between details and the supplier list -->
+            <RowDefinition Height="Auto" />
+            <!-- 3. Toolbar + DataGrid -->
+            <RowDefinition Height="*" MinHeight="150" />
+            <!-- 4. Footer -->
             <RowDefinition Height="25" />
         </Grid.RowDefinitions>
 
@@ -757,22 +755,105 @@
             </syncfusion:TabItemExt>
             <!--#endregion-->
 
-            <!--#region Order history-->
+            <!--#region Order history (KAN-81)-->
             <syncfusion:TabItemExt
-                Header="{x:Static language:Language.metadataSupplierDetailTabHistoryTitle}"
+                Header="{x:Static language:Language.metadataSupplierDetailTabOrderHistoryTitle}"
                 Image="{StaticResource orderhistory}"
                 ImageWidth="17"
                 ImageHeight="17">
-                <Grid Background="#FFDCDE11">
-                    <Label FontFamily="Comfortaa" Content="Deze functionaliteit is nog niet geÏmplementeerd" FontSize="24" FontWeight="ExtraBold" FontStyle="Italic" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#FFDCDE11" Foreground="#FFCA1313"/>
+                <Grid Margin="15,8,15,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="80" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" MinHeight="80" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Margin="0,0,0,6" FontSize="14" FontWeight="Bold">
+                        <Run Text="{x:Static language:Language.SupplierOrderHistoryOrderCount}" />
+                        <Run Text=": " />
+                        <Run Text="{Binding SupplierOrderCount, Mode=OneWay}" />
+                        <Run Text="   " />
+                        <Run Text="{x:Static language:Language.SupplierOrderHistoryTotal}" />
+                        <Run Text=": " />
+                        <Run Text="{Binding SupplierOrdersTotal, Mode=OneWay, StringFormat={}{0:N2}}" />
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="1"
+                               Margin="5"
+                               Foreground="Gray"
+                               FontStyle="Italic"
+                               Text="{x:Static language:Language.SupplierOrderHistoryEmpty}"
+                               Visibility="{Binding HasSupplierOrders, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}" />
+
+                    <!-- Orders of the selected supplier, newest first -->
+                    <syncfusion:SfDataGrid
+                        x:Name="SupplierOrdersGrid"
+                        Grid.Row="1"
+                        AllowEditing="False"
+                        AllowSorting="True"
+                        AutoGenerateColumns="False"
+                        ColumnSizer="Star"
+                        ItemsSource="{Binding SupplierOrders}"
+                        SelectedItem="{Binding SelectedSupplierOrder, Mode=TwoWay}"
+                        Visibility="{Binding HasSupplierOrders, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <syncfusion:SfDataGrid.Columns>
+                            <syncfusion:GridTextColumn MappingName="OrderNumber" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderOrderNumber}" />
+                            <syncfusion:GridDateTimeColumn MappingName="OrderDate" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderOrderDate}" Pattern="ShortDate" Width="100" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="LineCount" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderLines}" NumberDecimalDigits="0" Width="70" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="OpenLinesText" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderStatus}" />
+                            <syncfusion:GridDateTimeColumn MappingName="ClosedDate" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderClosedDate}" Pattern="ShortDate" AllowNullValue="True" Width="110" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="GrandTotal" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderTotal}" NumberDecimalDigits="2" Width="100" ColumnSizer="Auto" />
+                        </syncfusion:SfDataGrid.Columns>
+                    </syncfusion:SfDataGrid>
+
+                    <GridSplitter Grid.Row="2" Height="6" Margin="0,1" HorizontalAlignment="Stretch" ResizeDirection="Rows" ResizeBehavior="PreviousAndNext" Background="LightGray" ToolTip="{x:Static language:Language.SupplierOrderHistorySplitterTooltip}" />
+
+                    <!-- Lines of the selected order -->
+                    <syncfusion:SfDataGrid
+                        x:Name="SupplierOrderLinesGrid"
+                        Grid.Row="3"
+                        AllowEditing="False"
+                        AllowSorting="True"
+                        AutoGenerateColumns="False"
+                        ColumnSizer="Star"
+                        ItemsSource="{Binding SupplierOrderLines}"
+                        Visibility="{Binding HasSupplierOrders, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <syncfusion:SfDataGrid.Columns>
+                            <syncfusion:GridTextColumn MappingName="DisplayProductNumber" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderArticle}" Width="120" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="DisplayProductDescription" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderDescription}" />
+                            <syncfusion:GridNumericColumn MappingName="Amount" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderOrdered}" NumberDecimalDigits="2" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="Received" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderReceived}" NumberDecimalDigits="2" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="Price" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderPrice}" NumberDecimalDigits="2" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="DisplayRowTotal" HeaderText="{x:Static language:Language.SupplierOrderHistoryHeaderRowTotal}" NumberDecimalDigits="2" Width="90" ColumnSizer="Auto" />
+                        </syncfusion:SfDataGrid.Columns>
+                    </syncfusion:SfDataGrid>
                 </Grid>
             </syncfusion:TabItemExt>
             <!--#endregion-->
         </syncfusion:TabControlExt>
         <!--#endregion-->
 
+        <GridSplitter
+            Grid.Row="2"
+            Height="6"
+            Margin="0,1"
+            HorizontalAlignment="Stretch"
+            ResizeDirection="Rows"
+            ResizeBehavior="PreviousAndNext"
+            Background="LightGray"
+            ToolTip="{x:Static language:Language.SupplierDetailSplitterTooltip}" />
+
+        <Grid Grid.Row="3">
+        <Grid.RowDefinitions>
+            <!-- 0. Toolbar -->
+            <RowDefinition Height="40" />
+            <!-- 1. DataGrid -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
         <!--#region Toolbar section-->
-        <Grid Grid.Row="3"
+        <Grid Grid.Row="0"
               Margin="15,2,15,2"
               VerticalAlignment="Center">
 
@@ -913,7 +994,7 @@
         <!--#region Datagrid-->
         <syncfusion:SfDataGrid
             x:Name="SfDataGrid"
-            Grid.Row="4"
+            Grid.Row="1"
             Margin="15,3,15,5"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Top"
@@ -1008,5 +1089,6 @@
             </syncfusion:SfDataGrid.Columns>
         </syncfusion:SfDataGrid>
         <!--#endregion-->
+        </Grid>
     </Grid>
 </UserControl>

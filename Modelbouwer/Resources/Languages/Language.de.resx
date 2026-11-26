@@ -4851,4 +4851,58 @@ PowerShell:
   <data name="StockHistoryOrderDeleted" xml:space="preserve">
     <value>Bestellung nicht mehr vorhanden</value>
   </data>
+  <data name="metadataSupplierDetailTabOrderHistoryTitle" xml:space="preserve">
+    <value>Bestellhistorie</value>
+  </data>
+  <data name="SupplierOrderHistoryOrderCount" xml:space="preserve">
+    <value>Bestellungen</value>
+  </data>
+  <data name="SupplierOrderHistoryTotal" xml:space="preserve">
+    <value>Gesamt bestellt</value>
+  </data>
+  <data name="SupplierOrderHistoryEmpty" xml:space="preserve">
+    <value>Bei diesem Lieferanten gibt es noch keine Bestellungen.</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderNumber" xml:space="preserve">
+    <value>Bestellnummer</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderDate" xml:space="preserve">
+    <value>Bestelldatum</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderLines" xml:space="preserve">
+    <value>Positionen</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderClosedDate" xml:space="preserve">
+    <value>Abgeschlossen am</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderTotal" xml:space="preserve">
+    <value>Gesamt</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderArticle" xml:space="preserve">
+    <value>Artikel</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderDescription" xml:space="preserve">
+    <value>Beschreibung</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrdered" xml:space="preserve">
+    <value>Bestellt</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderReceived" xml:space="preserve">
+    <value>Erhalten</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderPrice" xml:space="preserve">
+    <value>Preis</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderRowTotal" xml:space="preserve">
+    <value>Positionssumme</value>
+  </data>
+  <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
+    <value>Ziehen, um die Aufteilung zwischen Bestellungen und Positionen zu ändern</value>
+  </data>
+  <data name="SupplierDetailSplitterTooltip" xml:space="preserve">
+    <value>Ziehen, um den Detailbereich höher oder niedriger zu machen</value>
+  </data>
 </root>

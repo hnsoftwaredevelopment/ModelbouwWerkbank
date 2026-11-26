@@ -15,6 +15,7 @@ public class SupplierPageViewModelTests
 	private Mock<IContactService> _mockContactService = null!;
 	private Mock<IContactTypeService> _mockContactTypeService = null!;
 	private Mock<IEntityValidator<SupplierModel>> _mockValidator = null!;
+	private Mock<IStockOrderService> _mockStockOrderService = null!;
 	private SupplierPageViewModel _viewModel = null!;
 
 	[TestInitialize]
@@ -26,6 +27,9 @@ public class SupplierPageViewModelTests
 		_mockContactService = new Mock<IContactService>();
 		_mockContactTypeService = new Mock<IContactTypeService>();
 		_mockValidator = new Mock<IEntityValidator<SupplierModel>>();
+		_mockStockOrderService = new Mock<IStockOrderService>();
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
 
 		// Setup default returns for async methods
 		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync() ).ReturnsAsync( new List<SupplierModel>() );
@@ -40,9 +44,93 @@ public class SupplierPageViewModelTests
 			_mockCurrencyService.Object,
 			_mockContactService.Object,
 			_mockContactTypeService.Object,
+			_mockStockOrderService.Object,
 			_mockValidator.Object
 		);
 	}
+
+	#region Order history tab (KAN-81)
+	private static List<StockOrderModel> OrdersOfTwoSuppliers() =>
+	[
+		new() { Id = 26, SupplierId = 1, OrderNumber = "CW0140", OrderDate = new DateTime( 2026, 11, 20 ), LinesTotal = 10, ShippingCosts = 5, LineCount = 2 },
+		new() { Id = 24, SupplierId = 2, OrderNumber = "OT0001", OrderDate = new DateTime( 2026, 10, 1 ), LinesTotal = 99, LineCount = 1 },
+		new() { Id = 19, SupplierId = 1, OrderNumber = "CW0132", OrderDate = new DateTime( 2026, 5, 4 ), LinesTotal = 20.5, OrderCosts = 1, LineCount = 3, Closed = true }
+	];
+
+	private static async Task WaitForAsync( Func<bool> condition )
+	{
+		for ( int i = 0; i < 40 && !condition(); i++ )
+			await Task.Delay( 25 );
+	}
+
+	[TestMethod]
+	public async Task SelectingSupplier_ShowsOnlyItsOrdersNewestFirstWithTotals()
+	{
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( OrdersOfTwoSuppliers() );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 26 ) ).ReturnsAsync( new List<StockOrderLineModel>
+		{
+			new() { Id = 90, SupplyOrderId = 26, ProductId = 5, Amount = 2, OpenAmount = 2, Price = 2.5, RealRowTotal = 5 },
+			new() { Id = 91, SupplyOrderId = 26, ProductId = 8, Amount = 1, OpenAmount = 0, Price = 5, RealRowTotal = 5 }
+		} );
+
+		_viewModel.SelectedItem = new SupplierModel { Id = 1, Name = "Cornwall" };
+		await WaitForAsync( () => _viewModel.SupplierOrderLines.Count == 2 );
+
+		CollectionAssert.AreEqual( new[] { "CW0140", "CW0132" }, _viewModel.SupplierOrders.Select( order => order.OrderNumber ).ToArray() );
+		Assert.AreEqual( 2, _viewModel.SupplierOrderCount );
+		Assert.AreEqual( 36.5, _viewModel.SupplierOrdersTotal, "Lines, shipping and order costs of both orders." );
+		Assert.IsTrue( _viewModel.HasSupplierOrders );
+		Assert.AreEqual( 26, _viewModel.SelectedSupplierOrder?.Id, "The newest order is selected and its lines are shown." );
+		Assert.AreEqual( 2, _viewModel.SupplierOrderLines.Count );
+	}
+
+	[TestMethod]
+	public void DisplayRowTotal_FallsBackToPriceTimesAmountForOlderOrders()
+	{
+		Assert.AreEqual( 7.5, new StockOrderLineModel { Price = 2.5, Amount = 3, RealRowTotal = 0 }.DisplayRowTotal );
+		Assert.AreEqual( 7d, new StockOrderLineModel { Price = 2.5, Amount = 3, RealRowTotal = 7 }.DisplayRowTotal, "A stored line total wins." );
+	}
+
+	[TestMethod]
+	public void OrderListQuery_TotalsOlderLinesWithoutStoredTotal()
+	{
+		var service = new StockOrderService( new Mock<GenericDataService>().Object );
+
+		StringAssert.Contains( service.CompleteOrderListQuery, "AS LineCount" );
+		StringAssert.Contains( service.CompleteOrderListQuery, "AS LinesTotal" );
+		StringAssert.Contains( service.CompleteOrderListQuery, "ELSE IFNULL(ol.Price, 0) * IFNULL(ol.Amount, 0)" );
+	}
+
+	[TestMethod]
+	public async Task SelectingAnotherOrder_ShowsItsLines()
+	{
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( OrdersOfTwoSuppliers() );
+		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( 19 ) ).ReturnsAsync( new List<StockOrderLineModel> { new() { Id = 70, SupplyOrderId = 19 } } );
+		_viewModel.SelectedItem = new SupplierModel { Id = 1, Name = "Cornwall" };
+		await WaitForAsync( () => _viewModel.SelectedSupplierOrder != null );
+
+		_viewModel.SelectedSupplierOrder = _viewModel.SupplierOrders.Single( order => order.Id == 19 );
+		await WaitForAsync( () => _viewModel.SupplierOrderLines.Count == 1 );
+
+		Assert.AreEqual( 70, _viewModel.SupplierOrderLines.Single().Id );
+	}
+
+	[TestMethod]
+	public async Task SelectingSupplierWithoutOrders_ClearsThePreviousHistory()
+	{
+		_mockStockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( OrdersOfTwoSuppliers() );
+		_viewModel.SelectedItem = new SupplierModel { Id = 1, Name = "Cornwall" };
+		await WaitForAsync( () => _viewModel.HasSupplierOrders );
+
+		_viewModel.SelectedItem = new SupplierModel { Id = 3, Name = "New supplier" };
+		await WaitForAsync( () => !_viewModel.HasSupplierOrders );
+
+		Assert.AreEqual( 0, _viewModel.SupplierOrders.Count );
+		Assert.AreEqual( 0, _viewModel.SupplierOrderLines.Count );
+		Assert.AreEqual( 0d, _viewModel.SupplierOrdersTotal );
+		Assert.IsNull( _viewModel.SelectedSupplierOrder );
+	}
+	#endregion
 
 	[TestMethod]
 	public void Constructor_InitializesCollections()
@@ -568,7 +656,16 @@ public class SupplierPageViewModelTests
 			currencyService ?? defaultCurrencyService.Object,
 			contactService ?? defaultContactService.Object,
 			contactTypeService ?? defaultContactTypeService.Object,
+			DefaultStockOrderService(),
 			validator.Object );
+	}
+
+	private static IStockOrderService DefaultStockOrderService()
+	{
+		var stockOrderService = new Mock<IStockOrderService>();
+		stockOrderService.Setup( s => s.GetAllOrdersAsync() ).ReturnsAsync( new List<StockOrderModel>() );
+		stockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
+		return stockOrderService.Object;
 	}
 
 	private static string LoadSource( params string [ ] relativeSegments )
