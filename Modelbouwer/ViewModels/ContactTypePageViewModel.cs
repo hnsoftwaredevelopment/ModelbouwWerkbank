@@ -67,10 +67,10 @@ public class ContactTypePageViewModel : EntityPageViewModel<ContactTypeModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<ContactTypeModel>> LoadItemsAsync() => _dataService.GetAllContactTypesAsync();
-	protected override Task<int> InsertAsync( ContactTypeModel item ) => _dataService.InsertNewContactTypeAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( ContactTypeModel item ) => _dataService.UpdateContactTypeAsync( CreateParameters( item ) );
-	protected override async Task DeleteAsync( ContactTypeModel item )
+	protected override Task<List<ContactTypeModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllContactTypesAsync( cancellationToken );
+	protected override Task<int> InsertAsync( ContactTypeModel item, CancellationToken cancellationToken ) => _dataService.InsertNewContactTypeAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( ContactTypeModel item, CancellationToken cancellationToken ) => _dataService.UpdateContactTypeAsync( CreateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( ContactTypeModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -86,7 +86,7 @@ public class ContactTypePageViewModel : EntityPageViewModel<ContactTypeModel>
 			return;
 		try
 		{
-			await _dataService.DeleteContactTypeAsync( item.ContactTypeId );
+			await _dataService.DeleteContactTypeAsync( item.ContactTypeId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

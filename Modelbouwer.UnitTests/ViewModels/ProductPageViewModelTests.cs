@@ -27,7 +27,7 @@ public class ProductPageViewModelTests
 		_mockStockService.Setup( s => s.GetStockHistoryAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockHistoryItemModel>() );
 
 		// Setup default returns for async methods
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( new List<ProductModel>() );
+		_mockProductService.Setup( s => s.GetAllProductsAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( new List<ProductModel>() );
 		_mockUnitService.Setup( s => s.GetAllUnitsAsync() ).ReturnsAsync( new List<UnitModel>() );
 		_mockBrandService.Setup( s => s.GetAllBrandsAsync() ).ReturnsAsync( new List<BrandModel>() );
 		_mockCategoryService.Setup( s => s.GetAllCategorysAsync() ).ReturnsAsync( new List<CategoryModel>() );
@@ -153,7 +153,7 @@ public class ProductPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load products." );
 		var productService = new Mock<IProductService>();
 		productService
-			.Setup( service => service.GetAllProductsAsync() )
+			.Setup( service => service.GetAllProductsAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<ProductModel>>( expected ) );
 
 		var viewModel = CreateViewModel( productService: productService.Object );
@@ -360,18 +360,18 @@ public class ProductPageViewModelTests
 		{
 			new ProductModel { ProductId = 1, ProductName = "Product 1" }
 		};
-		_mockProductService.Setup( s => s.GetAllProductsAsync() ).ReturnsAsync( products );
+		_mockProductService.Setup( s => s.GetAllProductsAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( products );
 
 		// Act
 		var method = _viewModel.GetType()
 			.GetMethod("LoadItemsAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-		var task = method?.Invoke(_viewModel, null) as Task<List<ProductModel>>;
+		var task = method?.Invoke(_viewModel, new object[] { CancellationToken.None }) as Task<List<ProductModel>>;
 		var result = await task!;
 
 		// Assert
 		Assert.IsNotNull( result );
 		Assert.AreEqual( 1, result.Count );
-		_mockProductService.Verify( s => s.GetAllProductsAsync(), Times.AtLeastOnce );
+		_mockProductService.Verify( s => s.GetAllProductsAsync( It.IsAny<CancellationToken>() ), Times.AtLeastOnce );
 	}
 
 	[TestMethod]
@@ -379,18 +379,18 @@ public class ProductPageViewModelTests
 	{
 		// Arrange
 		var product = new ProductModel { ProductId = 0, ProductName = "New Product" };
-		_mockProductService.Setup( s => s.InsertNewProductAsync( It.IsAny<Dictionary<string, object?>>() ) )
+		_mockProductService.Setup( s => s.InsertNewProductAsync( It.IsAny<Dictionary<string, object?>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 123 );
 
 		// Act
 		var method = _viewModel.GetType()
 			.GetMethod("InsertAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-		var task = method?.Invoke(_viewModel, new object[] { product }) as Task<int>;
+		var task = method?.Invoke(_viewModel, new object[] { product, CancellationToken.None }) as Task<int>;
 		var result = await task!;
 
 		// Assert
 		Assert.AreEqual( 123, result );
-		_mockProductService.Verify( s => s.InsertNewProductAsync( It.IsAny<Dictionary<string, object?>>() ), Times.Once );
+		_mockProductService.Verify( s => s.InsertNewProductAsync( It.IsAny<Dictionary<string, object?>>(), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -483,14 +483,14 @@ public class ProductPageViewModelTests
 
 		Dictionary<string, object?>? capturedParameters = null;
 		_mockProductService
-			.Setup( s => s.UpdateProductAsync( It.IsAny<Dictionary<string, object?>>() ) )
-			.Callback<Dictionary<string, object?>>( p => capturedParameters = p )
+			.Setup( s => s.UpdateProductAsync( It.IsAny<Dictionary<string, object?>>(), It.IsAny<CancellationToken>() ) )
+			.Callback<Dictionary<string, object?>, CancellationToken>( ( p, _ ) => capturedParameters = p )
 			.Returns( Task.CompletedTask );
 
 		// Act
 		var method = _viewModel.GetType()
 			.GetMethod( "UpdateAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance );
-		var task = method?.Invoke( _viewModel, new object[] { product } ) as Task;
+		var task = method?.Invoke( _viewModel, new object[] { product, CancellationToken.None } ) as Task;
 		await task!;
 
 		// Assert
@@ -588,7 +588,7 @@ public class ProductPageViewModelTests
 		var defaultSupplierService = new Mock<ISupplierService>();
 		var validator = new Mock<IEntityValidator<ProductModel>>();
 
-		defaultProductService.Setup( service => service.GetAllProductsAsync() ).ReturnsAsync( [ ] );
+		defaultProductService.Setup( service => service.GetAllProductsAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( [ ] );
 		defaultUnitService.Setup( service => service.GetAllUnitsAsync() ).ReturnsAsync( [ ] );
 		defaultBrandService.Setup( service => service.GetAllBrandsAsync() ).ReturnsAsync( [ ] );
 		defaultCategoryService.Setup( service => service.GetAllCategorysAsync() ).ReturnsAsync( [ ] );

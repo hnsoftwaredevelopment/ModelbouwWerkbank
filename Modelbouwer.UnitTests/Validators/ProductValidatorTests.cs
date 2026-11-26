@@ -26,7 +26,7 @@ public class ProductValidatorTests
 			ProductId = 1,
 			ProductName = "Valid Product"
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>() ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>(), It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -121,7 +121,7 @@ public class ProductValidatorTests
 			ProductId = 1,
 			ProductName = new string('A', 100) // Exactly 100 characters
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>() ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>(), It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -140,7 +140,7 @@ public class ProductValidatorTests
 			ProductId = 0, // New product
 			ProductName = "Duplicate Product"
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( "Duplicate Product" ) ).ReturnsAsync( true );
+		_mockProductService.Setup( s => s.NameExistsAsync( "Duplicate Product", It.IsAny<CancellationToken>() ) ).ReturnsAsync( true );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -166,7 +166,7 @@ public class ProductValidatorTests
 
 		// Assert
 		// Should not call NameExistsAsync for existing products
-		_mockProductService.Verify( s => s.NameExistsAsync( It.IsAny<string>() ), Times.Never );
+		_mockProductService.Verify( s => s.NameExistsAsync( It.IsAny<string>(), It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
@@ -178,7 +178,7 @@ public class ProductValidatorTests
 			ProductId = 0,
 			ProductName = "Unique Product"
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( "Unique Product" ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( "Unique Product", It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -217,7 +217,7 @@ public class ProductValidatorTests
 			ProductId = 1,
 			ProductName = "A" // Minimum valid name
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>() ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>(), It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -235,7 +235,7 @@ public class ProductValidatorTests
 			ProductId = 0,
 			ProductName = "  Valid Product  "
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>() ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( It.IsAny<string>(), It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		var result = await _validator.ValidateAsync(product);
@@ -254,12 +254,12 @@ public class ProductValidatorTests
 			ProductId = 0,
 			ProductName = "Test Product"
 		};
-		_mockProductService.Setup( s => s.NameExistsAsync( "Test Product" ) ).ReturnsAsync( false );
+		_mockProductService.Setup( s => s.NameExistsAsync( "Test Product", It.IsAny<CancellationToken>() ) ).ReturnsAsync( false );
 
 		// Act
 		await _validator.ValidateAsync( product );
 
 		// Assert
-		_mockProductService.Verify( s => s.NameExistsAsync( "Test Product" ), Times.Once );
+		_mockProductService.Verify( s => s.NameExistsAsync( "Test Product", It.IsAny<CancellationToken>() ), Times.Once );
 	}
 }

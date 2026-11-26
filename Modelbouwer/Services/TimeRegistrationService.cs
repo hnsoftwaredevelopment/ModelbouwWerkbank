@@ -18,7 +18,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 	{
 		string query =
 			$"SELECT {DBNames.TimeViewFieldNameId}, {DBNames.TimeViewFieldNameProjectId}, {DBNames.TimeViewFieldNameProjectName}, " +
-			$"{DBNames.TimeViewFieldNameWorktypeId}, {DBNames.TimeViewFieldNameWorktypeName}, {DBNames.TimeViewFieldNameWorkDate}, " +
+			$"{DBNames.TimeViewFieldNameWorkTypeId}, {DBNames.TimeViewFieldNameWorkTypeName}, {DBNames.TimeViewFieldNameWorkDate}, " +
 			$"{DBNames.TimeViewFieldNameStartTime}, {DBNames.TimeViewFieldNameEndTime}, {DBNames.TimeViewFieldNameComment} " +
 			$"FROM {DBNames.Database}.{DBNames.TimeView} " +
 			$"WHERE {DBNames.TimeViewFieldNameProjectId} = @ProjectId " +
@@ -35,8 +35,8 @@ public class TimeRegistrationService : ITimeRegistrationService
 				TimeId = DatabaseValueConverter.GetInt( reader [ DBNames.TimeViewFieldNameId ] ),
 				ProjectId = DatabaseValueConverter.GetInt( reader [ DBNames.TimeViewFieldNameProjectId ] ),
 				ProjectName = DatabaseValueConverter.GetString( reader [ DBNames.TimeViewFieldNameProjectName ] ),
-				WorktypeId = DatabaseValueConverter.GetInt( reader [ DBNames.TimeViewFieldNameWorktypeId ] ),
-				WorktypeName = DatabaseValueConverter.GetString( reader [ DBNames.TimeViewFieldNameWorktypeName ] ),
+				WorktypeId = DatabaseValueConverter.GetInt( reader [ DBNames.TimeViewFieldNameWorkTypeId ] ),
+				WorktypeName = DatabaseValueConverter.GetString( reader [ DBNames.TimeViewFieldNameWorkTypeName ] ),
 				WorkDate = workDate == default ? DateTime.Today : workDate,
 				StartTime = NormalizeTime( startTime ),
 				EndTime = NormalizeTime( endTime ),
@@ -53,7 +53,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 	{
 		string query =
 			$"INSERT INTO {DBNames.Database}.{DBNames.TimeTable} " +
-			$"({DBNames.TimeFieldNameProjectId}, {DBNames.TimeFieldNameWorktypeId}, {DBNames.TimeFieldNameWorkDate}, {DBNames.TimeFieldNameStartTime}, {DBNames.TimeFieldNameEndTime}, {DBNames.TimeFieldNameComment}) " +
+			$"({DBNames.TimeFieldNameProjectId}, {DBNames.TimeFieldNameWorkTypeId}, {DBNames.TimeFieldNameWorkDate}, {DBNames.TimeFieldNameStartTime}, {DBNames.TimeFieldNameEndTime}, {DBNames.TimeFieldNameComment}) " +
 			$"VALUES (@ProjectId, @WorktypeId, @WorkDate, @StartTime, @EndTime, @Comment); {DBNames.SqlSelectLastId}";
 
 		uint id = await _dataService.ExecuteScalarAsync<uint>( query, CreateTimeParameters( entry ), cancellationToken );
@@ -68,7 +68,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 		string query =
 			$"UPDATE {DBNames.Database}.{DBNames.TimeTable} SET " +
 			$"{DBNames.TimeFieldNameProjectId} = @ProjectId, " +
-			$"{DBNames.TimeFieldNameWorktypeId} = @WorktypeId, " +
+			$"{DBNames.TimeFieldNameWorkTypeId} = @WorktypeId, " +
 			$"{DBNames.TimeFieldNameWorkDate} = @WorkDate, " +
 			$"{DBNames.TimeFieldNameStartTime} = @StartTime, " +
 			$"{DBNames.TimeFieldNameEndTime} = @EndTime, " +
@@ -159,13 +159,13 @@ public class TimeRegistrationService : ITimeRegistrationService
 		$"WHERE {DBNames.ProductUsageFieldNameId} = @ProductUsageId;";
 
 	public static readonly string InsertUsageStocklogQuery =
-		$"INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} " +
-		$"({DBNames.StocklogFieldNameProductId}, {DBNames.StocklogFieldNameProductUsageId}, {DBNames.StocklogFieldNameAmountReceived}, {DBNames.StocklogFieldNameAmountUsed}, {DBNames.StocklogFieldNameAmountCorrection}, {DBNames.StocklogFieldNameLogDate}) " +
+		$"INSERT INTO {DBNames.Database}.{DBNames.StockLogTable} " +
+		$"({DBNames.StockLogFieldNameProductId}, {DBNames.StockLogFieldNameProductUsageId}, {DBNames.StockLogFieldNameAmountReceived}, {DBNames.StockLogFieldNameAmountUsed}, {DBNames.StockLogFieldNameAmountCorrection}, {DBNames.StockLogFieldNameLogDate}) " +
 		$"VALUES (@ProductId, @ProductUsageId, 0, @AmountUsed, 0, @UsageDate);";
 
 	public static readonly string DeleteUsageStocklogQuery =
-		$"DELETE FROM {DBNames.Database}.{DBNames.StocklogTable} " +
-		$"WHERE {DBNames.StocklogFieldNameProductUsageId} = @ProductUsageId;";
+		$"DELETE FROM {DBNames.Database}.{DBNames.StockLogTable} " +
+		$"WHERE {DBNames.StockLogFieldNameProductUsageId} = @ProductUsageId;";
 
 	public async Task<int> InsertMaterialUsageAsync( MaterialUsageModel usage, CancellationToken cancellationToken )
 	{
@@ -386,7 +386,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 		};
 	}
 
-	private static List<TimeReportItemModel> BuildWorkedHoursByWorktype( IEnumerable<TimeEntryModel> entries, IReadOnlyDictionary<int, WorktypeModel> worktypes )
+	private static List<TimeReportItemModel> BuildWorkedHoursByWorktype( IEnumerable<TimeEntryModel> entries, IReadOnlyDictionary<int, WorkTypeModel> worktypes )
 	{
 		var grouped = entries
 			.Where( entry => entry.WorkedMinutes > 0 )
@@ -610,26 +610,26 @@ public class TimeRegistrationService : ITimeRegistrationService
 			.ToList();
 	}
 
-	private Task<List<WorktypeModel>> GetWorktypesAsync( CancellationToken cancellationToken )
+	private Task<List<WorkTypeModel>> GetWorktypesAsync( CancellationToken cancellationToken )
 	{
 		string query =
-			$"SELECT {DBNames.WorktypeFieldNameId}, {DBNames.WorktypeFieldNameParentId}, {DBNames.WorktypeFieldNameName} " +
-			$"FROM {DBNames.Database}.{DBNames.WorktypeTable};";
+			$"SELECT {DBNames.WorkTypeFieldNameId}, {DBNames.WorkTypeFieldNameParentId}, {DBNames.WorkTypeFieldNameName} " +
+			$"FROM {DBNames.Database}.{DBNames.WorkTypeTable};";
 
-		return _dataService.ExecuteQueryAsync( query, reader => new WorktypeModel
+		return _dataService.ExecuteQueryAsync( query, reader => new WorkTypeModel
 		{
-			WorktypeId = DatabaseValueConverter.GetInt( reader [ DBNames.WorktypeFieldNameId ] ),
-			ParentId = DatabaseValueConverter.GetInt( reader [ DBNames.WorktypeFieldNameParentId ] ),
-			WorktypeName = DatabaseValueConverter.GetString( reader [ DBNames.WorktypeFieldNameName ] )
+			WorktypeId = DatabaseValueConverter.GetInt( reader [ DBNames.WorkTypeFieldNameId ] ),
+			ParentId = DatabaseValueConverter.GetInt( reader [ DBNames.WorkTypeFieldNameParentId ] ),
+			WorktypeName = DatabaseValueConverter.GetString( reader [ DBNames.WorkTypeFieldNameName ] )
 		}, null, cancellationToken );
 	}
 
-	private async Task<Dictionary<int, WorktypeModel>> GetWorktypeLookupAsync( CancellationToken cancellationToken ) =>
+	private async Task<Dictionary<int, WorkTypeModel>> GetWorktypeLookupAsync( CancellationToken cancellationToken ) =>
 		( await GetWorktypesAsync( cancellationToken ) )
 			.Where( worktype => worktype.WorktypeId > 0 )
 			.ToDictionary( worktype => worktype.WorktypeId );
 
-	private static string GetWorktypeName( int worktypeId, string? fallbackName, IReadOnlyDictionary<int, WorktypeModel> worktypes )
+	private static string GetWorktypeName( int worktypeId, string? fallbackName, IReadOnlyDictionary<int, WorkTypeModel> worktypes )
 	{
 		if ( worktypeId > 0 &&
 			worktypes.TryGetValue( worktypeId, out var worktype ) &&
@@ -639,7 +639,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 		return string.IsNullOrWhiteSpace( fallbackName ) ? "?" : fallbackName!;
 	}
 
-	private static string GetRootWorktypeName( int worktypeId, string fallbackName, IReadOnlyDictionary<int, WorktypeModel> worktypes )
+	private static string GetRootWorktypeName( int worktypeId, string fallbackName, IReadOnlyDictionary<int, WorkTypeModel> worktypes )
 	{
 		if ( worktypeId <= 0 || !worktypes.TryGetValue( worktypeId, out var current ) )
 			return fallbackName;
@@ -655,7 +655,7 @@ public class TimeRegistrationService : ITimeRegistrationService
 		return string.IsNullOrWhiteSpace( current.WorktypeName ) ? fallbackName : current.WorktypeName;
 	}
 
-	private static int GetWorktypeSortOrder( int worktypeId, IReadOnlyDictionary<int, WorktypeModel> worktypes )
+	private static int GetWorktypeSortOrder( int worktypeId, IReadOnlyDictionary<int, WorkTypeModel> worktypes )
 	{
 		if ( worktypeId <= 0 || !worktypes.TryGetValue( worktypeId, out var current ) )
 			return 0;

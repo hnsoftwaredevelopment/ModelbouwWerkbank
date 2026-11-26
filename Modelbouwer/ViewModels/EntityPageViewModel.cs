@@ -66,8 +66,8 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 	public IRelayCommand AddCommand => _addCommand ??= new RelayCommand( Add );
 	public IAsyncRelayCommand DeleteCommand => _deleteCommand ??= new AsyncRelayCommand( DeleteCommandAsync, CanDelete );
 	public IAsyncRelayCommand SaveCommand => _saveCommand ??= new AsyncRelayCommand( SaveAsync, CanSave );
-	public IAsyncRelayCommand ReloadCommand => _reloadCommand ??= new AsyncRelayCommand( ReloadAsync );
-	public IAsyncRelayCommand ReloadContactsCommand => _reloadContactsCommand ??= new AsyncRelayCommand( ReloadAsync );
+	public IAsyncRelayCommand ReloadCommand => _reloadCommand ??= new AsyncRelayCommand( cancellationToken => ReloadAsync( cancellationToken ) );
+	public IAsyncRelayCommand ReloadContactsCommand => _reloadContactsCommand ??= new AsyncRelayCommand( cancellationToken => ReloadAsync( cancellationToken ) );
 	public IRelayCommand ClearSearchCommand => _clearSearchCommand ??= new RelayCommand( () => SearchText = string.Empty );
 
 	private IRelayCommand? _addCommand;
@@ -80,10 +80,10 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 	// -----------------------------
 	// Abstract hooks for child
 	// -----------------------------
-	protected abstract Task<List<T>> LoadItemsAsync();
-	protected abstract Task<int> InsertAsync( T item );
-	protected abstract Task UpdateAsync( T item );
-	protected abstract Task DeleteAsync( T item );
+	protected abstract Task<List<T>> LoadItemsAsync( CancellationToken cancellationToken );
+	protected abstract Task<int> InsertAsync( T item, CancellationToken cancellationToken );
+	protected abstract Task UpdateAsync( T item, CancellationToken cancellationToken );
+	protected abstract Task DeleteAsync( T item, CancellationToken cancellationToken );
 	protected abstract int GetId( T item );
 	protected abstract void SetId( T item, int id );
 	protected abstract T CreateNewItem();
@@ -123,7 +123,7 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		HasUnsavedChanges = true;
 	}
 
-	private async Task SaveAsync()
+	private async Task SaveAsync( CancellationToken cancellationToken )
 	{
 		if ( IsSaving )
 			return;
@@ -131,12 +131,12 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		if ( SelectedItem == null )
 			return;
 
-		var validation = await Validator.ValidateAsync(SelectedItem);
+		var validation = await Validator.ValidateAsync( SelectedItem, cancellationToken );
 		if ( !validation.IsValid )
 		{
-			var result = MessageBox.Show(
+			MessageBox.Show(
 				string.Join( "\n", validation.Errors ),
-				Lang.ExportValidationCategoryNameExists,
+				Lang.generalMessageboxWarningTitle,
 				MessageBoxButton.OK,
 				MessageBoxImage.Error, MessageBoxResult.Abort );
 			return;
@@ -147,15 +147,15 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		{
 			if ( GetId( SelectedItem ) == 0 )
 			{
-				var id = await InsertAsync(SelectedItem);
+				var id = await InsertAsync( SelectedItem, cancellationToken );
 				SetId( SelectedItem, id );
 			}
 			else
 			{
-				await UpdateAsync( SelectedItem );
+				await UpdateAsync( SelectedItem, cancellationToken );
 			}
 
-			await ReloadAsync();
+			await ReloadAsync( cancellationToken );
 		}
 		finally
 		{
@@ -182,12 +182,15 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		_deleteCommand?.NotifyCanExecuteChanged();
 	}
 
-	protected async Task ReloadAsync()
+	protected Task ReloadAsync() => ReloadAsync( CancellationToken.None );
+
+	protected async Task ReloadAsync( CancellationToken cancellationToken )
 	{
 		IsLoading = true;
 		try
 		{
-			var items = await PerformanceTrace.MeasureAsync( $"{nameof( EntityPageViewModel<T> )}.{nameof( ReloadAsync )}", LoadItemsAsync );
+			var items = await PerformanceTrace.MeasureAsync( $"{nameof( EntityPageViewModel<T> )}.{nameof( ReloadAsync )}", () => LoadItemsAsync( cancellationToken ) );
+			cancellationToken.ThrowIfCancellationRequested();
 			Items.Clear();
 			foreach ( var item in items )
 				Items.Add( item );
@@ -203,7 +206,7 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		}
 	}
 
-	private async Task DeleteCommandAsync()
+	private async Task DeleteCommandAsync( CancellationToken cancellationToken )
 	{
 		if ( IsDeleting )
 			return;
@@ -214,8 +217,8 @@ public abstract partial class EntityPageViewModel<T> : AsyncObservableObject
 		IsDeleting = true;
 		try
 		{
-			await DeleteAsync( SelectedItem );
-			await ReloadAsync();
+			await DeleteAsync( SelectedItem, cancellationToken );
+			await ReloadAsync( cancellationToken );
 		}
 		catch ( Exception ex )
 		{

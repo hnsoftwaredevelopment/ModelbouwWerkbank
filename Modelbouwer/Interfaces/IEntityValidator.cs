@@ -7,4 +7,5 @@ namespace Modelbouwer.Interfaces;
 public interface IEntityValidator<T>
 {
 	Task<ValidationResult> ValidateAsync( T entity );
+	Task<ValidationResult> ValidateAsync( T entity, CancellationToken cancellationToken );
 }

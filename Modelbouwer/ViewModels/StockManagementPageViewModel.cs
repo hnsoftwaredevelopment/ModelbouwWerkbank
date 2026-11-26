@@ -21,19 +21,19 @@ public partial class StockManagementPageViewModel : EntityPageViewModel<StockMan
 		DataGridSaveSettingsCommand = new RelayCommand( SaveGridLayout );
 		DataGridResetSettingsCommand = new RelayCommand( ResetGridLayout );
 
-		ObserveBackgroundTask( ReloadAsync() );
-
-		// Hook collection changes to monitor new items
+		// Hook collection changes before loading, so items of a load that finishes at once are monitored too
 		Items.CollectionChanged += Items_CollectionChanged;
+
+		ObserveBackgroundTask( ReloadAsync() );
 
 	}
 
 	// -----------------------------
 	// Abstract overrides from EntityPageViewModel
 	// -----------------------------
-	protected override async Task<List<StockManagementModel>> LoadItemsAsync()
+	protected override async Task<List<StockManagementModel>> LoadItemsAsync( CancellationToken cancellationToken )
 	{
-		var items = await _dataService.GetCompleteInventoryAsync();
+		var items = await _dataService.GetCompleteInventoryAsync( cancellationToken );
 		return items;
 	}
 
@@ -81,11 +81,11 @@ public partial class StockManagementPageViewModel : EntityPageViewModel<StockMan
 
 	public async Task ResetGridLayoutAsync() => await _settingsService.ResetSettingsAsync( "StockManagementGridLayout" );
 
-	protected override Task<int> InsertAsync( StockManagementModel item ) => throw new NotImplementedException( "StockManagement does not support insert via this ViewModel." );
+	protected override Task<int> InsertAsync( StockManagementModel item, CancellationToken cancellationToken ) => throw new NotImplementedException( "StockManagement does not support insert via this ViewModel." );
 
-	protected override Task UpdateAsync( StockManagementModel item ) => throw new NotImplementedException( "Use HandleInventoryEditAsync for updates." );
+	protected override Task UpdateAsync( StockManagementModel item, CancellationToken cancellationToken ) => throw new NotImplementedException( "Use HandleInventoryEditAsync for updates." );
 
-	protected override Task DeleteAsync( StockManagementModel item ) => throw new NotImplementedException( "StockManagement does not support delete." );
+	protected override Task DeleteAsync( StockManagementModel item, CancellationToken cancellationToken ) => throw new NotImplementedException( "StockManagement does not support delete." );
 
 	protected override int GetId( StockManagementModel item ) => item.ProductId;
 
@@ -110,8 +110,8 @@ public partial class StockManagementPageViewModel : EntityPageViewModel<StockMan
 			// First save the correction to the database
 			var parameters = new Dictionary<string, object?>
 			{
-				{ $"@{DBNames.StocklogFieldNameProductId}", item.ProductId },
-				{ $"@{DBNames.StocklogFieldNameAmountCorrection}", difference }
+				{ $"@{DBNames.StockLogFieldNameProductId}", item.ProductId },
+				{ $"@{DBNames.StockLogFieldNameAmountCorrection}", difference }
 			};
 
 			await _dataService.InsertCorrectionAsync( parameters );

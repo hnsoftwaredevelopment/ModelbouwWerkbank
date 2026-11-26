@@ -6,7 +6,9 @@ public class ProjectValidator : IEntityValidator<ProjectModel>
 
 	public ProjectValidator( IProjectService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( ProjectModel project )
+	public Task<ValidationResult> ValidateAsync( ProjectModel project ) => ValidateAsync( project, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( ProjectModel project, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -23,7 +25,7 @@ public class ProjectValidator : IEntityValidator<ProjectModel>
 		// ❗ Duplicate checks
 		if ( project.ProjectId == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( project.ProjectName ) )
+			if ( await _dataService.NameExistsAsync( project.ProjectName, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationProjectNameExists );
 		}
 

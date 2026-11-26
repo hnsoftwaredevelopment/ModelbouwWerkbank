@@ -39,7 +39,6 @@ public class TimeRegistrationViewModelTests
 		AssertMethodContains( source, "private async Task RefreshSelectedProjectDataAsync( CancellationToken cancellationToken )", "var materialUsagesTask = _timeRegistrationService.GetMaterialUsageByProjectAsync( selectedProject.ProjectId, cancellationToken );" );
 		AssertMethodContains( source, "private async Task RefreshSelectedProjectDataAsync( CancellationToken cancellationToken )", "PerformanceTrace.MeasureAsync(" );
 		AssertMethodContains( source, "private async Task RefreshSelectedProjectDataAsync( CancellationToken cancellationToken )", "Task.WhenAll( timeEntriesTask, materialUsagesTask )" );
-		StringAssert.Contains( source, "GetTimeEntriesByProjectAsync( projectId, cancellationToken )" );
 		StringAssert.Contains( source, "GetMaterialUsageByProjectAsync( projectId, cancellationToken )" );
 	}
 
@@ -82,7 +81,7 @@ public class TimeRegistrationViewModelTests
 	{
 		var projectService = new Mock<IProjectService>();
 		var productService = new Mock<IProductService>();
-		var worktypeService = new Mock<IWorktypeService>();
+		var worktypeService = new Mock<IWorkTypeService>();
 		var categoryService = new Mock<ICategoryService>();
 
 		return new TimeRegistrationViewModel(

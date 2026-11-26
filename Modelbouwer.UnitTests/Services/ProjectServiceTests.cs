@@ -26,7 +26,7 @@ public class ProjectServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedProjects );
 
 		// Act
@@ -44,7 +44,7 @@ public class ProjectServiceTests
 	{
 		// Arrange
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( new List<ProjectModel>() );
 
 		// Act
@@ -62,7 +62,7 @@ public class ProjectServiceTests
 		var parameters = CreateValidProjectParameters();
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 42u );
 
 		// Act
@@ -79,7 +79,7 @@ public class ProjectServiceTests
 		var parameters = CreateValidProjectParameters();
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1u );
 
 		// Act
@@ -98,7 +98,7 @@ public class ProjectServiceTests
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameMemo}" ) &&
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameName}" ) &&
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameCode}" )
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -108,7 +108,7 @@ public class ProjectServiceTests
 		var parameters = CreateValidProjectParameters( 1, "Updated Project", "UP001" );
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -128,7 +128,7 @@ public class ProjectServiceTests
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameImageRotationAngle}" ) &&
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameMemo}" ) &&
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameName}" )
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -138,7 +138,7 @@ public class ProjectServiceTests
 		var projectId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -150,7 +150,7 @@ public class ProjectServiceTests
 			It.Is<Dictionary<string, object>>( d =>
 				d.ContainsKey( $"@{DBNames.ProjectFieldNameId}" ) &&
 				( int ) d [ $"@{DBNames.ProjectFieldNameId}" ] == projectId
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -161,7 +161,7 @@ public class ProjectServiceTests
 
 		// Moq will throw a lightweight test exception that exposes a Number property.
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ThrowsAsync( new TestMySqlException( 1451, "Foreign key constraint" ) );
 
 		// Act / Assert: use try/catch because Assert.ThrowsExceptionAsync isn't available in current test framework
@@ -184,7 +184,7 @@ public class ProjectServiceTests
 		var expectedDate = new DateTime(2024, 1, 15);
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<DateTime?>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<DateTime?>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedDate );
 
 		// Act
@@ -202,7 +202,7 @@ public class ProjectServiceTests
 		var projectId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<DateTime?>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<DateTime?>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( ( DateTime? ) null );
 
 		// Act
@@ -219,7 +219,7 @@ public class ProjectServiceTests
 		var projectId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		// Act
@@ -236,7 +236,7 @@ public class ProjectServiceTests
 		var projectId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		// Act
@@ -270,7 +270,7 @@ public class ProjectServiceTests
 	public async Task NameExistsAsync_WithExistingName_ReturnsTrue()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		var result = await _project_service.NameExistsAsync("Existing Project");
@@ -278,14 +278,14 @@ public class ProjectServiceTests
 		Assert.IsTrue( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
 	public async Task NameExistsAsync_WithNonExistingName_ReturnsFalse()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		var result = await _project_service.NameExistsAsync("Project B");
@@ -293,14 +293,14 @@ public class ProjectServiceTests
 		Assert.IsFalse( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, ProjectModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
 	public async Task NameExistsAsync_IsCaseInsensitive()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.Is<string>( query => query.Contains( "LOWER(" ) ), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.Is<string>( query => query.Contains( "LOWER(" ) ), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		var result = await _project_service.NameExistsAsync("TEST PROJECT");
@@ -321,7 +321,7 @@ public class ProjectServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteSingleAsync<ProjectWorkStats>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteSingleAsync<ProjectWorkStats>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedStats );
 
 		// Act
@@ -339,7 +339,7 @@ public class ProjectServiceTests
 		var projectId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteSingleAsync<ProjectWorkStats>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteSingleAsync<ProjectWorkStats>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( ( ProjectWorkStats? ) null );
 
 		// Act

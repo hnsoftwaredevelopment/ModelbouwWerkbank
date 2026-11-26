@@ -4,13 +4,15 @@ using System.Text;
 
 namespace Modelbouwer.Validators;
 
-public class WorktypeValidator : IEntityValidator<WorktypeModel>
+public class WorkTypeValidator : IEntityValidator<WorkTypeModel>
 {
-	private readonly IWorktypeService _dataService;
+	private readonly IWorkTypeService _dataService;
 
-	public WorktypeValidator( IWorktypeService dataService ) => _dataService = dataService;
+	public WorkTypeValidator( IWorkTypeService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( WorktypeModel worktype )
+	public Task<ValidationResult> ValidateAsync( WorkTypeModel worktype ) => ValidateAsync( worktype, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( WorkTypeModel worktype, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -24,7 +26,7 @@ public class WorktypeValidator : IEntityValidator<WorktypeModel>
 			result.Errors.Add( Lang.ExportValidationMessageNameLength );
 		}
 
-		if ( await _dataService.NameExistsAsync( worktype.WorktypeName, worktype.ParentId ) )
+		if ( await _dataService.NameExistsAsync( worktype.WorktypeName, worktype.ParentId, cancellationToken ) )
 		{
 			result.Errors.Add( Lang.ExportValidationWorkTypeNameExists );
 		}

@@ -10,7 +10,9 @@ namespace Modelbouwer.Validators
 
 		public ContactTypeValidator( IContactTypeService dataService ) => _dataService = dataService;
 
-		public async Task<ValidationResult> ValidateAsync( ContactTypeModel contacttype )
+		public Task<ValidationResult> ValidateAsync( ContactTypeModel contacttype ) => ValidateAsync( contacttype, CancellationToken.None );
+
+		public async Task<ValidationResult> ValidateAsync( ContactTypeModel contacttype, CancellationToken cancellationToken )
 		{
 			var result = new ValidationResult();
 
@@ -27,7 +29,7 @@ namespace Modelbouwer.Validators
 			// ❗ Duplicate checks
 			if ( contacttype.ContactTypeId == 0 )
 			{
-				if ( await _dataService.NameExistsAsync( contacttype.ContactTypeName ) )
+				if ( await _dataService.NameExistsAsync( contacttype.ContactTypeName, cancellationToken ) )
 					result.Errors.Add( Lang.ExportValidationContactTypeNameExists );
 			}
 

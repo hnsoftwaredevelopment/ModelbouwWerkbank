@@ -5,13 +5,17 @@ using Syncfusion.Windows.Shared;
 
 namespace Modelbouwer.ViewModels;
 
-public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
+public partial class WorkTypePageViewModel : EntityPageViewModel<WorkTypeModel>
 {
-	private readonly IWorktypeService _dataService;
+	private readonly IWorkTypeService _dataService;
 
 	// Collections
-	public ObservableCollection<WorktypeModel> WorkTypes { get; } = [ ];
-	public ObservableCollection<WorktypeModel> WorkTypeTree { get; } = [ ];
+	public ObservableCollection<WorkTypeModel> WorkTypes { get; } = [ ];
+	public ObservableCollection<WorkTypeModel> WorkTypeTree { get; } = [ ];
+
+	/// <summary>Called around rebuilding the tree, so the view can keep the open branches (a save reloads the list).</summary>
+	public Action? BeforeTreeRebuild { get; set; }
+	public Action? AfterTreeRebuild { get; set; }
 
 	// Commands
 	public IRelayCommand AddWorkTypeCommand => AddCommand;
@@ -42,16 +46,17 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	internal FilterChanged? _filterChanged;
 
 	// Constructor
-	public WorktypePageViewModel( IWorktypeService dataService, IEntityValidator<WorktypeModel> validator ) : base( validator )
+	public WorkTypePageViewModel( IWorkTypeService dataService, IEntityValidator<WorkTypeModel> validator ) : base( validator )
 	{
 		_dataService = dataService;
-
-		ObserveBackgroundTask( ReloadAsync() );
 
 		AddSubWorkTypeCommand = new RelayCommand( AddSubWorkType, () => SelectedItem != null );
 
 		ExpandCommand = new DelegateCommand<object>( ExpandExecute );
 		CollapseCommand = new DelegateCommand<object>( CollapseExecute );
+
+		// Started last: a load that finishes at once selects an item, which needs the commands above.
+		ObserveBackgroundTask( ReloadAsync() );
 	}
 
 	protected override void OnPropertyChanged( System.ComponentModel.PropertyChangedEventArgs e )
@@ -65,7 +70,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	}
 
 	// Override SelectedItem changed om DefaultWorkType te zetten
-	protected override void OnSelectedItemChanged( WorktypeModel? oldValue, WorktypeModel? newValue )
+	protected override void OnSelectedItemChanged( WorkTypeModel? oldValue, WorkTypeModel? newValue )
 	{
 		base.OnSelectedItemChanged( oldValue, newValue );
 
@@ -74,7 +79,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 
 	public bool FilterWorkType( object obj )
 	{
-		if ( obj is not WorktypeModel worktype )
+		if ( obj is not WorkTypeModel worktype )
 			return false;
 
 		if ( string.IsNullOrWhiteSpace( base.SearchText ) )
@@ -84,10 +89,10 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<WorktypeModel>> LoadItemsAsync() => _dataService.GetAllWorkTypesAsync();
-	protected override Task<int> InsertAsync( WorktypeModel item ) => _dataService.InsertNewWorkTypeAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( WorktypeModel item ) => _dataService.UpdateWorkTypeAsync( UpdateParameters( item ) );
-	protected override async Task DeleteAsync( WorktypeModel item )
+	protected override Task<List<WorkTypeModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllWorkTypesAsync( cancellationToken );
+	protected override Task<int> InsertAsync( WorkTypeModel item, CancellationToken cancellationToken ) => _dataService.InsertNewWorkTypeAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( WorkTypeModel item, CancellationToken cancellationToken ) => _dataService.UpdateWorkTypeAsync( UpdateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( WorkTypeModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -103,7 +108,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 			return;
 		try
 		{
-			await _dataService.DeleteWorkTypeAsync( item.WorktypeId );
+			await _dataService.DeleteWorkTypeAsync( item.WorktypeId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{
@@ -128,7 +133,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 		treeGrid?.CollapseAllNodes();
 	}
 
-	public ObservableCollection<WorktypeModel> BuildTree( IEnumerable<WorktypeModel> flatList )
+	public ObservableCollection<WorkTypeModel> BuildTree( IEnumerable<WorkTypeModel> flatList )
 	{
 		var lookup = flatList.ToDictionary(c => c.WorktypeId);
 
@@ -145,13 +150,13 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 			}
 		}
 
-		return new ObservableCollection<WorktypeModel>( lookup.Values.Where( c => c.ParentId == null || c.ParentId == 0 ) );
+		return new ObservableCollection<WorkTypeModel>( lookup.Values.Where( c => c.ParentId == null || c.ParentId == 0 ) );
 	}
 
-	protected override int GetId( WorktypeModel item ) => item.WorktypeId;
-	protected override void SetId( WorktypeModel item, int id ) => item.WorktypeId = id;
+	protected override int GetId( WorkTypeModel item ) => item.WorktypeId;
+	protected override void SetId( WorkTypeModel item, int id ) => item.WorktypeId = id;
 
-	protected override WorktypeModel CreateNewItem() => new()
+	protected override WorkTypeModel CreateNewItem() => new()
 	{
 		WorktypeId = 0,
 		ParentId = 0,
@@ -162,6 +167,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	{
 		base.OnItemsLoaded();
 
+		BeforeTreeRebuild?.Invoke();
 		WorkTypeTree.Clear();
 
 		var tree = BuildTree( Items );
@@ -169,6 +175,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 			WorkTypeTree.Add( root );
 
 		OnPropertyChanged( nameof( WorkTypeTree ) );
+		AfterTreeRebuild?.Invoke();
 	}
 
 	private void AddSubWorkType()
@@ -176,7 +183,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 		if ( SelectedItem == null )
 			return;
 
-		var newWorkType = new WorktypeModel
+		var newWorkType = new WorkTypeModel
 		{
 			WorktypeName = string.Empty,
 			ParentId = SelectedItem.WorktypeId
@@ -189,7 +196,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	#region Filtering
 	public bool FilterRecords( object o )
 	{
-		if ( o is not WorktypeModel worktype )
+		if ( o is not WorkTypeModel worktype )
 			return false;
 
 		if ( string.IsNullOrWhiteSpace( SearchText ) )
@@ -202,7 +209,7 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 		return HasMatchingChild( worktype );
 	}
 
-	private bool HasMatchingChild( WorktypeModel parent )
+	private bool HasMatchingChild( WorkTypeModel parent )
 	{
 		if ( parent.Children == null || parent.Children.Count == 0 )
 			return false;
@@ -222,16 +229,16 @@ public partial class WorktypePageViewModel : EntityPageViewModel<WorktypeModel>
 	#endregion
 
 	// Parameter dictionary voor save
-	private static Dictionary<string, object?> CreateParameters( WorktypeModel c ) => new()
+	private static Dictionary<string, object?> CreateParameters( WorkTypeModel c ) => new()
 	{
-		{ $"@{DBNames.WorktypeFieldNameParentId}", c.ParentId == 0 ? null : c.ParentId },
-		{ $"@{DBNames.WorktypeFieldNameName}", c.WorktypeName?.Trim() }
+		{ $"@{DBNames.WorkTypeFieldNameParentId}", c.ParentId == 0 ? null : c.ParentId },
+		{ $"@{DBNames.WorkTypeFieldNameName}", c.WorktypeName?.Trim() }
 	};
 
-	private static Dictionary<string, object?> UpdateParameters( WorktypeModel c ) => new()
+	private static Dictionary<string, object?> UpdateParameters( WorkTypeModel c ) => new()
 	{
-		{ $"@{DBNames.WorktypeFieldNameId}", c.WorktypeId == 0 ? null : c.WorktypeId },
-		{ $"@{DBNames.WorktypeFieldNameParentId}", c.ParentId == 0 ? null : c.ParentId },
-		{ $"@{DBNames.WorktypeFieldNameName}", c.WorktypeName?.Trim() }
+		{ $"@{DBNames.WorkTypeFieldNameId}", c.WorktypeId == 0 ? null : c.WorktypeId },
+		{ $"@{DBNames.WorkTypeFieldNameParentId}", c.ParentId == 0 ? null : c.ParentId },
+		{ $"@{DBNames.WorkTypeFieldNameName}", c.WorktypeName?.Trim() }
 	};
 }

@@ -26,7 +26,7 @@ public class ProductServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedProducts );
 
 		// Act
@@ -44,7 +44,7 @@ public class ProductServiceTests
 	{
 		// Arrange
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( new List<ProductModel>() );
 
 		// Act
@@ -66,7 +66,7 @@ public class ProductServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, BrandModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, BrandModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedBrands );
 
 		// Act
@@ -89,7 +89,7 @@ public class ProductServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedUnits );
 
 		// Act
@@ -112,7 +112,7 @@ public class ProductServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, CategoryModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, CategoryModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedCategories );
 
 		// Act
@@ -131,7 +131,7 @@ public class ProductServiceTests
 		var parameters = CreateValidProductParameters();
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 42u );
 
 		// Act
@@ -148,7 +148,7 @@ public class ProductServiceTests
 		var parameters = CreateValidProductParameters();
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1u );
 
 		// Act
@@ -180,7 +180,7 @@ public class ProductServiceTests
 				( int ) d [ DBNames.ProductFieldNameStorageId ] == 4 &&
 				( int ) d [ DBNames.ProductFieldNameUnitId ] == 2 &&
 				( int ) d [ DBNames.ProductFieldNameBrandId ] == 5
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -190,7 +190,7 @@ public class ProductServiceTests
 		var parameters = CreateValidProductParameters( 1, "Updated Product", "UP001" );
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -224,7 +224,7 @@ public class ProductServiceTests
 				( int ) d [ DBNames.ProductFieldNameStorageId ] == 4 &&
 				( int ) d [ DBNames.ProductFieldNameUnitId ] == 2 &&
 				( int ) d [ DBNames.ProductFieldNameBrandId ] == 5
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -234,7 +234,7 @@ public class ProductServiceTests
 		var productId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -246,7 +246,7 @@ public class ProductServiceTests
 			It.Is<Dictionary<string, object>>( d =>
 				d.ContainsKey( $"@{DBNames.ProductFieldNameId}" ) &&
 				( int ) d [ $"@{DBNames.ProductFieldNameId}" ] == productId
-			) ), Times.Once );
+			), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -257,7 +257,7 @@ public class ProductServiceTests
 
 		// Moq will throw a lightweight test exception that exposes a Number property.
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ThrowsAsync( new TestMySqlException( 1451, "Foreign key constraint" ) );
 
 		// Act / Assert: use try/catch because Assert.ThrowsExceptionAsync is not available
@@ -279,7 +279,7 @@ public class ProductServiceTests
 		var productId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		// Act
@@ -296,7 +296,7 @@ public class ProductServiceTests
 		var productId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		// Act
@@ -330,7 +330,7 @@ public class ProductServiceTests
 	public async Task NameExistsAsync_WithExistingName_ReturnsTrue()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		var result = await _productService.NameExistsAsync("Existing Product");
@@ -338,14 +338,14 @@ public class ProductServiceTests
 		Assert.IsTrue( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
 	public async Task NameExistsAsync_WithNonExistingName_ReturnsFalse()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		var result = await _productService.NameExistsAsync("Product B");
@@ -353,14 +353,14 @@ public class ProductServiceTests
 		Assert.IsFalse( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, ProductModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
 	public async Task NameExistsAsync_IsCaseInsensitive()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.Is<string>( query => query.Contains( "LOWER(" ) ), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.Is<string>( query => query.Contains( "LOWER(" ) ), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		var result = await _productService.NameExistsAsync("TEST PRODUCT");

@@ -8,13 +8,13 @@ public class ProjectPageViewModelTests
 	{
 		var projectService = new Mock<IProjectService>();
 		projectService
-			.Setup( service => service.GetAllProjectsAsync() )
+			.Setup( service => service.GetAllProjectsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( projectService.Object );
 
 		await Task.Delay( 100 );
-		projectService.Verify( service => service.GetAllProjectsAsync(), Times.Once );
+		projectService.Verify( service => service.GetAllProjectsAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -23,7 +23,7 @@ public class ProjectPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load projects." );
 		var projectService = new Mock<IProjectService>();
 		projectService
-			.Setup( service => service.GetAllProjectsAsync() )
+			.Setup( service => service.GetAllProjectsAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<ProjectModel>>( expected ) );
 
 		var viewModel = CreateViewModel( projectService.Object );
@@ -39,7 +39,7 @@ public class ProjectPageViewModelTests
 		var project = new ProjectModel { ProjectId = 7, ProjectName = "Test" };
 		var projectService = new Mock<IProjectService>();
 		projectService
-			.Setup( service => service.GetAllProjectsAsync() )
+			.Setup( service => service.GetAllProjectsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ project ] );
 		projectService
 			.Setup( service => service.GetProjectWorkStatsAsync( project.ProjectId ) )

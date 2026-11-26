@@ -8,13 +8,13 @@ public class CurrencyPageViewModelTests
 	{
 		var currencyService = new Mock<ICurrencyService>();
 		currencyService
-			.Setup( service => service.GetAllCurrenciesAsync() )
+			.Setup( service => service.GetAllCurrenciesAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( currencyService.Object );
 
 		await Task.Delay( 100 );
-		currencyService.Verify( service => service.GetAllCurrenciesAsync(), Times.Once );
+		currencyService.Verify( service => service.GetAllCurrenciesAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -23,7 +23,7 @@ public class CurrencyPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load currencies." );
 		var currencyService = new Mock<ICurrencyService>();
 		currencyService
-			.Setup( service => service.GetAllCurrenciesAsync() )
+			.Setup( service => service.GetAllCurrenciesAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<CurrencyModel>>( expected ) );
 
 		var viewModel = CreateViewModel( currencyService.Object );

@@ -36,11 +36,15 @@ public class ExcelExportService : IExportService
 		if ( dataGrid == null )
 			return;
 
+		int exported = 0;
 		await dataGrid.Dispatcher.InvokeAsync( () =>
 		{
 			var exportData = PrepareDataGridExportData<T>(dataGrid, columnHeaderOverrides);
-			WriteExcelFile( exportData, filePath, customValueFormatter );
+			exported = WriteExcelFile( exportData, filePath, customValueFormatter );
 		} );
+
+		// Shown after the dispatcher call: waiting for a message box on the dispatcher from inside it blocked the app.
+		await ShowSuccessMessageAsync( filePath, exported );
 	}
 
 	public async Task ExportToExcelAsync<T>( SfTreeGrid treeGrid, string filePath, Dictionary<string, string>? columnHeaderOverrides = null, Func<T, TreeGridColumn, string>? customValueFormatter = null )
@@ -48,11 +52,15 @@ public class ExcelExportService : IExportService
 		if ( treeGrid == null )
 			return;
 
+		int exported = 0;
 		await treeGrid.Dispatcher.InvokeAsync( () =>
 		{
 			var exportData = PrepareTreeGridExportData<T>(treeGrid, columnHeaderOverrides);
-			WriteExcelFile( exportData, filePath, customValueFormatter );
+			exported = WriteExcelFile( exportData, filePath, customValueFormatter );
 		} );
+
+		// Shown after the dispatcher call: waiting for a message box on the dispatcher from inside it blocked the app.
+		await ShowSuccessMessageAsync( filePath, exported );
 	}
 
 
@@ -126,7 +134,7 @@ public class ExcelExportService : IExportService
 		return exportData;
 	}
 
-	private void AddItemAndChildren<T>( T item, ExportData<T> exportData, string childPropertyName )
+	internal void AddItemAndChildren<T>( T item, ExportData<T> exportData, string childPropertyName )
 	{
 		// Add current item
 		exportData.Items.Add( item );
@@ -150,7 +158,7 @@ public class ExcelExportService : IExportService
 		}
 	}
 
-	private void WriteExcelFile<T, TColumn>( ExportData<T> exportData, string filePath, Func<T, TColumn, string>? customValueFormatter )
+	internal int WriteExcelFile<T, TColumn>( ExportData<T> exportData, string filePath, Func<T, TColumn, string>? customValueFormatter )
 	{
 		using ( ExcelEngine excelEngine = new ExcelEngine() )
 		{
@@ -188,9 +196,9 @@ public class ExcelExportService : IExportService
 
 			// Save the file
 			workbook.SaveAs( filePath );
-
-			ShowSuccessMessageAsync( filePath, exportData.Items.Count ).GetAwaiter().GetResult();
 		}
+
+		return exportData.Items.Count;
 	}
 	private string GetColumnHeader( GridColumn column, Dictionary<string, string>? columnHeaderOverrides )
 	{
@@ -231,8 +239,8 @@ public class ExcelExportService : IExportService
 		try
 		{
 			var message = _languageProvider?.GetTranslation("ExportGeneralSuccess")
-						  ?.Replace("{count}", recordCount.ToString())
-						  ?.Replace("{file}", Path.GetFileName(filePath))
+						  ?.Replace("{count}", recordCount.ToString(), StringComparison.Ordinal)
+						  ?.Replace("{file}", Path.GetFileName(filePath), StringComparison.Ordinal)
 						  ?? $"Exported {recordCount} records to {Path.GetFileName(filePath)}";
 
 			if ( Application.Current != null )

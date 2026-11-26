@@ -10,7 +10,7 @@ public partial class TimeRegistrationView : UserControl
 
 	private void WorktypeTree_SelectedItemChanged( object sender, RoutedPropertyChangedEventArgs<object> e )
 	{
-		if ( DataContext is TimeRegistrationViewModel viewModel && e.NewValue is WorktypeModel worktype )
+		if ( DataContext is TimeRegistrationViewModel viewModel && e.NewValue is WorkTypeModel worktype )
 			viewModel.SelectWorktype( worktype );
 	}
 

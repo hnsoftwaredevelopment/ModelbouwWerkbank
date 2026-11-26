@@ -10,7 +10,9 @@ public class BrandValidator : IEntityValidator<BrandModel>
 
 	public BrandValidator( IBrandService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( BrandModel brand )
+	public Task<ValidationResult> ValidateAsync( BrandModel brand ) => ValidateAsync( brand, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( BrandModel brand, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -27,7 +29,7 @@ public class BrandValidator : IEntityValidator<BrandModel>
 		// ❗ Duplicate checks
 		if ( brand.BrandId == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( brand.BrandName ) )
+			if ( await _dataService.NameExistsAsync( brand.BrandName, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationBrandNameExists );
 		}
 

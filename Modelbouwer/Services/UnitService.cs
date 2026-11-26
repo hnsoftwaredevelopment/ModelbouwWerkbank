@@ -7,7 +7,7 @@ namespace Modelbouwer.Services;
 public class UnitService : IUnitService
 {
 	private readonly GenericDataService _dataService;
-	public bool UnitUsed { get; set; } = false;
+	public bool UnitUsed { get; set; }
 
 	public UnitService( GenericDataService dataService )
 	{
@@ -32,7 +32,7 @@ public class UnitService : IUnitService
 		$"UPDATE {DBNames.Database}.{DBNames.UnitTable} " +
 		$"SET " +
 		$"{DBNames.UnitFieldNameUnitName} = @{DBNames.UnitFieldNameUnitName}" +
-		$"WHERE {DBNames.UnitFieldNameUnitId} = @{DBNames.UnitFieldNameUnitId};";
+		$" WHERE {DBNames.UnitFieldNameUnitId} = @{DBNames.UnitFieldNameUnitId};";
 
 	public string DeleteUnitQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.UnitTable} " +
@@ -46,7 +46,9 @@ public class UnitService : IUnitService
 	public string UnitUsedQuery = $"SELECT COUNT({DBNames.ProductFieldNameUnitId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameUnitId} = @UnitId";
 	#endregion
 
-	public Task<List<UnitModel>> GetAllUnitsAsync()
+	public Task<List<UnitModel>> GetAllUnitsAsync() => GetAllUnitsAsync( CancellationToken.None );
+
+	public Task<List<UnitModel>> GetAllUnitsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteUnitList, reader =>
 		{
@@ -55,22 +57,26 @@ public class UnitService : IUnitService
 				UnitId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.UnitFieldNameUnitId}" ] ),
 				UnitName = DatabaseValueConverter.GetString( reader [ $"{DBNames.UnitFieldNameUnitName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewUnitAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewUnitAsync( Dictionary<string, object?> queryParameters ) => InsertNewUnitAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewUnitAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
 			{ $"@{DBNames.UnitFieldNameUnitName}", queryParameters[$"@{DBNames.UnitFieldNameUnitName}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewUnitQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewUnitQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateUnitAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateUnitAsync( Dictionary<string, object?> queryParameters ) => UpdateUnitAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateUnitAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -78,10 +84,12 @@ public class UnitService : IUnitService
 			{ $"@{DBNames.UnitFieldNameUnitName}", queryParameters[$"@{DBNames.UnitFieldNameUnitName}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateUnitQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateUnitQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteUnitAsync( int unitId )
+	public Task DeleteUnitAsync( int unitId ) => DeleteUnitAsync( unitId, CancellationToken.None );
+
+	public async Task DeleteUnitAsync( int unitId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -90,7 +98,7 @@ public class UnitService : IUnitService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteUnitQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteUnitQuery, parameters, cancellationToken );
 		}
 		catch ( Exception ex )
 		{
@@ -113,7 +121,9 @@ public class UnitService : IUnitService
 		}
 	}
 
-	public async Task<bool> IsUnitUsedAsync( int unitId )
+	public Task<bool> IsUnitUsedAsync( int unitId ) => IsUnitUsedAsync( unitId, CancellationToken.None );
+
+	public async Task<bool> IsUnitUsedAsync( int unitId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -122,12 +132,14 @@ public class UnitService : IUnitService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			UnitUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? unitName )
+	public Task<bool> NameExistsAsync( string? unitName ) => NameExistsAsync( unitName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? unitName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( unitName ) )
 			return false;
@@ -137,7 +149,7 @@ public class UnitService : IUnitService
 			{ $"@{DBNames.UnitFieldNameUnitName}", unitName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( UnitNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( UnitNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 }

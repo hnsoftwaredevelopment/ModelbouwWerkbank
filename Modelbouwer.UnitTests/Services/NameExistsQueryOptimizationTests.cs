@@ -26,7 +26,7 @@ public class NameExistsQueryOptimizationTests
 
 		StringAssert.Contains( source, $"public string {queryName}" );
 		StringAssert.Contains( source, "LOWER(" );
-		StringAssert.Contains( method, $"ExecuteScalarAsync<int>( {queryName}, parameters )" );
+		StringAssert.Contains( method, $"ExecuteScalarAsync<int>( {queryName}, parameters, cancellationToken )" );
 		Assert.IsFalse( method.Contains( "GetAll", StringComparison.Ordinal ), $"{serviceFileName} {methodSignature} should not load full lists for existence checks." );
 	}
 

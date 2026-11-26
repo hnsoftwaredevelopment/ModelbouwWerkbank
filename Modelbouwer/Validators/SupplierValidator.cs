@@ -6,7 +6,9 @@ public class SupplierValidator : IEntityValidator<SupplierModel>
 
 	public SupplierValidator( ISupplierService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( SupplierModel supplier )
+	public Task<ValidationResult> ValidateAsync( SupplierModel supplier ) => ValidateAsync( supplier, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( SupplierModel supplier, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -23,7 +25,7 @@ public class SupplierValidator : IEntityValidator<SupplierModel>
 		// ❗ Duplicate checks
 		if ( supplier.Id == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( supplier.Name ) )
+			if ( await _dataService.NameExistsAsync( supplier.Name, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationSupplierNameExists );
 		}
 

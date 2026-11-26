@@ -27,7 +27,7 @@ public class SupplierServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductSupplierModel>>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, ProductSupplierModel>>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( new List<ProductSupplierModel> { expected } );
 
 		var result = await _service.GetProductSupplierAsync( 11, 5 );
@@ -67,7 +67,7 @@ public class SupplierServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.Is<string>( q => q != null && q.Contains( "INSERT INTO" ) ), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.Is<string>( q => q != null && q.Contains( "INSERT INTO" ) ), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 41u );
 
 		var result = await _service.UpsertProductSupplierAsync( productSupplier );
@@ -83,7 +83,7 @@ public class SupplierServiceTests
 				( int ) p [ DBNames.ProductSupplierFieldNameProductId ] == 5 &&
 				( int ) p [ DBNames.ProductSupplierFieldNameSupplierId ] == 11 &&
 				!p.ContainsKey( DBNames.ProductSupplierFieldNameCurrencyId ) &&
-				!p.ContainsKey( DBNames.ProductSupplierFieldNameDefaultSupplier ) ) ),
+				!p.ContainsKey( DBNames.ProductSupplierFieldNameDefaultSupplier ) ), It.IsAny<CancellationToken>() ),
 			Times.Once );
 	}
 }

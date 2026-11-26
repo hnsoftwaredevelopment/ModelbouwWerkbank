@@ -116,10 +116,10 @@ public class TimeRegistrationServiceTests
 	[TestMethod]
 	public void UsageStocklogQueries_BookUsageAsAmountUsedLinkedToTheUsage()
 	{
-		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"INSERT INTO {DBNames.Database}.{DBNames.StocklogTable}" );
-		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"{DBNames.StocklogFieldNameProductUsageId}" );
+		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"INSERT INTO {DBNames.Database}.{DBNames.StockLogTable}" );
+		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, $"{DBNames.StockLogFieldNameProductUsageId}" );
 		StringAssert.Contains( TimeRegistrationService.InsertUsageStocklogQuery, "VALUES (@ProductId, @ProductUsageId, 0, @AmountUsed, 0, @UsageDate)" );
-		StringAssert.Contains( TimeRegistrationService.DeleteUsageStocklogQuery, $"WHERE {DBNames.StocklogFieldNameProductUsageId} = @ProductUsageId" );
+		StringAssert.Contains( TimeRegistrationService.DeleteUsageStocklogQuery, $"WHERE {DBNames.StockLogFieldNameProductUsageId} = @ProductUsageId" );
 	}
 
 	[TestMethod]

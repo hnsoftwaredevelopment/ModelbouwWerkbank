@@ -3,7 +3,7 @@
 public class StorageLocationService : IStorageLocationService
 {
 	private readonly GenericDataService _dataService;
-	public bool StorageLocationUsed { get; set; } = false;
+	public bool StorageLocationUsed { get; set; }
 
 	public StorageLocationService( GenericDataService dataService )
 	{
@@ -30,7 +30,7 @@ public class StorageLocationService : IStorageLocationService
 		$"SET " +
 		$"{DBNames.StorageFieldNameParentId} = @{DBNames.StorageFieldNameParentId}, " +
 		$"{DBNames.StorageFieldNameName} = @{DBNames.StorageFieldNameName}" +
-		$"WHERE {DBNames.StorageFieldNameId} = @{DBNames.StorageFieldNameId};";
+		$" WHERE {DBNames.StorageFieldNameId} = @{DBNames.StorageFieldNameId};";
 
 	public string DeleteStorageLocationQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.StorageTable} " +
@@ -48,7 +48,9 @@ public class StorageLocationService : IStorageLocationService
 		$"SELECT COUNT(*){DBNames.ProductFieldNameStorageId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameStorageId} = @StorageLocationId";
 	#endregion
 
-	public Task<List<StorageLocationModel>> GetAllStorageLocationsAsync()
+	public Task<List<StorageLocationModel>> GetAllStorageLocationsAsync() => GetAllStorageLocationsAsync( CancellationToken.None );
+
+	public Task<List<StorageLocationModel>> GetAllStorageLocationsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteStorageLocationList, reader =>
 		{
@@ -58,10 +60,12 @@ public class StorageLocationService : IStorageLocationService
 				ParentId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.StorageFieldNameParentId}" ] ),
 				StorageName = DatabaseValueConverter.GetString( reader [ $"{DBNames.StorageFieldNameName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewStorageLocationAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewStorageLocationAsync( Dictionary<string, object?> queryParameters ) => InsertNewStorageLocationAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewStorageLocationAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -69,12 +73,14 @@ public class StorageLocationService : IStorageLocationService
 			{ $"@{DBNames.StorageFieldNameName}", queryParameters[$"@{DBNames.StorageFieldNameName}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewStorageLocationQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewStorageLocationQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateStorageLocationAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateStorageLocationAsync( Dictionary<string, object?> queryParameters ) => UpdateStorageLocationAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateStorageLocationAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -83,10 +89,12 @@ public class StorageLocationService : IStorageLocationService
 			{ $"@{DBNames.StorageFieldNameName}", queryParameters[$"@{DBNames.StorageFieldNameName}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateStorageLocationQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateStorageLocationQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteStorageLocationAsync( int storagelocationId )
+	public Task DeleteStorageLocationAsync( int storagelocationId ) => DeleteStorageLocationAsync( storagelocationId, CancellationToken.None );
+
+	public async Task DeleteStorageLocationAsync( int storagelocationId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -95,7 +103,7 @@ public class StorageLocationService : IStorageLocationService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteStorageLocationQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteStorageLocationQuery, parameters, cancellationToken );
 		}
 		catch ( MySqlException ex ) when ( ex.Number == 1451 )
 		{
@@ -104,7 +112,9 @@ public class StorageLocationService : IStorageLocationService
 		}
 	}
 
-	public async Task<bool> IsStorageLocationUsedAsync( int storagelocationId )
+	public Task<bool> IsStorageLocationUsedAsync( int storagelocationId ) => IsStorageLocationUsedAsync( storagelocationId, CancellationToken.None );
+
+	public async Task<bool> IsStorageLocationUsedAsync( int storagelocationId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -113,12 +123,14 @@ public class StorageLocationService : IStorageLocationService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			StorageLocationUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? StorageName, int? parentId )
+	public Task<bool> NameExistsAsync( string? StorageName, int? parentId ) => NameExistsAsync( StorageName, parentId, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? StorageName, int? parentId, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( StorageName ) )
 			return false;
@@ -133,7 +145,7 @@ public class StorageLocationService : IStorageLocationService
 		};
 
 
-		var count = await _dataService.ExecuteScalarAsync<int>( StorageNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( StorageNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 }

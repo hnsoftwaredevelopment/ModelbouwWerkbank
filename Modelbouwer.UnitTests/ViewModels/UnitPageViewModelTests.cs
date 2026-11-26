@@ -8,13 +8,13 @@ public class UnitPageViewModelTests
 	{
 		var unitService = new Mock<IUnitService>();
 		unitService
-			.Setup( service => service.GetAllUnitsAsync() )
+			.Setup( service => service.GetAllUnitsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( unitService.Object );
 
 		await Task.Delay( 100 );
-		unitService.Verify( service => service.GetAllUnitsAsync(), Times.Once );
+		unitService.Verify( service => service.GetAllUnitsAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -23,7 +23,7 @@ public class UnitPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load units." );
 		var unitService = new Mock<IUnitService>();
 		unitService
-			.Setup( service => service.GetAllUnitsAsync() )
+			.Setup( service => service.GetAllUnitsAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<UnitModel>>( expected ) );
 
 		var viewModel = CreateViewModel( unitService.Object );

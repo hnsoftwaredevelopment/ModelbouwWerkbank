@@ -249,29 +249,29 @@ public class DBNames
 
 	#region Products in stock
 	#region Stocklog table
-	public static readonly string StocklogTable = "stocklog";
+	public static readonly string StockLogTable = "stocklog";
 	public static readonly string GetCategoryFunction = "GetCategoryPath";
 	public static readonly string GetStockLocationFunction = "GetStockLocationPath";
-	public static readonly string StocklogFieldNameId = "Id";
-	public static readonly string StocklogFieldTypeId = "int";
-	public static readonly string StocklogFieldNameProductId = "product_Id";
-	public static readonly string StocklogFieldTypeProductId = "int";
-	public static readonly string StocklogFieldNameStorageId = "storage_Id";
-	public static readonly string StocklogFieldTypeStorageId = "int";
-	public static readonly string StocklogFieldNameSupplyOrderId = "supplyorder_Id";
-	public static readonly string StocklogFieldTypeSupplyOrderId = "int";
-	public static readonly string StocklogFieldNameProductUsageId = "productusage_Id";
-	public static readonly string StocklogFieldTypeProductUsageId = "int";
-	public static readonly string StocklogFieldNameSupplyOrderlineId = "supplyorderline_Id";
-	public static readonly string StocklogFieldTypeSupplyOrderlineId = "int";
-	public static readonly string StocklogFieldNameAmountReceived = "AmountReceived";
-	public static readonly string StocklogFieldTypeAmountReceived = "double";
-	public static readonly string StocklogFieldNameAmountUsed = "AmountUsed";
-	public static readonly string StocklogFieldTypeAmountUsed = "double";
-	public static readonly string StocklogFieldNameAmountCorrection = "AmountCorrection";
-	public static readonly string StocklogFieldTypeAmountCorrection = "double";
-	public static readonly string StocklogFieldNameLogDate = "LogDate";
-	public static readonly string StocklogFieldTypeLogDate = "date";
+	public static readonly string StockLogFieldNameId = "Id";
+	public static readonly string StockLogFieldTypeId = "int";
+	public static readonly string StockLogFieldNameProductId = "product_Id";
+	public static readonly string StockLogFieldTypeProductId = "int";
+	public static readonly string StockLogFieldNameStorageId = "storage_Id";
+	public static readonly string StockLogFieldTypeStorageId = "int";
+	public static readonly string StockLogFieldNameSupplyOrderId = "supplyorder_Id";
+	public static readonly string StockLogFieldTypeSupplyOrderId = "int";
+	public static readonly string StockLogFieldNameProductUsageId = "productusage_Id";
+	public static readonly string StockLogFieldTypeProductUsageId = "int";
+	public static readonly string StockLogFieldNameSupplyOrderLineId = "supplyorderline_Id";
+	public static readonly string StockLogFieldTypeSupplyOrderLineId = "int";
+	public static readonly string StockLogFieldNameAmountReceived = "AmountReceived";
+	public static readonly string StockLogFieldTypeAmountReceived = "double";
+	public static readonly string StockLogFieldNameAmountUsed = "AmountUsed";
+	public static readonly string StockLogFieldTypeAmountUsed = "double";
+	public static readonly string StockLogFieldNameAmountCorrection = "AmountCorrection";
+	public static readonly string StockLogFieldTypeAmountCorrection = "double";
+	public static readonly string StockLogFieldNameLogDate = "LogDate";
+	public static readonly string StockLogFieldTypeLogDate = "date";
 	#endregion Stocklog table
 
 	#endregion
@@ -285,8 +285,8 @@ public class DBNames
 	public static readonly string StorageFieldTypeParentId = "int";
 	public static readonly string StorageFieldNameName = "Name";
 	public static readonly string StorageFieldTypeName = "string";
-	public static readonly string StorageFieldNameFullpath = "Fullpath";
-	public static readonly string StorageFieldTypeFullpath = "string";
+	public static readonly string StorageFieldNameFullPath = "Fullpath";
+	public static readonly string StorageFieldTypeFullPath = "string";
 
 	#endregion Storage table
 
@@ -357,8 +357,8 @@ public class DBNames
 	public static readonly string TimeFieldTypeId = "int";
 	public static readonly string TimeFieldNameProjectId = "project_Id";
 	public static readonly string TimeFieldTypeProjectId = "int";
-	public static readonly string TimeFieldNameWorktypeId = "Worktype_Id";
-	public static readonly string TimeFieldTypeWorktypeId = "int";
+	public static readonly string TimeFieldNameWorkTypeId = "Worktype_Id";
+	public static readonly string TimeFieldTypeWorkTypeId = "int";
 	public static readonly string TimeFieldNameWorkDate = "WorkDate";
 	public static readonly string TimeFieldTypeWorkDate = "date";
 	public static readonly string TimeFieldNameStartTime = "StartTime";
@@ -375,10 +375,10 @@ public class DBNames
 	public static readonly string TimeViewFieldTypeProjectId = "int";
 	public static readonly string TimeViewFieldNameProjectName = "ProjectName";
 	public static readonly string TimeViewFieldTypeProjectName = "string";
-	public static readonly string TimeViewFieldNameWorktypeId = "WorktypeId";
-	public static readonly string TimeViewFieldTypeWorktypeId = "int";
-	public static readonly string TimeViewFieldNameWorktypeName = "WorktypeName";
-	public static readonly string TimeViewFieldTypeWorktypeName = "string";
+	public static readonly string TimeViewFieldNameWorkTypeId = "WorktypeId";
+	public static readonly string TimeViewFieldTypeWorkTypeId = "int";
+	public static readonly string TimeViewFieldNameWorkTypeName = "WorktypeName";
+	public static readonly string TimeViewFieldTypeWorkTypeName = "string";
 	public static readonly string TimeViewFieldNameWorkDate = "WorkDate";
 	public static readonly string TimeViewFieldTypeWorkDate = "date";
 	public static readonly string TimeViewFieldNameStartTime = "StartTime";
@@ -559,15 +559,15 @@ public class DBNames
 	#endregion Unit Table
 
 	#region Worktype Table and view
-	public static readonly string WorktypeTable = "worktype";
-	public static readonly string WorktypeFieldNameId = "Id";
-	public static readonly string WorktypeFieldTypeId = "int";
-	public static readonly string WorktypeFieldNameParentId = "ParentId";
-	public static readonly string WorktypeFieldTypeParentId = "int";
-	public static readonly string WorktypeFieldNameName = "Name";
-	public static readonly string WorktypeFieldTypeName = "string";
-	public static readonly string WorktypeFieldNameFullpath = "FullPath";
-	public static readonly string WorktypeFieldTypeFullpath = "string";
+	public static readonly string WorkTypeTable = "worktype";
+	public static readonly string WorkTypeFieldNameId = "Id";
+	public static readonly string WorkTypeFieldTypeId = "int";
+	public static readonly string WorkTypeFieldNameParentId = "ParentId";
+	public static readonly string WorkTypeFieldTypeParentId = "int";
+	public static readonly string WorkTypeFieldNameName = "Name";
+	public static readonly string WorkTypeFieldTypeName = "string";
+	public static readonly string WorkTypeFieldNameFullPath = "FullPath";
+	public static readonly string WorkTypeFieldTypeFullPath = "string";
 
 	#endregion
 }

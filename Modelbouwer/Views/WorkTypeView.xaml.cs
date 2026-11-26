@@ -7,9 +7,9 @@ using Syncfusion.UI.Xaml.TreeGrid;
 namespace Modelbouwer.Views;
 
 /// <summary>
-/// Interaction logic for WorktypeView.xaml
+/// Interaction logic for WorkTypeView.xaml
 /// </summary>
-public partial class WorktypeView : UserControl
+public partial class WorkTypeView : UserControl
 {
 	private readonly CsvExportService _csvExportService;
 	private readonly ExcelExportService _excelExportService;
@@ -18,15 +18,22 @@ public partial class WorktypeView : UserControl
 	public bool IncludeHeaders { get; set; } = true;
 	public Encoding CsvEncoding { get; set; } = Encoding.UTF8;
 
-	public WorktypeView( WorktypePageViewModel viewModel, CsvExportService csvExportService, ExcelExportService excelExportService )
+	public WorkTypeView( WorkTypePageViewModel viewModel, CsvExportService csvExportService, ExcelExportService excelExportService )
 	{
 		InitializeComponent();
 		DataContext = viewModel;
 		_csvExportService = csvExportService;
 		_excelExportService = excelExportService;
 
-		if ( DataContext is WorktypePageViewModel vm )
+		if ( DataContext is WorkTypePageViewModel vm )
 		{
+			// A save reloads the list; keep the branches the user had open.
+			TreeGridExpansionState.KeepExpansion( SfGridTree, item => ( ( WorkTypeModel ) item ).WorktypeId, ( before, after ) =>
+			{
+				vm.BeforeTreeRebuild = before;
+				vm.AfterTreeRebuild = after;
+			} );
+
 			vm._filterChanged += () =>
 			{
 				if ( SfGridTree.View == null )
@@ -46,7 +53,7 @@ public partial class WorktypeView : UserControl
 
 	private void WorktypeView_Loaded( object sender, RoutedEventArgs e )
 	{
-		if ( DataContext is WorktypePageViewModel vm )
+		if ( DataContext is WorkTypePageViewModel vm )
 		{
 			vm.RefreshGridFilter = () =>
 			{
@@ -61,7 +68,7 @@ public partial class WorktypeView : UserControl
 		if ( sender is not SfTreeGrid grid )
 			return;
 
-		if ( DataContext is not WorktypePageViewModel vm )
+		if ( DataContext is not WorkTypePageViewModel vm )
 			return;
 
 		_ = grid.Dispatcher.BeginInvoke(
@@ -87,14 +94,14 @@ public partial class WorktypeView : UserControl
 		if ( dialog.ShowDialog() == true )
 		{
 			// Haal de lijst op uit de DataGrid
-			if ( SfGridTree.ItemsSource is List<WorktypeModel> currencies )
+			if ( SfGridTree.ItemsSource is List<WorkTypeModel> currencies )
 			{
 				// Voer de import uit
 				var result = CsvImportService.ImportCsv(
 				filePath: dialog.FileName,
 				existingRecords: currencies,
-				columnMappings: WorktypeModel.ColumnMappings, // mapping van UI naar property
-                uniqueProperty: nameof(WorktypeModel.WorktypeName) // unieke kolom
+				columnMappings: WorkTypeModel.ColumnMappings, // mapping van UI naar property
+                uniqueProperty: nameof(WorkTypeModel.WorktypeName) // unieke kolom
             );
 
 				MessageBox.Show(
@@ -112,7 +119,7 @@ public partial class WorktypeView : UserControl
 			}
 			else
 			{
-				MessageBox.Show( "The ItemsSource of the DataGrid is not a List<WorktypeModel>.", "Error", MessageBoxButton.OK, MessageBoxImage.Error );
+				MessageBox.Show( "The ItemsSource of the DataGrid is not a List<WorkTypeModel>.", "Error", MessageBoxButton.OK, MessageBoxImage.Error );
 			}
 		}
 	}
@@ -133,14 +140,14 @@ public partial class WorktypeView : UserControl
 
 			var columnHeaders = new Dictionary<string, string>();
 
-			foreach ( var mapping in WorktypeModel.ColumnMappings )
+			foreach ( var mapping in WorkTypeModel.ColumnMappings )
 			{
 				columnHeaders [ mapping.Key ] = mapping.Value [ 0 ];
 			}
 
 			using ( new UiBusyScope( CustomCursors.Exporting ) )
 			{
-				await _csvExportService.ExportToCsvAsync<WorktypeModel>(
+				await _csvExportService.ExportToCsvAsync<WorkTypeModel>(
 				SfGridTree,
 				dialog.FileName,
 				columnHeaders,
@@ -174,7 +181,7 @@ public partial class WorktypeView : UserControl
 
 			using ( new UiBusyScope( CustomCursors.Exporting ) )
 			{
-				await _excelExportService.ExportToExcelAsync<WorktypeModel>(
+				await _excelExportService.ExportToExcelAsync<WorkTypeModel>(
 				SfGridTree,
 				dialog.FileName,
 				columnHeaders );

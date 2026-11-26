@@ -3,7 +3,7 @@
 public class SettingsService : ISettingsService
 {
 	private static readonly CultureInfo SettingsNumberCulture = new("nl-NL");
-	string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+	readonly string userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 	public AppSettings Settings { get; private set; } = new AppSettings();
 	public event EventHandler? SettingsChanged;
 	public SettingsService() { }
@@ -121,7 +121,7 @@ public class SettingsService : ISettingsService
 			return false;
 		}
 
-		var culture = value.Contains( ',' ) && !value.Contains( '.' )
+		var culture = value.Contains( ',', StringComparison.Ordinal ) && !value.Contains( '.', StringComparison.Ordinal )
 			? SettingsNumberCulture
 			: CultureInfo.InvariantCulture;
 

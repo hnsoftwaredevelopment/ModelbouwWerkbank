@@ -117,21 +117,21 @@
             <StackPanel Orientation="Horizontal" Grid.Column="0" Margin="10,2,0,2">
                 <Button
                     Style="{StaticResource ActionBarButtonStyle}"
-                    Command="{Binding AddCountryCommand}"
+                    Command="{Binding AddUnitCommand}"
                     ToolTip="{x:Static language:Language.toolbarButtonActionNew}">
                     <Image Style="{DynamicResource ToolBarAddIcon}" />
                 </Button>
 
                 <Button
                     Style="{StaticResource ActionBarButtonStyle}"
-                    Command="{Binding DeleteCountryCommand}"
+                    Command="{Binding DeleteUnitCommand}"
                     ToolTip="{x:Static language:Language.toolbarButtonActionDelete}">
                     <Image Style="{DynamicResource ToolBarDeleteIcon}" />
                 </Button>
 
                 <Button
                     Style="{StaticResource ActionBarButtonStyle}"
-                    Command="{Binding SaveCountryCommand}"
+                    Command="{Binding SaveUnitCommand}"
                     ToolTip="{x:Static language:Language.toolbarButtonActionSave}">
                     <Image Style="{DynamicResource ToolBarSaveIcon}" />
                 </Button>

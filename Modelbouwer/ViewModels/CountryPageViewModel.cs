@@ -109,10 +109,10 @@ public partial class CountryPageViewModel : EntityPageViewModel<CountryModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<CountryModel>> LoadItemsAsync() => _countryService.GetAllCountriesAsync();
-	protected override Task<int> InsertAsync( CountryModel item ) => _countryService.InsertNewCountryAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( CountryModel item ) => _countryService.UpdateCountryAsync( CreateParameters( item ) );
-	protected override async Task DeleteAsync( CountryModel item )
+	protected override Task<List<CountryModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _countryService.GetAllCountriesAsync( cancellationToken );
+	protected override Task<int> InsertAsync( CountryModel item, CancellationToken cancellationToken ) => _countryService.InsertNewCountryAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( CountryModel item, CancellationToken cancellationToken ) => _countryService.UpdateCountryAsync( CreateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( CountryModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -129,7 +129,7 @@ public partial class CountryPageViewModel : EntityPageViewModel<CountryModel>
 
 		try
 		{
-			await _countryService.DeleteCountryAsync( item.CountryId );
+			await _countryService.DeleteCountryAsync( item.CountryId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

@@ -67,10 +67,10 @@ public class UnitPageViewModel : EntityPageViewModel<UnitModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<UnitModel>> LoadItemsAsync() => _dataService.GetAllUnitsAsync();
-	protected override Task<int> InsertAsync( UnitModel item ) => _dataService.InsertNewUnitAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( UnitModel item ) => _dataService.UpdateUnitAsync( CreateParameters( item ) );
-	protected override async Task DeleteAsync( UnitModel item )
+	protected override Task<List<UnitModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllUnitsAsync( cancellationToken );
+	protected override Task<int> InsertAsync( UnitModel item, CancellationToken cancellationToken ) => _dataService.InsertNewUnitAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( UnitModel item, CancellationToken cancellationToken ) => _dataService.UpdateUnitAsync( CreateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( UnitModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -86,7 +86,7 @@ public class UnitPageViewModel : EntityPageViewModel<UnitModel>
 			return;
 		try
 		{
-			await _dataService.DeleteUnitAsync( item.UnitId );
+			await _dataService.DeleteUnitAsync( item.UnitId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

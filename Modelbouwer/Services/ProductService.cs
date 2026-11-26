@@ -3,7 +3,7 @@
 public class ProductService : IProductService
 {
 	private readonly GenericDataService _dataService;
-	public bool ProductUsed { get; set; } = false;
+	public bool ProductUsed { get; set; }
 
 	public ProductService( GenericDataService dataService )
 	{
@@ -134,7 +134,9 @@ public class ProductService : IProductService
 		$"AS ProductInUse;";
 	#endregion
 
-	public Task<List<ProductModel>> GetAllProductsAsync()
+	public Task<List<ProductModel>> GetAllProductsAsync() => GetAllProductsAsync( CancellationToken.None );
+
+	public Task<List<ProductModel>> GetAllProductsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteProductList, reader =>
 		{
@@ -157,10 +159,12 @@ public class ProductService : IProductService
 				ProductStorageId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.ProductFieldNameStorageId}" ] ),
 				ProductUnitId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.ProductFieldNameUnitId}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public Task<List<BrandModel>> GetAllBrandsAsync()
+	public Task<List<BrandModel>> GetAllBrandsAsync() => GetAllBrandsAsync( CancellationToken.None );
+
+	public Task<List<BrandModel>> GetAllBrandsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteBrandList, reader =>
 		{
@@ -169,10 +173,12 @@ public class ProductService : IProductService
 				BrandId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.BrandFieldNameId}" ] ),
 				BrandName = DatabaseValueConverter.GetString( reader [ $"{DBNames.BrandFieldNameName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public Task<List<UnitModel>> GetAllUnitsAsync()
+	public Task<List<UnitModel>> GetAllUnitsAsync() => GetAllUnitsAsync( CancellationToken.None );
+
+	public Task<List<UnitModel>> GetAllUnitsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteUnitList, reader =>
 		{
@@ -181,10 +187,12 @@ public class ProductService : IProductService
 				UnitId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.UnitFieldNameUnitId}" ] ),
 				UnitName = DatabaseValueConverter.GetString( reader [ $"{DBNames.UnitFieldNameUnitName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public Task<List<CategoryModel>> GetAllCategoriesAsync()
+	public Task<List<CategoryModel>> GetAllCategoriesAsync() => GetAllCategoriesAsync( CancellationToken.None );
+
+	public Task<List<CategoryModel>> GetAllCategoriesAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteCategoryList, reader =>
 		{
@@ -194,10 +202,12 @@ public class ProductService : IProductService
 				ParentId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.CategoryFieldNameParentId}" ] ),
 				CategoryName = DatabaseValueConverter.GetString( reader [ $"{DBNames.CategoryFieldNameName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewProductAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewProductAsync( Dictionary<string, object?> queryParameters ) => InsertNewProductAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewProductAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -218,12 +228,14 @@ public class ProductService : IProductService
 			{ $"{DBNames.ProductFieldNameUnitId}", queryParameters[$"@{DBNames.ProductFieldNameUnitId}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewProductQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewProductQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateProductAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateProductAsync( Dictionary<string, object?> queryParameters ) => UpdateProductAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateProductAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -245,10 +257,12 @@ public class ProductService : IProductService
 			{ $"{DBNames.ProductFieldNameUnitId}", queryParameters[$"@{DBNames.ProductFieldNameUnitId}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateProductQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateProductQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteProductAsync( int productId )
+	public Task DeleteProductAsync( int productId ) => DeleteProductAsync( productId, CancellationToken.None );
+
+	public async Task DeleteProductAsync( int productId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -257,7 +271,7 @@ public class ProductService : IProductService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteProductQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteProductQuery, parameters, cancellationToken );
 		}
 		catch ( Exception ex )
 		{
@@ -283,7 +297,9 @@ public class ProductService : IProductService
 		}
 	}
 
-	public async Task<bool> IsProductUsedAsync( int productId )
+	public Task<bool> IsProductUsedAsync( int productId ) => IsProductUsedAsync( productId, CancellationToken.None );
+
+	public async Task<bool> IsProductUsedAsync( int productId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -292,12 +308,14 @@ public class ProductService : IProductService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			ProductUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? productName )
+	public Task<bool> NameExistsAsync( string? productName ) => NameExistsAsync( productName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? productName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( productName ) )
 			return false;
@@ -307,7 +325,7 @@ public class ProductService : IProductService
 			{ $"@{DBNames.ProductFieldNameName}", productName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( ProductNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( ProductNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 }

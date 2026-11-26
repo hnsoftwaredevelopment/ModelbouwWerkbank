@@ -13,8 +13,8 @@
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>false</SelfContained>
     <PublishReadyToRun>true</PublishReadyToRun>
-    <AssemblyVersion>2026.11.26.6</AssemblyVersion>
-    <FileVersion>2026.11.26.6</FileVersion>
+    <AssemblyVersion>2026.11.26.13</AssemblyVersion>
+    <FileVersion>2026.11.26.13</FileVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -90,6 +90,10 @@
     <Compile Remove="..\tmp\**\*.cs" />
     <EmbeddedResource Remove="..\tmp\**\*.*" />
     <None Remove="..\tmp\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Modelbouwer.UnitTests" />
   </ItemGroup>
 
 </Project>

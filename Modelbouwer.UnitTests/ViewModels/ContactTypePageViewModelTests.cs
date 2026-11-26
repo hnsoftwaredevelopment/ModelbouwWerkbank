@@ -8,13 +8,13 @@ public class ContactTypePageViewModelTests
 	{
 		var contactTypeService = new Mock<IContactTypeService>();
 		contactTypeService
-			.Setup( service => service.GetAllContactTypesAsync() )
+			.Setup( service => service.GetAllContactTypesAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( contactTypeService.Object );
 
 		await Task.Delay( 100 );
-		contactTypeService.Verify( service => service.GetAllContactTypesAsync(), Times.Once );
+		contactTypeService.Verify( service => service.GetAllContactTypesAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -23,7 +23,7 @@ public class ContactTypePageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load contact types." );
 		var contactTypeService = new Mock<IContactTypeService>();
 		contactTypeService
-			.Setup( service => service.GetAllContactTypesAsync() )
+			.Setup( service => service.GetAllContactTypesAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<ContactTypeModel>>( expected ) );
 
 		var viewModel = CreateViewModel( contactTypeService.Object );

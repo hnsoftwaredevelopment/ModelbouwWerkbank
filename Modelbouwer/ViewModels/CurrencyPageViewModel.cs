@@ -7,7 +7,6 @@ public partial class CurrencyPageViewModel : EntityPageViewModel<CurrencyModel>
 	private readonly ICurrencyService _dataService;
 
 	// Collections
-	public ObservableCollection<CurrencyModel> Currencies { get; } = [ ];
 
 	// SelectedCurrency als type-safe alias
 	public CurrencyModel? SelectedCurrency
@@ -52,7 +51,7 @@ public partial class CurrencyPageViewModel : EntityPageViewModel<CurrencyModel>
 	}
 
 	// Properties voor UI binding
-	public ObservableCollection<CurrencyModel> Countries => Items;
+	public ObservableCollection<CurrencyModel> Currencies => Items;
 	public int TotalCurrencyCount => TotalItemCount;
 	public int VisibleCurrencyCount
 	{
@@ -75,10 +74,10 @@ public partial class CurrencyPageViewModel : EntityPageViewModel<CurrencyModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<CurrencyModel>> LoadItemsAsync() => _dataService.GetAllCurrenciesAsync();
-	protected override Task<int> InsertAsync( CurrencyModel item ) => _dataService.InsertNewCurrencyAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( CurrencyModel item ) => _dataService.UpdateCurrencyAsync( CreateParameters( item ) );
-	protected override async Task DeleteAsync( CurrencyModel item )
+	protected override Task<List<CurrencyModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllCurrenciesAsync( cancellationToken );
+	protected override Task<int> InsertAsync( CurrencyModel item, CancellationToken cancellationToken ) => _dataService.InsertNewCurrencyAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( CurrencyModel item, CancellationToken cancellationToken ) => _dataService.UpdateCurrencyAsync( CreateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( CurrencyModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -94,7 +93,7 @@ public partial class CurrencyPageViewModel : EntityPageViewModel<CurrencyModel>
 			return;
 		try
 		{
-			await _dataService.DeleteCurrencyAsync( item.CurrencyId );
+			await _dataService.DeleteCurrencyAsync( item.CurrencyId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

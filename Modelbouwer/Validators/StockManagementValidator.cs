@@ -1,17 +1,9 @@
-﻿namespace Modelbouwer.Validators;
+namespace Modelbouwer.Validators;
 
 public class StockManagementValidator : IEntityValidator<StockManagementModel>
 {
-	private readonly IStockService _dataService;
+	// No validation is required for stock management yet; this is where future rules go.
+	public Task<ValidationResult> ValidateAsync( StockManagementModel stockmanagement ) => ValidateAsync( stockmanagement, CancellationToken.None );
 
-	public StockManagementValidator( IStockService dataService ) => _dataService = dataService;
-
-	public async Task<ValidationResult> ValidateAsync( StockManagementModel stockmanagement )
-	{
-		var result = new ValidationResult();
-
-		// No validation requirered for stock management as of now, but this is where you would add any future validation logic.
-
-		return result;
-	}
+	public Task<ValidationResult> ValidateAsync( StockManagementModel stockmanagement, CancellationToken cancellationToken ) => Task.FromResult( new ValidationResult() );
 }

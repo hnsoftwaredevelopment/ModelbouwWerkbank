@@ -155,7 +155,6 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 	#endregion
 
 	#region SelectedSupplier + Filter
-	private SupplierModel? _previousSupplier;
 	//public SupplierModel? SelectedSupplier => SelectedItem;
 
 	private void UpdateFilteredContacts()
@@ -278,8 +277,6 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 		ObserveBackgroundTask( LoadOrderHistoryAsync( newValue ) );
 
 		OpenWebsiteCommand.NotifyCanExecuteChanged();
-
-		_previousSupplier = newValue;
 	}
 
 	#region Order history tab (KAN-81)
@@ -363,18 +360,18 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<SupplierModel>> LoadItemsAsync() => _dataService.GetAllSuppliersAsync();
-	protected override Task<int> InsertAsync( SupplierModel item ) => _dataService.InsertNewSupplierAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( SupplierModel item )
+	protected override Task<List<SupplierModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllSuppliersAsync( cancellationToken );
+	protected override Task<int> InsertAsync( SupplierModel item, CancellationToken cancellationToken ) => _dataService.InsertNewSupplierAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( SupplierModel item, CancellationToken cancellationToken )
 	{
 		if ( SelectedItem == null )
 			return Task.CompletedTask;
 
 		_lastSelectedSupplierId = SelectedItem.Id;
 
-		return _dataService.UpdateSupplierAsync( CreateParameters( SelectedItem ) );
+		return _dataService.UpdateSupplierAsync( CreateParameters( SelectedItem ), cancellationToken );
 	}
-	protected override async Task DeleteAsync( SupplierModel item )
+	protected override async Task DeleteAsync( SupplierModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -390,7 +387,7 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 			return;
 		try
 		{
-			await _dataService.DeleteSupplierAsync( item.Id );
+			await _dataService.DeleteSupplierAsync( item.Id, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{
@@ -460,6 +457,19 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 		{ $"@{DBNames.SupplierFieldNameId}", c.Id },
 		{ $"@{DBNames.SupplierFieldNameCode}", c.Code },
 		{ $"@{DBNames.SupplierFieldNameName}", c.Name?.Trim() },
+		{ $"@{DBNames.SupplierFieldNameAddress1}", c.Address1 },
+		{ $"@{DBNames.SupplierFieldNameAddress2}", c.Address2 },
+		{ $"@{DBNames.SupplierFieldNameZip}", c.Zip },
+		{ $"@{DBNames.SupplierFieldNameCity}", c.City },
+		{ $"@{DBNames.SupplierFieldNameUrl}", c.Url },
+		{ $"@{DBNames.SupplierFieldNameShippingCosts}", c.ShippingCosts },
+		{ $"@{DBNames.SupplierFieldNameMinShippingCosts}", c.MinShippingCosts },
+		{ $"@{DBNames.SupplierFieldNameOrderCosts}", c.OrderCosts },
+		{ $"@{DBNames.SupplierFieldNameMinOrderCosts}", c.MinOrderCosts },
+		{ $"@{DBNames.SupplierFieldNameCurrencyId}", c.CurrencyId == 0 ? null : c.CurrencyId },
+		{ $"@{DBNames.SupplierFieldNameCountryId}", c.CountryId == 0 ? null : c.CountryId },
+		{ $"@{DBNames.SupplierFieldNameGeneralEmail}", c.Mail },
+		{ $"@{DBNames.SupplierFieldNameGeneralPhone}", c.Phone },
 		{ $"@{DBNames.SupplierFieldNameMemo}", c.Memo }
 	};
 
