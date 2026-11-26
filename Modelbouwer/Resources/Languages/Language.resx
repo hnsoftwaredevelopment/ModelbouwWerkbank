@@ -4851,4 +4851,55 @@ PowerShell:
   <data name="StockHistoryOrderDeleted" xml:space="preserve">
     <value>Order niet meer aanwezig</value>
   </data>
+  <data name="metadataSupplierDetailTabOrderHistoryTitle" xml:space="preserve">
+    <value>Orderhistorie</value>
+  </data>
+  <data name="SupplierOrderHistoryOrderCount" xml:space="preserve">
+    <value>Orders</value>
+  </data>
+  <data name="SupplierOrderHistoryTotal" xml:space="preserve">
+    <value>Totaal besteld</value>
+  </data>
+  <data name="SupplierOrderHistoryEmpty" xml:space="preserve">
+    <value>Er zijn nog geen orders bij deze leverancier.</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderNumber" xml:space="preserve">
+    <value>Ordernummer</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderDate" xml:space="preserve">
+    <value>Besteldatum</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderLines" xml:space="preserve">
+    <value>Regels</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderClosedDate" xml:space="preserve">
+    <value>Afgesloten op</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderTotal" xml:space="preserve">
+    <value>Totaal</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderArticle" xml:space="preserve">
+    <value>Artikel</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderDescription" xml:space="preserve">
+    <value>Omschrijving</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrdered" xml:space="preserve">
+    <value>Besteld</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderReceived" xml:space="preserve">
+    <value>Ontvangen</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderPrice" xml:space="preserve">
+    <value>Prijs</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderRowTotal" xml:space="preserve">
+    <value>Regeltotaal</value>
+  </data>
+  <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
+    <value>Sleep om de verdeling tussen orders en orderregels te wijzigen</value>
+  </data>
 </root>

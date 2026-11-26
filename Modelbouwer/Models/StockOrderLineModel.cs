@@ -26,6 +26,9 @@ public partial class StockOrderLineModel : ObservableObject
 	public string DisplayProductNumber => string.IsNullOrWhiteSpace( SupplierProductNumber ) ? ProductCode ?? string.Empty : SupplierProductNumber;
 	public string DisplayProductDescription => string.IsNullOrWhiteSpace( SupplierProductName ) ? ProductName ?? string.Empty : SupplierProductName;
 
+	/// <summary>Older orders have no stored line total; then the total is price times amount (order history, KAN-81).</summary>
+	public double DisplayRowTotal => RealRowTotal != 0d ? RealRowTotal : Math.Round( Price * Amount, 2, MidpointRounding.AwayFromZero );
+
 	partial void OnProductCodeChanged( string? value )
 	{
 		OnPropertyChanged( nameof( DisplayProductNumber ) );

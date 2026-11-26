@@ -4851,4 +4851,55 @@ PowerShell:
   <data name="StockHistoryOrderDeleted" xml:space="preserve">
     <value>Order no longer exists</value>
   </data>
+  <data name="metadataSupplierDetailTabOrderHistoryTitle" xml:space="preserve">
+    <value>Order history</value>
+  </data>
+  <data name="SupplierOrderHistoryOrderCount" xml:space="preserve">
+    <value>Orders</value>
+  </data>
+  <data name="SupplierOrderHistoryTotal" xml:space="preserve">
+    <value>Total ordered</value>
+  </data>
+  <data name="SupplierOrderHistoryEmpty" xml:space="preserve">
+    <value>There are no orders with this supplier yet.</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderNumber" xml:space="preserve">
+    <value>Order number</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrderDate" xml:space="preserve">
+    <value>Order date</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderLines" xml:space="preserve">
+    <value>Lines</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderStatus" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderClosedDate" xml:space="preserve">
+    <value>Closed on</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderTotal" xml:space="preserve">
+    <value>Total</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderArticle" xml:space="preserve">
+    <value>Article</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderDescription" xml:space="preserve">
+    <value>Description</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderOrdered" xml:space="preserve">
+    <value>Ordered</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderReceived" xml:space="preserve">
+    <value>Received</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderPrice" xml:space="preserve">
+    <value>Price</value>
+  </data>
+  <data name="SupplierOrderHistoryHeaderRowTotal" xml:space="preserve">
+    <value>Line total</value>
+  </data>
+  <data name="SupplierOrderHistorySplitterTooltip" xml:space="preserve">
+    <value>Drag to change the split between orders and order lines</value>
+  </data>
 </root>

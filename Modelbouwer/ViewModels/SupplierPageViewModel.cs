@@ -9,6 +9,7 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 	private readonly ICurrencyService _currencyService;
 	private readonly IContactService _contactService;
 	private readonly IContactTypeService _contactTypeService;
+	private readonly IStockOrderService _stockOrderService;
 
 	private int? _lastSelectedSupplierId;
 
@@ -20,9 +21,11 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 			ICurrencyService currencyService,
 			IContactService contactService,
 			IContactTypeService contactTypeService,
+			IStockOrderService stockOrderService,
 			IEntityValidator<SupplierModel> validator
 		) : base( validator )
 	{
+		_stockOrderService = stockOrderService;
 		_dataService = dataService;
 		_countryService = countryService;
 		_currencyService = currencyService;
@@ -272,11 +275,70 @@ public partial class SupplierPageViewModel : EntityPageViewModel<SupplierModel>
 		SelectedCountry = SupplierCountry.FirstOrDefault( c => c.CountryId == newValue?.CountryId );
 
 		UpdateFilteredContacts();
+		ObserveBackgroundTask( LoadOrderHistoryAsync( newValue ) );
 
 		OpenWebsiteCommand.NotifyCanExecuteChanged();
 
 		_previousSupplier = newValue;
 	}
+
+	#region Order history tab (KAN-81)
+	private int _orderHistoryVersion;
+	private int _orderLinesVersion;
+
+	/// <summary>Orders of the selected supplier, newest first.</summary>
+	public ObservableCollection<StockOrderModel> SupplierOrders { get; } = [ ];
+	public ObservableCollection<StockOrderLineModel> SupplierOrderLines { get; } = [ ];
+	[ObservableProperty] private StockOrderModel? _selectedSupplierOrder;
+	[ObservableProperty] private bool _hasSupplierOrders;
+	[ObservableProperty] private int _supplierOrderCount;
+	[ObservableProperty] private double _supplierOrdersTotal;
+
+	partial void OnSelectedSupplierOrderChanged( StockOrderModel? value ) => ObserveBackgroundTask( LoadOrderLinesAsync( value ) );
+
+	private async Task LoadOrderHistoryAsync( SupplierModel? supplier )
+	{
+		int version = ++_orderHistoryVersion;
+
+		// The previous supplier's orders must not be shown as this supplier's while they load.
+		SupplierOrders.Clear();
+		SelectedSupplierOrder = null;
+		HasSupplierOrders = false;
+		SupplierOrderCount = 0;
+		SupplierOrdersTotal = 0d;
+
+		if ( supplier == null || supplier.Id <= 0 )
+			return;
+
+		var orders = await _stockOrderService.GetAllOrdersAsync();
+		if ( version != _orderHistoryVersion )
+			return;
+
+		// The order list already comes newest first.
+		foreach ( var order in orders.Where( order => order.SupplierId == supplier.Id ) )
+			SupplierOrders.Add( order );
+
+		HasSupplierOrders = SupplierOrders.Count > 0;
+		SupplierOrderCount = SupplierOrders.Count;
+		SupplierOrdersTotal = Math.Round( SupplierOrders.Sum( order => order.GrandTotal ), 2, MidpointRounding.AwayFromZero );
+		SelectedSupplierOrder = SupplierOrders.FirstOrDefault();
+	}
+
+	private async Task LoadOrderLinesAsync( StockOrderModel? order )
+	{
+		int version = ++_orderLinesVersion;
+		SupplierOrderLines.Clear();
+		if ( order == null )
+			return;
+
+		var lines = await _stockOrderService.GetOrderLinesAsync( order.Id );
+		if ( version != _orderLinesVersion )
+			return;
+
+		foreach ( var line in lines )
+			SupplierOrderLines.Add( line );
+	}
+	#endregion
 
 
 	// Properties voor UI binding
