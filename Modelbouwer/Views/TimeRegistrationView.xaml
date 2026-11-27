@@ -239,7 +239,7 @@
                             <syncfusion:GridDateTimeColumn Width="110" MappingName="WorkDate" HeaderText="{x:Static language:Language.TimeRegistrationDateHeader}" Pattern="ShortDate" AllowEditing="False" />
                             <syncfusion:GridTextColumn Width="90" MappingName="StartTime" HeaderText="{x:Static language:Language.TimeRegistrationStartHeader}" AllowEditing="False" TextAlignment="Right" />
                             <syncfusion:GridTextColumn Width="90" MappingName="EndTime" HeaderText="{x:Static language:Language.TimeRegistrationEndHeader}" AllowEditing="False" TextAlignment="Right" />
-                            <syncfusion:GridTextColumn Width="110" MappingName="WorkedTime" HeaderText="{x:Static language:Language.TimeRegistrationWorkedHeader}" AllowEditing="False" HorizontalHeaderContentAlignment="Right" TextAlignment="Right" />
+                            <syncfusion:GridNumericColumn Width="110" MappingName="WorkedHours" HeaderText="{x:Static language:Language.TimeRegistrationWorkedHeader}" NumberDecimalDigits="2" AllowEditing="False" HorizontalHeaderContentAlignment="Right" />
                             <syncfusion:GridTextColumn Width="220" MappingName="WorktypeName" HeaderText="{x:Static language:Language.TimeRegistrationWorktypeHeader}" AllowEditing="False" />
                             <syncfusion:GridTextColumn Width="260" MappingName="Comment" HeaderText="{x:Static language:Language.TimeRegistrationCommentHeader}" AllowEditing="False" />
                         </syncfusion:SfDataGrid.Columns>

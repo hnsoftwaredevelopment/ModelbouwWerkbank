@@ -27,7 +27,7 @@ public class ProjectPageViewModelFlowTests
 
 	private async Task<ProjectPageViewModel> CreateAsync()
 	{
-		var vm = new ProjectPageViewModel( _service.Object, _validator.Object );
+		var vm = new ProjectPageViewModel( _service.Object, _validator.Object, new Mock<ITimeRegistrationService>().Object );
 		await WaitUntilAsync( () => vm.Projects.Count == _stored.Count );
 		return vm;
 	}
