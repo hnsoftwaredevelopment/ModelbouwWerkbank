@@ -9,8 +9,7 @@ public interface ICountryService
 
 	Task<List<CountryModel>> GetAllCountriesAsync();
 	Task<List<CountryModel>> GetAllCountriesAsync( CancellationToken cancellationToken );
-	Task<bool> IsCountryUsedAsync( int countryId );
-	Task<bool> IsCountryUsedAsync( int countryId, CancellationToken cancellationToken );
+
 	Task<int> InsertNewCountryAsync( Dictionary<string, object?> parameters );
 	Task<int> InsertNewCountryAsync( Dictionary<string, object?> parameters, CancellationToken cancellationToken );
 	Task DeleteCountryAsync( int countryId );

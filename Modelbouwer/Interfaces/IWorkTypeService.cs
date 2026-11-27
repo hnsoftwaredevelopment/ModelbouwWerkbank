@@ -14,8 +14,7 @@ public interface IWorkTypeService
 	Task UpdateWorkTypeAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteWorkTypeAsync( int worktypeId );
 	Task DeleteWorkTypeAsync( int worktypeId, CancellationToken cancellationToken );
-	Task<bool> IsWorkTypeUsedAsync( int worktypeId );
-	Task<bool> IsWorkTypeUsedAsync( int worktypeId, CancellationToken cancellationToken );
+
 	Task<bool> NameExistsAsync( string? worktypeName, int? parentId );
 	Task<bool> NameExistsAsync( string? worktypeName, int? parentId, CancellationToken cancellationToken );
 }

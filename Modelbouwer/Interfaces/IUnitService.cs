@@ -14,8 +14,7 @@ public interface IUnitService
 	Task UpdateUnitAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteUnitAsync( int unitId );
 	Task DeleteUnitAsync( int unitId, CancellationToken cancellationToken );
-	Task<bool> IsUnitUsedAsync( int unitId );
-	Task<bool> IsUnitUsedAsync( int unitId, CancellationToken cancellationToken );
+
 	Task<bool> NameExistsAsync( string? unitName );
 	Task<bool> NameExistsAsync( string? unitName, CancellationToken cancellationToken );
 }

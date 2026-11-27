@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS `productsupplier` (
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `Product_Id` (`Product_Id`),
-  KEY `Supplier_Id` (`Supplier_Id`)
+  KEY `Supplier_Id` (`Supplier_Id`),
+  CONSTRAINT `FK_ProdSupplier_Product_Id` FOREIGN KEY (`Product_Id`) REFERENCES `product` (`Id`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `FK_ProdSupplier_Supplier_Id` FOREIGN KEY (`Supplier_Id`) REFERENCES `supplier` (`Id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='List for all products per supplier';
 /*!40101 SET character_set_client = @saved_cs_client */;

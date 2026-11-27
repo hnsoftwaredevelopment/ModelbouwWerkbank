@@ -10,8 +10,7 @@ public interface ICurrencyService
 	Task UpdateCurrencyAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteCurrencyAsync( int currencyId );
 	Task DeleteCurrencyAsync( int currencyId, CancellationToken cancellationToken );
-	Task<bool> IsCurrencyUsedAsync( int currencyId );
-	Task<bool> IsCurrencyUsedAsync( int currencyId, CancellationToken cancellationToken );
+
 	Task<bool> CodeExistsAsync( string? currencyCode );
 	Task<bool> CodeExistsAsync( string? currencyCode, CancellationToken cancellationToken );
 	Task<bool> NameExistsAsync( string? currencyName );

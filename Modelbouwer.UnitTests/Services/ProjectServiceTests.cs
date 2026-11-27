@@ -213,40 +213,6 @@ public class ProjectServiceTests
 	}
 
 	[TestMethod]
-	public async Task IsProjectUsedAsync_WhenProjectIsUsed_ReturnsTrue()
-	{
-		// Arrange
-		var projectId = 123;
-
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 1 );
-
-		// Act
-		var result = await _project_service.IsProjectUsedAsync(projectId);
-
-		// Assert
-		Assert.IsTrue( result );
-	}
-
-	[TestMethod]
-	public async Task IsProjectUsedAsync_WhenProjectIsNotUsed_ReturnsFalse()
-	{
-		// Arrange
-		var projectId = 123;
-
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 0 );
-
-		// Act
-		var result = await _project_service.IsProjectUsedAsync(projectId);
-
-		// Assert
-		Assert.IsFalse( result );
-	}
-
-	[TestMethod]
 	public async Task NameExistsAsync_WithNullName_ReturnsFalse()
 	{
 		// Act
@@ -347,29 +313,6 @@ public class ProjectServiceTests
 
 		// Assert
 		Assert.IsNull( result );
-	}
-
-	[TestMethod]
-	public void ProjectUsed_Property_CanBeSetAndRetrieved()
-	{
-		// Arrange
-		var service = new ProjectService(_mockDataService.Object);
-
-		// Act
-		service.ProjectUsed = true;
-
-		// Assert
-		Assert.IsTrue( service.ProjectUsed );
-	}
-
-	[TestMethod]
-	public void ProjectUsed_DefaultValue_IsFalse()
-	{
-		// Arrange
-		var service = new ProjectService(_mockDataService.Object);
-
-		// Act & Assert
-		Assert.IsFalse( service.ProjectUsed );
 	}
 
 	private static Dictionary<string, object?> CreateValidProjectParameters(

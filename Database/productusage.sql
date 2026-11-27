@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS `productusage` (
   `Modifed` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`),
   KEY `FK_Project_Id` (`project_Id`),
-  KEY `FK_Product_Id` (`product_Id`)
+  KEY `FK_Product_Id` (`product_Id`),
+  CONSTRAINT `FK_ProductProduct_Id` FOREIGN KEY (`product_Id`) REFERENCES `product` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_ProductProject_Id` FOREIGN KEY (`project_Id`) REFERENCES `project` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Store the product usage as entered in the Time Management page. Part of the data is equal to the data in the StockLog, but because of Foreign keys necesary for relating to Project and Product age a separate tabble is needed.\r\nSame data , as needed in the Stocklog table, is also stored in the stocklog.';
 /*!40101 SET character_set_client = @saved_cs_client */;

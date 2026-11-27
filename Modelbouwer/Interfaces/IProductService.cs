@@ -17,8 +17,6 @@ public interface IProductService
 	Task DeleteProductAsync( int productId );
 	Task DeleteProductAsync( int productId, CancellationToken cancellationToken );
 
-	Task<bool> IsProductUsedAsync( int productId );
-	Task<bool> IsProductUsedAsync( int productId, CancellationToken cancellationToken );
 	Task<bool> NameExistsAsync( string? productName );
 	Task<bool> NameExistsAsync( string? productName, CancellationToken cancellationToken );
 }

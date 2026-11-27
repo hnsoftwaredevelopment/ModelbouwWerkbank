@@ -23,8 +23,6 @@ public interface ISupplierService
 	Task DeleteSupplierAsync( int supplierId );
 	Task DeleteSupplierAsync( int supplierId, CancellationToken cancellationToken );
 
-	Task<bool> IsSupplierUsedAsync( int supplierId );
-	Task<bool> IsSupplierUsedAsync( int supplierId, CancellationToken cancellationToken );
 	Task<bool> NameExistsAsync( string? supplierName );
 	Task<bool> NameExistsAsync( string? supplierName, CancellationToken cancellationToken );
 }

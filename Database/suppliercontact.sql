@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS `suppliercontact` (
   PRIMARY KEY (`Id`),
   KEY `Supplier_Id` (`Supplier_Id`),
   KEY `Contacttype_Id` (`Contacttype_Id`),
-  KEY `Name` (`Name`)
+  KEY `Name` (`Name`),
+  CONSTRAINT `FK_SupContact_Contacttype_Id` FOREIGN KEY (`Contacttype_Id`) REFERENCES `contacttype` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_SupContact_Supplier_Id` FOREIGN KEY (`Supplier_Id`) REFERENCES `supplier` (`Id`) ON DELETE CASCADE ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

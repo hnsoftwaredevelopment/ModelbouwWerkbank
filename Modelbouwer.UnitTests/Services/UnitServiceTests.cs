@@ -161,36 +161,6 @@ public class UnitServiceTests
 	}
 
 	[TestMethod]
-	public async Task IsUnitUsedAsync_WhenUnitIsUsed_ReturnsTrue()
-	{
-		// Arrange
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 2 );
-
-		// Act
-		var result = await _unitService.IsUnitUsedAsync( 4 );
-
-		// Assert
-		Assert.IsTrue( result );
-	}
-
-	[TestMethod]
-	public async Task IsUnitUsedAsync_WhenUnitIsNotUsed_ReturnsFalse()
-	{
-		// Arrange
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 0 );
-
-		// Act
-		var result = await _unitService.IsUnitUsedAsync( 4 );
-
-		// Assert
-		Assert.IsFalse( result );
-	}
-
-	[TestMethod]
 	public async Task NameExistsAsync_WithNullOrWhitespace_ReturnsFalse()
 	{
 		Assert.IsFalse( await _unitService.NameExistsAsync( null ) );

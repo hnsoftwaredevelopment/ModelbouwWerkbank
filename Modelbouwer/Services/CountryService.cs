@@ -5,7 +5,6 @@ namespace Modelbouwer.Services;
 public class CountryService( GenericDataService dataService ) : ICountryService
 {
 	private readonly GenericDataService _dataService = dataService;
-	public bool CountryUsed { get; set; }
 
 	#region Database queries
 	public string CompleteCountryList =
@@ -36,11 +35,6 @@ public class CountryService( GenericDataService dataService ) : ICountryService
 	public string DeleteCountryQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.CountryTable} " +
 		$"WHERE {DBNames.CountryFieldNameId} = @{DBNames.CountryFieldNameId};";
-
-	public string CountryUsedQuery =
-		$"SELECT COUNT({DBNames.SupplierFieldNameCountryId}) " +
-		$"FROM {DBNames.Database}.{DBNames.SupplierTable} " +
-		$"WHERE {DBNames.SupplierFieldNameCountryId} = @CountryId";
 
 	public string CountryCodeExistsQuery =
 		$"SELECT COUNT({DBNames.CountryFieldNameId}) " +
@@ -116,27 +110,11 @@ public class CountryService( GenericDataService dataService ) : ICountryService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteCountryQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataCountryDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsCountryUsedAsync( int countryId ) => IsCountryUsedAsync( countryId, CancellationToken.None );
-
-	public async Task<bool> IsCountryUsedAsync( int countryId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.SupplierFieldNameCountryId}", countryId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			CountryUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> CodeExistsAsync( string? countryCode ) => CodeExistsAsync( countryCode, CancellationToken.None );

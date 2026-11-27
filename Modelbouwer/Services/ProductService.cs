@@ -3,7 +3,6 @@
 public class ProductService : IProductService
 {
 	private readonly GenericDataService _dataService;
-	public bool ProductUsed { get; set; }
 
 	public ProductService( GenericDataService dataService )
 	{
@@ -114,24 +113,6 @@ public class ProductService : IProductService
 		$"FROM {DBNames.Database}.{DBNames.ProductTable} " +
 		$"WHERE LOWER({DBNames.ProductFieldNameName}) = LOWER(@{DBNames.ProductFieldNameName})";
 
-	public string ProductUsedQuery = $"" +
-		$"SELECT" +
-		$"EXISTS( " +
-		$"SELECT 1 " +
-		$"FROM {DBNames.Database}.{DBNames.ProductUsageTable} " +
-		$"WHERE {DBNames.ProductUsageFieldNameProductId} = @ProductId " +
-		$"LIMIT 1 ) " +
-		$"OR EXISTS( " +
-		$"SELECT 1 " +
-		$"FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
-		$"WHERE {DBNames.OrderLineFieldNameProductId} = @ProductId " +
-		$"LIMIT 1 ) " +
-		$"OR EXISTS( " +
-		$"SELECT 1 " +
-		$"FROM {DBNames.Database}.{DBNames.ProductSupplierTable} " +
-		$"WHERE {DBNames.ProductSupplierFieldNameProductId} = @ProductId " +
-		$"LIMIT 1 ) " +
-		$"AS ProductInUse;";
 	#endregion
 
 	public Task<List<ProductModel>> GetAllProductsAsync() => GetAllProductsAsync( CancellationToken.None );
@@ -273,44 +254,10 @@ public class ProductService : IProductService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteProductQuery, parameters, cancellationToken );
 		}
-		catch ( Exception ex )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
-			// Try to get a SQL error number (MySqlException has a Number property).
-			// We use reflection so unit tests can throw a lightweight exception exposing a Number property.
-			int? number = null;
-			try
-			{
-				var prop = ex.GetType().GetProperty( "Number" );
-				if ( prop != null && prop.PropertyType == typeof( int ) )
-					number = ( int? ) prop.GetValue( ex );
-			}
-			catch { /* ignore reflection issues */ }
-
-			if ( number == 1451 )
-			{
-				throw new EntityInUseException(
-					$"{Lang.metadataProductDeleteError}." );
-			}
-
-			// Not a MySQL foreign key constraint — rethrow original.
-			throw;
+			throw new EntityInUseException( $"{Lang.metadataProductDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsProductUsedAsync( int productId ) => IsProductUsedAsync( productId, CancellationToken.None );
-
-	public async Task<bool> IsProductUsedAsync( int productId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@ProductId", productId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			ProductUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? productName ) => NameExistsAsync( productName, CancellationToken.None );

@@ -7,6 +7,7 @@
       1. KAN-136-usage-to-stocklog.sql       usage on projects lowers the stock
       2. KAN-137-remove-orphan-receipts.sql  removes receipts of orders that no longer exist
       3. KAN-99-drop-unused-objects.sql      removes tables, views and procedures nothing uses
+      4. KAN-145-add-foreign-keys.sql        puts the foreign keys back (stops if rows point to a missing parent)
     Every script is safe to run again, so it does not matter which of them already ran on this database.
 
     Steps:
@@ -42,7 +43,8 @@ $RepoRoot = Split-Path $PSScriptRoot -Parent
 $Scripts = @(
     'KAN-136-usage-to-stocklog.sql',
     'KAN-137-remove-orphan-receipts.sql',
-    'KAN-99-drop-unused-objects.sql'
+    'KAN-99-drop-unused-objects.sql',
+    'KAN-145-add-foreign-keys.sql'
 )
 
 function Write-Step([string] $text) { Write-Host "`n== $text" -ForegroundColor Cyan }

@@ -3,7 +3,6 @@
 public class ProjectService : IProjectService
 {
 	private readonly GenericDataService _dataService;
-	public bool ProjectUsed { get; set; }
 
 	public ProjectService( GenericDataService dataService )
 	{
@@ -81,8 +80,6 @@ public class ProjectService : IProjectService
 		$"IFNULL(SUM({DBNames.TimeViewFieldNameElapsedMinutes}), 0) / 60 AS TotalHours " +
 		$"FROM {DBNames.Database}.{DBNames.TimeView} " +
 		$"WHERE {DBNames.TimeViewFieldNameProjectId} =  @{DBNames.TimeViewFieldNameProjectId};";
-
-	public string ProjectUsedQuery = $"SELECT COUNT({DBNames.TimeFieldNameProjectId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.TimeFieldNameProjectId} = @{DBNames.TimeFieldNameProjectId}";
 
 	public string GetProjectExpectedEndDateQuery = $"CALL {DBNames.Database}.{DBNames.SPProjectExpectedEndDate}(@ProjectId);";
 	#endregion
@@ -165,24 +162,9 @@ public class ProjectService : IProjectService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteProjectQuery, parameters, cancellationToken );
 		}
-		catch ( Exception ex )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
-			int? number = null;
-			try
-			{
-				var prop = ex.GetType().GetProperty( "Number" );
-				if ( prop != null && prop.PropertyType == typeof( int ) )
-					number = ( int? ) prop.GetValue( ex );
-			}
-			catch { /* ignore reflection issues */ }
-
-			if ( number == 1451 )
-			{
-				throw new EntityInUseException(
-					$"{Lang.metadataProjectDeleteError}." );
-			}
-
-			throw;
+			throw new EntityInUseException( $"{Lang.metadataProjectDeleteError}." );
 		}
 	}
 
@@ -201,22 +183,6 @@ public class ProjectService : IProjectService
 		return result.HasValue
 			? DateOnly.FromDateTime( result.Value )
 			: null;
-	}
-
-	public Task<bool> IsProjectUsedAsync( int projectId ) => IsProjectUsedAsync( projectId, CancellationToken.None );
-
-	public async Task<bool> IsProjectUsedAsync( int projectId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.TimeFieldNameProjectId}", projectId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			ProjectUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? projectName ) => NameExistsAsync( projectName, CancellationToken.None );

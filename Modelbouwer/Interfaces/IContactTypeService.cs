@@ -10,8 +10,7 @@ public interface IContactTypeService
 	Task UpdateContactTypeAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteContactTypeAsync( int contacttypeId );
 	Task DeleteContactTypeAsync( int contacttypeId, CancellationToken cancellationToken );
-	Task<bool> IsContactTypeUsedAsync( int contacttypeId );
-	Task<bool> IsContactTypeUsedAsync( int contacttypeId, CancellationToken cancellationToken );
+
 	Task<bool> NameExistsAsync( string? contacttypeName );
 	Task<bool> NameExistsAsync( string? contacttypeName, CancellationToken cancellationToken );
 }

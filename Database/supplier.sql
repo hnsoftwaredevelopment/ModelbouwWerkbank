@@ -25,6 +25,8 @@ CREATE TABLE IF NOT EXISTS `supplier` (
   PRIMARY KEY (`Id`) USING BTREE,
   UNIQUE KEY `supplier_Code` (`Code`) USING BTREE,
   KEY `Currency_Id` (`Currency_Id`) USING BTREE,
-  KEY `Country_Id` (`Country_Id`) USING BTREE
+  KEY `Country_Id` (`Country_Id`) USING BTREE,
+  CONSTRAINT `FK_Supplier_Country_Id` FOREIGN KEY (`Country_Id`) REFERENCES `country` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_Supplier_Currency_Id` FOREIGN KEY (`Currency_Id`) REFERENCES `currency` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

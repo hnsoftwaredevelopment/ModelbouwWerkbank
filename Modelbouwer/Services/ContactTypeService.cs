@@ -7,7 +7,6 @@ namespace Modelbouwer.Services;
 public class ContactTypeService : IContactTypeService
 {
 	private readonly GenericDataService _dataService;
-	public bool ContactTypeUsed { get; set; }
 
 	public ContactTypeService( GenericDataService dataService )
 	{
@@ -43,7 +42,6 @@ public class ContactTypeService : IContactTypeService
 		$"FROM {DBNames.Database}.{DBNames.ContactTypeTable} " +
 		$"WHERE LOWER({DBNames.ContactTypeFieldNameName}) = LOWER(@{DBNames.ContactTypeFieldNameName})";
 
-	public string ContactTypeUsedQuery = $"SELECT COUNT({DBNames.SupplierContactFieldNameTypeId}) FROM {DBNames.Database}.{DBNames.SupplierTable} WHERE {DBNames.SupplierContactFieldNameTypeId} = @ContactTypeId";
 	#endregion
 
 	public Task<List<ContactTypeModel>> GetAllContactTypesAsync() => GetAllContactTypesAsync( CancellationToken.None );
@@ -100,27 +98,11 @@ public class ContactTypeService : IContactTypeService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteContactTypeQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataContactTypeDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsContactTypeUsedAsync( int contacttypeId ) => IsContactTypeUsedAsync( contacttypeId, CancellationToken.None );
-
-	public async Task<bool> IsContactTypeUsedAsync( int contacttypeId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.SupplierContactFieldNameTypeId}", contacttypeId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			ContactTypeUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? contacttypeName ) => NameExistsAsync( contacttypeName, CancellationToken.None );

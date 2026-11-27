@@ -3,7 +3,6 @@
 public class ContactService : IContactService
 {
 	private readonly GenericDataService _dataService;
-	public bool ContactUsed { get; set; }
 
 	public ContactService( GenericDataService dataService )
 	{
@@ -118,7 +117,7 @@ public class ContactService : IContactService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteContactQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataSupplierContactDeleteError}." );

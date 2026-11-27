@@ -8,7 +8,6 @@ namespace Modelbouwer.Services;
 public class CurrencyService : ICurrencyService
 {
 	private readonly GenericDataService _dataService;
-	public bool CurrencyUsed { get; set; }
 
 	public CurrencyService( GenericDataService dataService )
 	{
@@ -55,7 +54,6 @@ public class CurrencyService : ICurrencyService
 		$"FROM {DBNames.Database}.{DBNames.CurrencyTable} " +
 		$"WHERE LOWER({DBNames.CurrencyFieldNameName}) = LOWER(@{DBNames.CurrencyFieldNameName})";
 
-	public string CurrencyUsedQuery = $"SELECT COUNT({DBNames.CurrencyFieldNameId}) FROM {DBNames.Database}.{DBNames.CurrencyTable} WHERE {DBNames.CurrencyFieldNameId} = @CurrencyId";
 	#endregion
 
 	public Task<List<CurrencyModel>> GetAllCurrenciesAsync() => GetAllCurrenciesAsync( CancellationToken.None );
@@ -121,27 +119,11 @@ public class CurrencyService : ICurrencyService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteCurrencyQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataCurrencyDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsCurrencyUsedAsync( int currencyId ) => IsCurrencyUsedAsync( currencyId, CancellationToken.None );
-
-	public async Task<bool> IsCurrencyUsedAsync( int currencyId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.SupplierFieldNameCurrencyId}", currencyId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			CurrencyUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> CodeExistsAsync( string? currencyCode ) => CodeExistsAsync( currencyCode, CancellationToken.None );
