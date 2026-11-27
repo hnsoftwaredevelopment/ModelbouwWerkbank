@@ -13,7 +13,7 @@ public class StockService : IStockService
 		$"	p.{DBNames.ProductFieldNamePrice} AS Price, " +
 		$"	p.{DBNames.ProductFieldNameMinimalStock} AS MinimalStock, " +
 		$"	{DBNames.Database}.{DBNames.GetCategoryFunction}(p.{DBNames.ProductFieldNameCategoryId}) AS Category, " +
-		$"	{DBNames.Database}.{DBNames.GetStockLocationFunction}(s.{DBNames.StocklogFieldNameId}) AS Location, " +
+		$"	{DBNames.Database}.{DBNames.GetStockLocationFunction}(s.{DBNames.StockLogFieldNameId}) AS Location, " +
 		$"	IFNULL(sl.InventoryAmount, 0) AS InventoryAmount, " +
 		$"	p.{DBNames.ProductFieldNamePrice} * IFNULL(sl.InventoryAmount, 0) AS InventoryValue, " +
 		$"	IFNULL(so.InOrder, 0) AS InOrder, " +
@@ -26,11 +26,11 @@ public class StockService : IStockService
 		$"LEFT JOIN {DBNames.Database}.{DBNames.StorageTable} s ON p.{DBNames.ProductFieldNameStorageId} = s.{DBNames.StorageFieldNameId} " +
 		$"LEFT JOIN ( " +
 		$"	SELECT" +
-		$"		{DBNames.StocklogFieldNameProductId}, " +
-		$"		SUM(({DBNames.StocklogFieldNameAmountReceived} - {DBNames.StocklogFieldNameAmountUsed}) + {DBNames.StocklogFieldNameAmountCorrection}) AS InventoryAmount " +
-		$"	FROM {DBNames.Database}.{DBNames.StocklogTable} " +
-		$"	GROUP BY {DBNames.StocklogFieldNameProductId}" +
-		$") sl ON sl.{DBNames.StocklogFieldNameProductId} = p.{DBNames.ProductFieldNameId} " +
+		$"		{DBNames.StockLogFieldNameProductId}, " +
+		$"		SUM(({DBNames.StockLogFieldNameAmountReceived} - {DBNames.StockLogFieldNameAmountUsed}) + {DBNames.StockLogFieldNameAmountCorrection}) AS InventoryAmount " +
+		$"	FROM {DBNames.Database}.{DBNames.StockLogTable} " +
+		$"	GROUP BY {DBNames.StockLogFieldNameProductId}" +
+		$") sl ON sl.{DBNames.StockLogFieldNameProductId} = p.{DBNames.ProductFieldNameId} " +
 		$"LEFT JOIN ( " +
 		$"	SELECT " +
 		$"		{DBNames.OrderLineFieldNameProductId}, " +
@@ -41,13 +41,13 @@ public class StockService : IStockService
 		$"WHERE p.{DBNames.ProductFieldNameHide} = 0;";
 
 	public string InsertInventoryCorrection = $"" +
-		$"INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} ( " +
-		$"{DBNames.StocklogFieldNameProductId}, " +
-		$"{DBNames.StocklogFieldNameAmountCorrection}, " +
-		$"{DBNames.StocklogFieldNameLogDate} " +
+		$"INSERT INTO {DBNames.Database}.{DBNames.StockLogTable} ( " +
+		$"{DBNames.StockLogFieldNameProductId}, " +
+		$"{DBNames.StockLogFieldNameAmountCorrection}, " +
+		$"{DBNames.StockLogFieldNameLogDate} " +
 		$") VALUES ( " +
-		$"@{DBNames.StocklogFieldNameProductId}, " +
-		$"@{DBNames.StocklogFieldNameAmountCorrection}, " +
+		$"@{DBNames.StockLogFieldNameProductId}, " +
+		$"@{DBNames.StockLogFieldNameAmountCorrection}, " +
 		$"{DBNames.SqlCurrentDate} " +
 		$");";
 
@@ -62,23 +62,23 @@ public class StockService : IStockService
 	/// <summary>All stocklog rows of one product with the order, supplier or project they belong to (KAN-80).</summary>
 	public static readonly string StockHistoryQuery = $"" +
 		$"SELECT " +
-		$"	sl.{DBNames.StocklogFieldNameId} AS Id, " +
-		$"	sl.{DBNames.StocklogFieldNameLogDate} AS LogDate, " +
-		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountReceived}, 0) AS AmountReceived, " +
-		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountUsed}, 0) AS AmountUsed, " +
-		$"	IFNULL(sl.{DBNames.StocklogFieldNameAmountCorrection}, 0) AS AmountCorrection, " +
-		$"	sl.{DBNames.StocklogFieldNameSupplyOrderlineId} AS SupplyOrderLineId, " +
-		$"	sl.{DBNames.StocklogFieldNameProductUsageId} AS ProductUsageId, " +
+		$"	sl.{DBNames.StockLogFieldNameId} AS Id, " +
+		$"	sl.{DBNames.StockLogFieldNameLogDate} AS LogDate, " +
+		$"	IFNULL(sl.{DBNames.StockLogFieldNameAmountReceived}, 0) AS AmountReceived, " +
+		$"	IFNULL(sl.{DBNames.StockLogFieldNameAmountUsed}, 0) AS AmountUsed, " +
+		$"	IFNULL(sl.{DBNames.StockLogFieldNameAmountCorrection}, 0) AS AmountCorrection, " +
+		$"	sl.{DBNames.StockLogFieldNameSupplyOrderLineId} AS SupplyOrderLineId, " +
+		$"	sl.{DBNames.StockLogFieldNameProductUsageId} AS ProductUsageId, " +
 		$"	so.{DBNames.OrderFieldNameOrderNumber} AS OrderNumber, " +
 		$"	sup.{DBNames.SupplierFieldNameName} AS SupplierName, " +
 		$"	prj.{DBNames.ProjectFieldNameName} AS ProjectName " +
-		$"FROM {DBNames.Database}.{DBNames.StocklogTable} sl " +
-		$"LEFT JOIN {DBNames.Database}.{DBNames.OrderTable} so ON so.{DBNames.OrderFieldNameId} = sl.{DBNames.StocklogFieldNameSupplyOrderId} " +
+		$"FROM {DBNames.Database}.{DBNames.StockLogTable} sl " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.OrderTable} so ON so.{DBNames.OrderFieldNameId} = sl.{DBNames.StockLogFieldNameSupplyOrderId} " +
 		$"LEFT JOIN {DBNames.Database}.{DBNames.SupplierTable} sup ON sup.{DBNames.SupplierFieldNameId} = so.{DBNames.OrderFieldNameSupplierId} " +
-		$"LEFT JOIN {DBNames.Database}.{DBNames.ProductUsageTable} pu ON pu.{DBNames.ProductUsageFieldNameId} = sl.{DBNames.StocklogFieldNameProductUsageId} " +
+		$"LEFT JOIN {DBNames.Database}.{DBNames.ProductUsageTable} pu ON pu.{DBNames.ProductUsageFieldNameId} = sl.{DBNames.StockLogFieldNameProductUsageId} " +
 		$"LEFT JOIN {DBNames.Database}.{DBNames.ProjectTable} prj ON prj.{DBNames.ProjectFieldNameId} = pu.{DBNames.ProductUsageFieldNameProjectId} " +
-		$"WHERE sl.{DBNames.StocklogFieldNameProductId} = @ProductId " +
-		$"ORDER BY sl.{DBNames.StocklogFieldNameLogDate}, sl.{DBNames.StocklogFieldNameId};";
+		$"WHERE sl.{DBNames.StockLogFieldNameProductId} = @ProductId " +
+		$"ORDER BY sl.{DBNames.StockLogFieldNameLogDate}, sl.{DBNames.StockLogFieldNameId};";
 
 	public Task<List<StockHistoryItemModel>> GetStockHistoryAsync( int productId ) =>
 		GetStockHistoryAsync( productId, CancellationToken.None );
@@ -104,7 +104,9 @@ public class StockService : IStockService
 
 	#region All Database mutations for inventory management
 	#region Get the complete inventory list
-	public Task<List<StockManagementModel>> GetCompleteInventoryAsync()
+	public Task<List<StockManagementModel>> GetCompleteInventoryAsync() => GetCompleteInventoryAsync( CancellationToken.None );
+
+	public Task<List<StockManagementModel>> GetCompleteInventoryAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteInventoryList, reader =>
 		{
@@ -126,27 +128,31 @@ public class StockService : IStockService
 				ProductShortInventory = DatabaseValueConverter.GetDouble( reader [ "Short" ] ),
 				ProductTempShortInventory = DatabaseValueConverter.GetDouble( reader [ "TempShort" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 	#endregion
 
 	#region Insert a inventory correction for the given product
-	public async Task<int> InsertCorrectionAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertCorrectionAsync( Dictionary<string, object?> queryParameters ) => InsertCorrectionAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertCorrectionAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
-			{ $"@{DBNames.StocklogFieldNameProductId}", queryParameters[$"@{DBNames.StocklogFieldNameProductId}"] ?? DBNull.Value },
-			{ $"@{DBNames.StocklogFieldNameAmountCorrection}", queryParameters[$"@{DBNames.StocklogFieldNameAmountCorrection}"] ?? DBNull.Value }
+			{ $"@{DBNames.StockLogFieldNameProductId}", queryParameters[$"@{DBNames.StockLogFieldNameProductId}"] ?? DBNull.Value },
+			{ $"@{DBNames.StockLogFieldNameAmountCorrection}", queryParameters[$"@{DBNames.StockLogFieldNameAmountCorrection}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( InsertInventoryCorrection, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( InsertInventoryCorrection, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 	#endregion
 
 	#region Update Minimal stock and/or price for the given product
-	public async Task<int> UpdateProductCorrectionAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> UpdateProductCorrectionAsync( Dictionary<string, object?> queryParameters ) => UpdateProductCorrectionAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> UpdateProductCorrectionAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -155,7 +161,7 @@ public class StockService : IStockService
 			{ $"@{DBNames.ProductFieldNamePrice}", queryParameters[$"@{DBNames.ProductFieldNamePrice}"] ?? 0 }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( UpdateProductCorrection, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( UpdateProductCorrection, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}

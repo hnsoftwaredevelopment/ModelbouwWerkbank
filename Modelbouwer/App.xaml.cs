@@ -9,6 +9,12 @@ public partial class App : Application
 {
 	private readonly IHost _host;
 
+	/// <summary>Cancelled when the application exits, so start-up work still running stops (KAN-92).</summary>
+	private readonly CancellationTokenSource _appLifetime = new();
+
+	/// <summary>How long the host may take to stop its services when the application exits.</summary>
+	private static readonly TimeSpan HostStopTimeout = TimeSpan.FromSeconds( 5 );
+
 	public App()
 	{
 		SetCurrentCulture( "nl-NL" );
@@ -43,7 +49,7 @@ public partial class App : Application
 		services.AddSingleton<SupplierService>();
 		services.AddSingleton<TimeRegistrationService>();
 		services.AddSingleton<UnitService>();
-		services.AddSingleton<WorktypeService>();
+		services.AddSingleton<WorkTypeService>();
 
 		// Register ViewModels
 		services.AddTransient<BrandPageViewModel>();
@@ -63,7 +69,7 @@ public partial class App : Application
 		services.AddTransient<SupplierPageViewModel>();
 		services.AddTransient<TimeRegistrationViewModel>();
 		services.AddTransient<UnitPageViewModel>();
-		services.AddTransient<WorktypePageViewModel>();
+		services.AddTransient<WorkTypePageViewModel>();
 
 		// Register NavigationViewModel
 		services.AddSingleton<NavigationViewModel>();
@@ -86,7 +92,7 @@ public partial class App : Application
 		services.AddTransient<SupplierView>();
 		services.AddTransient<TimeRegistrationView>();
 		services.AddTransient<UnitView>();
-		services.AddTransient<WorktypeView>();
+		services.AddTransient<WorkTypeView>();
 
 		// Register MainWindow
 		services.AddSingleton<MainWindow>();
@@ -115,7 +121,7 @@ public partial class App : Application
 		services.AddSingleton<ISettingsService>( provider => provider.GetRequiredService<SettingsService>() );
 		services.AddScoped<ITimeRegistrationService, TimeRegistrationService>();
 		services.AddScoped<IUnitService, UnitService>();
-		services.AddScoped<IWorktypeService, WorktypeService>();
+		services.AddScoped<IWorkTypeService, WorkTypeService>();
 
 		services.AddScoped<IEntityValidator<BrandModel>, BrandValidator>();
 		services.AddScoped<IEntityValidator<CategoryModel>, CategoryValidator>();
@@ -129,7 +135,7 @@ public partial class App : Application
 		services.AddScoped<IEntityValidator<SupplierModel>, SupplierValidator>();
 		services.AddScoped<IEntityValidator<SupplierContactModel>, ContactValidator>();
 		services.AddScoped<IEntityValidator<UnitModel>, UnitValidator>();
-		services.AddScoped<IEntityValidator<WorktypeModel>, WorktypeValidator>();
+		services.AddScoped<IEntityValidator<WorkTypeModel>, WorkTypeValidator>();
 	}
 
 	protected override async void OnStartup( StartupEventArgs e )
@@ -145,10 +151,10 @@ public partial class App : Application
 
 		try
 		{
-			await _host.StartAsync();
+			await _host.StartAsync( _appLifetime.Token );
 
 			var settingsService = _host.Services.GetRequiredService<SettingsService>();
-			await settingsService.LoadSettingsAsync();
+			await settingsService.LoadSettingsAsync( _appLifetime.Token );
 			ApplyCulture( settingsService.Settings.Culture, settingsService.Settings.Language );
 
 			_ = _host.Services.GetRequiredService<NavigationViewModel>();
@@ -168,7 +174,9 @@ public partial class App : Application
 	{
 		try
 		{
-			await _host.StopAsync();
+			_appLifetime.Cancel();
+			using var stopTimeout = new CancellationTokenSource( HostStopTimeout );
+			await _host.StopAsync( stopTimeout.Token );
 		}
 		catch ( Exception ex )
 		{
@@ -177,6 +185,7 @@ public partial class App : Application
 		finally
 		{
 			_host.Dispose();
+			_appLifetime.Dispose();
 			base.OnExit( e );
 		}
 	}

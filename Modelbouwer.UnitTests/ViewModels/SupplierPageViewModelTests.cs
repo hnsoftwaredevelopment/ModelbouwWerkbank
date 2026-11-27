@@ -32,7 +32,7 @@ public class SupplierPageViewModelTests
 		_mockStockOrderService.Setup( s => s.GetOrderLinesAsync( It.IsAny<int>() ) ).ReturnsAsync( new List<StockOrderLineModel>() );
 
 		// Setup default returns for async methods
-		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync() ).ReturnsAsync( new List<SupplierModel>() );
+		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( new List<SupplierModel>() );
 		_mockCountryService.Setup( s => s.GetAllCountriesAsync() ).ReturnsAsync( new List<CountryModel>() );
 		_mockCurrencyService.Setup( s => s.GetAllCurrenciesAsync() ).ReturnsAsync( new List<CurrencyModel>() );
 		_mockContactService.Setup( s => s.GetAllContactsAsync() ).ReturnsAsync( new List<SupplierContactModel>() );
@@ -158,7 +158,7 @@ public class SupplierPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load suppliers." );
 		var supplierService = new Mock<ISupplierService>();
 		supplierService
-			.Setup( service => service.GetAllSuppliersAsync() )
+			.Setup( service => service.GetAllSuppliersAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<SupplierModel>>( expected ) );
 
 		var viewModel = CreateViewModel( supplierService: supplierService.Object );
@@ -413,18 +413,18 @@ public class SupplierPageViewModelTests
 		{
 			new SupplierModel { Id = 1, Name = "Supplier 1" }
 		};
-		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync() ).ReturnsAsync( suppliers );
+		_mockSupplierService.Setup( s => s.GetAllSuppliersAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( suppliers );
 
 		// Act
 		var method = _viewModel.GetType()
 			.GetMethod("LoadItemsAsync", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-		var task = method?.Invoke(_viewModel, null) as Task<List<SupplierModel>>;
+		var task = method?.Invoke(_viewModel, new object[] { CancellationToken.None }) as Task<List<SupplierModel>>;
 		var result = await task!;
 
 		// Assert
 		Assert.IsNotNull( result );
 		Assert.AreEqual( 1, result.Count );
-		_mockSupplierService.Verify( s => s.GetAllSuppliersAsync(), Times.AtLeastOnce );
+		_mockSupplierService.Verify( s => s.GetAllSuppliersAsync( It.IsAny<CancellationToken>() ), Times.AtLeastOnce );
 	}
 
 	[TestMethod]
@@ -644,7 +644,7 @@ public class SupplierPageViewModelTests
 		var defaultContactTypeService = new Mock<IContactTypeService>();
 		var validator = new Mock<IEntityValidator<SupplierModel>>();
 
-		defaultSupplierService.Setup( service => service.GetAllSuppliersAsync() ).ReturnsAsync( [ ] );
+		defaultSupplierService.Setup( service => service.GetAllSuppliersAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( [ ] );
 		defaultCountryService.Setup( service => service.GetAllCountriesAsync() ).ReturnsAsync( [ ] );
 		defaultCurrencyService.Setup( service => service.GetAllCurrenciesAsync() ).ReturnsAsync( [ ] );
 		defaultContactService.Setup( service => service.GetAllContactsAsync() ).ReturnsAsync( [ ] );

@@ -9,7 +9,7 @@ public class StockManagementPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load inventory." );
 		var stockService = new Mock<IStockService>();
 		stockService
-			.Setup( service => service.GetCompleteInventoryAsync() )
+			.Setup( service => service.GetCompleteInventoryAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<StockManagementModel>>( expected ) );
 
 		var viewModel = CreateViewModel( stockService.Object );
@@ -23,7 +23,7 @@ public class StockManagementPageViewModelTests
 	{
 		var expected = new InvalidOperationException( "Unable to save inventory." );
 		var stockService = new Mock<IStockService>();
-		stockService.Setup( service => service.GetCompleteInventoryAsync() ).ReturnsAsync( [ ] );
+		stockService.Setup( service => service.GetCompleteInventoryAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( [ ] );
 		stockService
 			.Setup( service => service.InsertCorrectionAsync( It.IsAny<Dictionary<string, object?>>() ) )
 			.Returns( Task.FromException<int>( expected ) );

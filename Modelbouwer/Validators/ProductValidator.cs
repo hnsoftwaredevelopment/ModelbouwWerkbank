@@ -6,7 +6,9 @@ public class ProductValidator : IEntityValidator<ProductModel>
 
 	public ProductValidator( IProductService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( ProductModel product )
+	public Task<ValidationResult> ValidateAsync( ProductModel product ) => ValidateAsync( product, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( ProductModel product, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -23,7 +25,7 @@ public class ProductValidator : IEntityValidator<ProductModel>
 		// ❗ Duplicate checks
 		if ( product.ProductId == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( product.Name ) )
+			if ( await _dataService.NameExistsAsync( product.Name, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationProductNameExists );
 		}
 

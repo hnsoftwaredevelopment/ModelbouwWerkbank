@@ -15,7 +15,7 @@ public class AsyncSafetySourceTests
 		"StorageLocationView.xaml.cs",
 		"SupplierView.xaml.cs",
 		"UnitView.xaml.cs",
-		"WorktypeView.xaml.cs"
+		"WorkTypeView.xaml.cs"
 	];
 
 	[TestMethod]

@@ -157,7 +157,7 @@ public class CsvExportService : IExportService
 		return exportData;
 	}
 
-	private void AddItemAndChildren<T>( T item, ExportData<T> exportData, string childPropertyName )
+	internal void AddItemAndChildren<T>( T item, ExportData<T> exportData, string childPropertyName )
 	{
 		// Add current item
 		exportData.Items.Add( item );
@@ -184,7 +184,7 @@ public class CsvExportService : IExportService
 
 	#region CSV Generation
 
-	private string GenerateCsvContent<T, TColumn>(
+	internal string GenerateCsvContent<T, TColumn>(
 		ExportData<T> exportData,
 		Func<T, TColumn, string>? customValueFormatter )
 		where TColumn : class
@@ -281,13 +281,13 @@ public class CsvExportService : IExportService
 
 	#region Helpers
 
-	private string FormatValueForCsv( string value )
+	internal string FormatValueForCsv( string value )
 	{
 		if ( string.IsNullOrEmpty( value ) )
 			return string.Empty;
 
-		if ( value.Contains( Separator ) || value.Contains( "\"" ) || value.Contains( "\n" ) || value.Contains( "\r" ) )
-			return $"\"{value.Replace( "\"", "\"\"" )}\"";
+		if ( value.Contains( Separator, StringComparison.Ordinal ) || value.Contains( '"', StringComparison.Ordinal ) || value.Contains( '\n', StringComparison.Ordinal ) || value.Contains( '\r', StringComparison.Ordinal ) )
+			return $"\"{value.Replace( "\"", "\"\"", StringComparison.Ordinal )}\"";
 
 		return value;
 	}
@@ -297,8 +297,8 @@ public class CsvExportService : IExportService
 		try
 		{
 			var message = _languageProvider?.GetTranslation("ExportGeneralSuccess")
-						  ?.Replace("{count}", recordCount.ToString())
-						  ?.Replace("{file}", Path.GetFileName(filePath))
+						  ?.Replace("{count}", recordCount.ToString(), StringComparison.Ordinal)
+						  ?.Replace("{file}", Path.GetFileName(filePath), StringComparison.Ordinal)
 						  ?? $"Exported {recordCount} records to {Path.GetFileName(filePath)}";
 
 			if ( Application.Current != null )

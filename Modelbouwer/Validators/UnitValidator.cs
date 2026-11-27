@@ -10,7 +10,9 @@ public class UnitValidator : IEntityValidator<UnitModel>
 
 	public UnitValidator( IUnitService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( UnitModel unit )
+	public Task<ValidationResult> ValidateAsync( UnitModel unit ) => ValidateAsync( unit, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( UnitModel unit, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -27,7 +29,7 @@ public class UnitValidator : IEntityValidator<UnitModel>
 		// ❗ Duplicate checks
 		if ( unit.UnitId == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( unit.UnitName ) )
+			if ( await _dataService.NameExistsAsync( unit.UnitName, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationUnitNameExists );
 		}
 

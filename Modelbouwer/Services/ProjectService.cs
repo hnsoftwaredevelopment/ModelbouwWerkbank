@@ -3,7 +3,7 @@
 public class ProjectService : IProjectService
 {
 	private readonly GenericDataService _dataService;
-	public bool ProjectUsed { get; set; } = false;
+	public bool ProjectUsed { get; set; }
 
 	public ProjectService( GenericDataService dataService )
 	{
@@ -87,7 +87,9 @@ public class ProjectService : IProjectService
 	public string GetProjectExpectedEndDateQuery = $"CALL {DBNames.Database}.{DBNames.SPProjectExpectedEndDate}(@ProjectId);";
 	#endregion
 
-	public Task<List<ProjectModel>> GetAllProjectsAsync()
+	public Task<List<ProjectModel>> GetAllProjectsAsync() => GetAllProjectsAsync( CancellationToken.None );
+
+	public Task<List<ProjectModel>> GetAllProjectsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteProjectList, reader =>
 		{
@@ -104,10 +106,12 @@ public class ProjectService : IProjectService
 				ProjectImageRotationAngle = DatabaseValueConverter.GetDouble( reader [ $"{DBNames.ProjectFieldNameImageRotationAngle}" ] ),
 				ProjectMemo = DatabaseValueConverter.GetString( reader [ $"{DBNames.ProjectFieldNameMemo}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewProjectAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewProjectAsync( Dictionary<string, object?> queryParameters ) => InsertNewProjectAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewProjectAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -122,12 +126,14 @@ public class ProjectService : IProjectService
 			{ $"@{DBNames.ProjectFieldNameMemo}", queryParameters[$"@{DBNames.ProjectFieldNameMemo}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewProjectQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewProjectQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateProjectAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateProjectAsync( Dictionary<string, object?> queryParameters ) => UpdateProjectAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateProjectAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -143,10 +149,12 @@ public class ProjectService : IProjectService
 			{ $"@{DBNames.ProjectFieldNameMemo}", queryParameters[$"@{DBNames.ProjectFieldNameMemo}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateProjectQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateProjectQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteProjectAsync( int projectId )
+	public Task DeleteProjectAsync( int projectId ) => DeleteProjectAsync( projectId, CancellationToken.None );
+
+	public async Task DeleteProjectAsync( int projectId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -155,7 +163,7 @@ public class ProjectService : IProjectService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteProjectQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteProjectQuery, parameters, cancellationToken );
 		}
 		catch ( Exception ex )
 		{
@@ -178,7 +186,9 @@ public class ProjectService : IProjectService
 		}
 	}
 
-	public async Task<DateOnly?> GetLastWorkDateOnProjectAsync( int projectId )
+	public Task<DateOnly?> GetLastWorkDateOnProjectAsync( int projectId ) => GetLastWorkDateOnProjectAsync( projectId, CancellationToken.None );
+
+	public async Task<DateOnly?> GetLastWorkDateOnProjectAsync( int projectId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -186,14 +196,16 @@ public class ProjectService : IProjectService
 		};
 		var result = await _dataService.ExecuteScalarAsync<DateTime?>(
 			LastWorkDateOnProjectQuery,
-			parameters
+			parameters, cancellationToken
 		);
 		return result.HasValue
 			? DateOnly.FromDateTime( result.Value )
 			: null;
 	}
 
-	public async Task<bool> IsProjectUsedAsync( int projectId )
+	public Task<bool> IsProjectUsedAsync( int projectId ) => IsProjectUsedAsync( projectId, CancellationToken.None );
+
+	public async Task<bool> IsProjectUsedAsync( int projectId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -202,12 +214,14 @@ public class ProjectService : IProjectService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			ProjectUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? projectName )
+	public Task<bool> NameExistsAsync( string? projectName ) => NameExistsAsync( projectName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? projectName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( projectName ) )
 			return false;
@@ -217,18 +231,20 @@ public class ProjectService : IProjectService
 			{ $"@{DBNames.ProjectFieldNameName}", projectName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( ProjectNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( ProjectNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 
-	public async Task<ProjectWorkStats?> GetProjectWorkStatsAsync( int projectId )
+	public Task<ProjectWorkStats?> GetProjectWorkStatsAsync( int projectId ) => GetProjectWorkStatsAsync( projectId, CancellationToken.None );
+
+	public async Task<ProjectWorkStats?> GetProjectWorkStatsAsync( int projectId, CancellationToken cancellationToken )
 	{
 		return await _dataService.ExecuteSingleAsync<ProjectWorkStats>(
 			FirstWorkDateAndHourTotalsOnProjectQueryWithProjectId,
 			new Dictionary<string, object>
 			{
 			{ DBNames.TimeViewFieldNameProjectId, projectId }
-			} );
+			}, cancellationToken );
 	}
 
 }

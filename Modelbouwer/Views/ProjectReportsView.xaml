@@ -667,7 +667,7 @@
                                 Margin="0,0,0,4">
                         <TextBlock VerticalAlignment="Center" Text="{x:Static language:Language.ProjectReportsChartViewLabel}" />
                         <ToggleButton Margin="8,0"
-                                      IsChecked="{Binding WorktypeShowsTable, Mode=TwoWay}"
+                                      IsChecked="{Binding WorkTypeShowsTable, Mode=TwoWay}"
                                       Style="{StaticResource ReportViewToggleStyle}" />
                         <TextBlock VerticalAlignment="Center" Text="{x:Static language:Language.ProjectReportsTableViewLabel}" />
                     </StackPanel>
@@ -676,7 +676,7 @@
                                    AreaBorderThickness="0"
                                    Background="Transparent"
                                    Series="{Binding WorktypeStackedSeries}"
-                                   Visibility="{Binding WorktypeShowsTable, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
+                                   Visibility="{Binding WorkTypeShowsTable, Converter={StaticResource InverseBooleanToVisibilityConverter}}">
                         <chart:SfChart.Legend>
                             <chart:ChartLegend DockPosition="Right"
                                                CheckBoxVisibility="Collapsed" />
@@ -706,7 +706,7 @@
                                            ColumnSizer="Star"
                                            ItemsSource="{Binding WorktypeHours}"
                                            ShowGroupDropArea="True"
-                                           Visibility="{Binding WorktypeShowsTable, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                           Visibility="{Binding WorkTypeShowsTable, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <syncfusion:SfDataGrid.GroupColumnDescriptions>
                             <syncfusion:GroupColumnDescription ColumnName="WorktypeGroupName" />
                         </syncfusion:SfDataGrid.GroupColumnDescriptions>

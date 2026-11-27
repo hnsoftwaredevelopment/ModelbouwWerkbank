@@ -13,7 +13,9 @@ public class CountryValidator : IEntityValidator<CountryModel>
 
 	public CountryValidator( ICountryService countryService ) => _countryService = countryService;
 
-	public async Task<ValidationResult> ValidateAsync( CountryModel country )
+	public Task<ValidationResult> ValidateAsync( CountryModel country ) => ValidateAsync( country, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( CountryModel country, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -36,10 +38,10 @@ public class CountryValidator : IEntityValidator<CountryModel>
 		// ❗ Duplicate checks (alleen bij nieuw)
 		if ( country.CountryId == 0 )
 		{
-			if ( await _countryService.CodeExistsAsync( country.CountryCode ) )
+			if ( await _countryService.CodeExistsAsync( country.CountryCode, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationCountryCodeExists );
 
-			if ( await _countryService.NameExistsAsync( country.CountryName ) )
+			if ( await _countryService.NameExistsAsync( country.CountryName, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationCountryNameExists );
 		}
 

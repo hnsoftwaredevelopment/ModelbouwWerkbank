@@ -10,13 +10,13 @@ public class CategoryPageViewModelTests
 	{
 		var categoryService = new Mock<ICategoryService>();
 		categoryService
-			.Setup( service => service.GetAllCategorysAsync() )
+			.Setup( service => service.GetAllCategorysAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( categoryService.Object );
 
 		await Task.Delay( 100 );
-		categoryService.Verify( service => service.GetAllCategorysAsync(), Times.Once );
+		categoryService.Verify( service => service.GetAllCategorysAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -25,7 +25,7 @@ public class CategoryPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load categories." );
 		var categoryService = new Mock<ICategoryService>();
 		categoryService
-			.Setup( service => service.GetAllCategorysAsync() )
+			.Setup( service => service.GetAllCategorysAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<CategoryModel>>( expected ) );
 
 		var viewModel = CreateViewModel( categoryService.Object );

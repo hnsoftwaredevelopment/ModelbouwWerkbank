@@ -320,7 +320,6 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 	#endregion
 
 	#region SelectedProduct + Filter
-	private ProductModel? _previousProduct;
 	#endregion
 
 
@@ -538,8 +537,6 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 
 		UpdateFilteredSuppliers();
 		ObserveBackgroundTask( LoadStockHistoryAsync( newValue ) );
-
-		_previousProduct = newValue;
 	}
 
 
@@ -566,18 +563,18 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<ProductModel>> LoadItemsAsync() => _dataService.GetAllProductsAsync();
-	protected override Task<int> InsertAsync( ProductModel item ) => _dataService.InsertNewProductAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( ProductModel item )
+	protected override Task<List<ProductModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllProductsAsync( cancellationToken );
+	protected override Task<int> InsertAsync( ProductModel item, CancellationToken cancellationToken ) => _dataService.InsertNewProductAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( ProductModel item, CancellationToken cancellationToken )
 	{
 		if ( SelectedItem == null )
 			return Task.CompletedTask;
 
 		_lastSelectedProductId = SelectedItem.ProductId;
 
-		return _dataService.UpdateProductAsync( CreateParameters( SelectedItem ) );
+		return _dataService.UpdateProductAsync( CreateParameters( SelectedItem ), cancellationToken );
 	}
-	protected override async Task DeleteAsync( ProductModel item )
+	protected override async Task DeleteAsync( ProductModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -593,7 +590,7 @@ public partial class ProductPageViewModel : EntityPageViewModel<ProductModel>
 			return;
 		try
 		{
-			await _dataService.DeleteProductAsync( item.ProductId );
+			await _dataService.DeleteProductAsync( item.ProductId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

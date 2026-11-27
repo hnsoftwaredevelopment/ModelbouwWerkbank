@@ -10,7 +10,9 @@ public class CategoryValidator : IEntityValidator<CategoryModel>
 
 	public CategoryValidator( ICategoryService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( CategoryModel category )
+	public Task<ValidationResult> ValidateAsync( CategoryModel category ) => ValidateAsync( category, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( CategoryModel category, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -24,7 +26,7 @@ public class CategoryValidator : IEntityValidator<CategoryModel>
 			result.Errors.Add( Lang.ExportValidationMessageNameLength );
 		}
 
-		if ( await _dataService.NameExistsAsync( category.CategoryName, category.ParentId ) )
+		if ( await _dataService.NameExistsAsync( category.CategoryName, category.ParentId, cancellationToken ) )
 		{
 			result.Errors.Add( Lang.ExportValidationCategoryNameExists );
 		}

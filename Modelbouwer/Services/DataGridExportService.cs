@@ -52,8 +52,8 @@ public static class DataGridExportService
 	// Escapes CSV fields that contain separators or quotes
 	private static string EscapeCsv( string input )
 	{
-		if ( input.Contains( ';' ) || input.Contains( '"' ) )
-			return $"\"{input.Replace( "\"", "\"\"" )}\"";
+		if ( input.Contains( ';', StringComparison.Ordinal ) || input.Contains( '"', StringComparison.Ordinal ) )
+			return $"\"{input.Replace( "\"", "\"\"", StringComparison.Ordinal )}\"";
 
 		return input;
 	}

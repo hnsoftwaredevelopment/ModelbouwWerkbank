@@ -210,18 +210,18 @@ SET
 WHERE {DBNames.ProductSupplierFieldNameId} = @{DBNames.ProductSupplierFieldNameId};";
 
 	public string InsertStocklogReceiptQuery = $@"
-INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
-	{DBNames.StocklogFieldNameProductId},
-	{DBNames.StocklogFieldNameSupplyOrderId},
-	{DBNames.StocklogFieldNameSupplyOrderlineId},
-	{DBNames.StocklogFieldNameAmountReceived},
-	{DBNames.StocklogFieldNameLogDate}
+INSERT INTO {DBNames.Database}.{DBNames.StockLogTable} (
+	{DBNames.StockLogFieldNameProductId},
+	{DBNames.StockLogFieldNameSupplyOrderId},
+	{DBNames.StockLogFieldNameSupplyOrderLineId},
+	{DBNames.StockLogFieldNameAmountReceived},
+	{DBNames.StockLogFieldNameLogDate}
 ) VALUES (
-	@{DBNames.StocklogFieldNameProductId},
-	@{DBNames.StocklogFieldNameSupplyOrderId},
-	@{DBNames.StocklogFieldNameSupplyOrderlineId},
-	@{DBNames.StocklogFieldNameAmountReceived},
-	@{DBNames.StocklogFieldNameLogDate}
+	@{DBNames.StockLogFieldNameProductId},
+	@{DBNames.StockLogFieldNameSupplyOrderId},
+	@{DBNames.StockLogFieldNameSupplyOrderLineId},
+	@{DBNames.StockLogFieldNameAmountReceived},
+	@{DBNames.StockLogFieldNameLogDate}
 );";
 
 	public Task<int> SaveOrderAsync( StockOrderModel order, IEnumerable<StockOrderLineModel> lines, IEnumerable<int> deletedLineIds, IEnumerable<Modelbouwer.Model.ProductSupplierModel> productSuppliers )
@@ -454,9 +454,9 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	/// <summary>Receipts in the stocklog or received amounts on the lines of the order.</summary>
 	public static readonly string CountOrderReceiptsQuery =
 		$"SELECT " +
-		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.StocklogTable} " +
-		$" WHERE {DBNames.StocklogFieldNameAmountReceived} <> 0 " +
-		$"   AND ({DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder}))) + " +
+		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.StockLogTable} " +
+		$" WHERE {DBNames.StockLogFieldNameAmountReceived} <> 0 " +
+		$"   AND ({DBNames.StockLogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StockLogFieldNameSupplyOrderLineId} IN ({OrderLineIdsOfOrder}))) + " +
 		$"(SELECT COUNT(*) FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
 		$" WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId " +
 		$"   AND {DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0);";
@@ -464,9 +464,9 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 	/// <summary>Stocklog rows of an order without receipts: the corrections orders wrote before KAN-100.</summary>
 	/// <remarks>Never deletes a receipt: one recorded after the check stays, so its stock is not lost.</remarks>
 	public static readonly string DeleteOrderStocklogQuery =
-		$"DELETE FROM {DBNames.Database}.{DBNames.StocklogTable} " +
-		$"WHERE IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0 " +
-		$"  AND ({DBNames.StocklogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StocklogFieldNameSupplyOrderlineId} IN ({OrderLineIdsOfOrder}));";
+		$"DELETE FROM {DBNames.Database}.{DBNames.StockLogTable} " +
+		$"WHERE IFNULL({DBNames.StockLogFieldNameAmountReceived}, 0) = 0 " +
+		$"  AND ({DBNames.StockLogFieldNameSupplyOrderId} = @OrderId OR {DBNames.StockLogFieldNameSupplyOrderLineId} IN ({OrderLineIdsOfOrder}));";
 
 	public static readonly string DeleteOrderLinesOfOrderQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.OrderLineTable} " +
@@ -689,11 +689,11 @@ INSERT INTO {DBNames.Database}.{DBNames.StocklogTable} (
 
 		return ExecuteNonQueryInTransactionAsync( connection, transaction, InsertStocklogReceiptQuery, new Dictionary<string, object>
 		{
-			{ $"@{DBNames.StocklogFieldNameProductId}", productId },
-			{ $"@{DBNames.StocklogFieldNameSupplyOrderId}", supplyOrderId > 0 ? supplyOrderId : DBNull.Value },
-			{ $"@{DBNames.StocklogFieldNameSupplyOrderlineId}", supplyOrderLineId > 0 ? supplyOrderLineId : DBNull.Value },
-			{ $"@{DBNames.StocklogFieldNameAmountReceived}", receivedAmount },
-			{ $"@{DBNames.StocklogFieldNameLogDate}", deliveryDate is DateTime date ? date : DateTime.Today }
+			{ $"@{DBNames.StockLogFieldNameProductId}", productId },
+			{ $"@{DBNames.StockLogFieldNameSupplyOrderId}", supplyOrderId > 0 ? supplyOrderId : DBNull.Value },
+			{ $"@{DBNames.StockLogFieldNameSupplyOrderLineId}", supplyOrderLineId > 0 ? supplyOrderLineId : DBNull.Value },
+			{ $"@{DBNames.StockLogFieldNameAmountReceived}", receivedAmount },
+			{ $"@{DBNames.StockLogFieldNameLogDate}", deliveryDate is DateTime date ? date : DateTime.Today }
 		}, cancellationToken );
 	}
 }

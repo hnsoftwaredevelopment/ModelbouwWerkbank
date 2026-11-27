@@ -7,7 +7,7 @@ namespace Modelbouwer.Services;
 public class BrandService : IBrandService
 {
 	private readonly GenericDataService _dataService;
-	public bool BrandUsed { get; set; } = false;
+	public bool BrandUsed { get; set; }
 
 	public BrandService( GenericDataService dataService )
 	{
@@ -32,7 +32,7 @@ public class BrandService : IBrandService
 		$"UPDATE {DBNames.Database}.{DBNames.BrandTable} " +
 		$"SET " +
 		$"{DBNames.BrandFieldNameName} = @{DBNames.BrandFieldNameName}" +
-		$"WHERE {DBNames.BrandFieldNameId} = @{DBNames.BrandFieldNameId};";
+		$" WHERE {DBNames.BrandFieldNameId} = @{DBNames.BrandFieldNameId};";
 
 	public string DeleteBrandQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.BrandTable} " +
@@ -46,7 +46,9 @@ public class BrandService : IBrandService
 	public string BrandUsedQuery = $"SELECT COUNT({DBNames.ProductFieldNameBrandId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameBrandId} = @BrandId";
 	#endregion
 
-	public Task<List<BrandModel>> GetAllBrandsAsync()
+	public Task<List<BrandModel>> GetAllBrandsAsync() => GetAllBrandsAsync( CancellationToken.None );
+
+	public Task<List<BrandModel>> GetAllBrandsAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteBrandList, reader =>
 		{
@@ -55,22 +57,26 @@ public class BrandService : IBrandService
 				BrandId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.BrandFieldNameId}" ] ),
 				BrandName = DatabaseValueConverter.GetString( reader [ $"{DBNames.BrandFieldNameName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewBrandAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewBrandAsync( Dictionary<string, object?> queryParameters ) => InsertNewBrandAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewBrandAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
 			{ $"@{DBNames.BrandFieldNameName}", queryParameters[$"@{DBNames.BrandFieldNameName}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewBrandQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewBrandQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateBrandAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateBrandAsync( Dictionary<string, object?> queryParameters ) => UpdateBrandAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateBrandAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -78,10 +84,12 @@ public class BrandService : IBrandService
 			{ $"@{DBNames.BrandFieldNameName}", queryParameters[$"@{DBNames.BrandFieldNameName}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateBrandQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateBrandQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteBrandAsync( int brandId )
+	public Task DeleteBrandAsync( int brandId ) => DeleteBrandAsync( brandId, CancellationToken.None );
+
+	public async Task DeleteBrandAsync( int brandId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -90,7 +98,7 @@ public class BrandService : IBrandService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteBrandQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteBrandQuery, parameters, cancellationToken );
 		}
 		catch ( MySqlException ex ) when ( ex.Number == 1451 )
 		{
@@ -99,7 +107,9 @@ public class BrandService : IBrandService
 		}
 	}
 
-	public async Task<bool> IsBrandUsedAsync( int brandId )
+	public Task<bool> IsBrandUsedAsync( int brandId ) => IsBrandUsedAsync( brandId, CancellationToken.None );
+
+	public async Task<bool> IsBrandUsedAsync( int brandId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -108,12 +118,14 @@ public class BrandService : IBrandService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			BrandUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? brandName )
+	public Task<bool> NameExistsAsync( string? brandName ) => NameExistsAsync( brandName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? brandName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( brandName ) )
 			return false;
@@ -123,7 +135,7 @@ public class BrandService : IBrandService
 			{ $"@{DBNames.BrandFieldNameName}", brandName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( BrandNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( BrandNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 }

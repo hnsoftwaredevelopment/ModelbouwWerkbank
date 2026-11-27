@@ -2,14 +2,6 @@
 
 namespace Modelbouwer.Services;
 
-public class CsvImportResult
-{
-	public int TotalRows { get; set; }
-	public int Imported { get; set; }
-	public int Skipped { get; set; }
-	public int Updated { get; set; }
-}
-
 public static class CsvImportService
 {
 	/// <summary>

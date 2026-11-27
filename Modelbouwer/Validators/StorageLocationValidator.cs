@@ -6,7 +6,9 @@ public class StorageLocationValidator : IEntityValidator<StorageLocationModel>
 
 	public StorageLocationValidator( IStorageLocationService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( StorageLocationModel storagelocation )
+	public Task<ValidationResult> ValidateAsync( StorageLocationModel storagelocation ) => ValidateAsync( storagelocation, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( StorageLocationModel storagelocation, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -20,7 +22,7 @@ public class StorageLocationValidator : IEntityValidator<StorageLocationModel>
 			result.Errors.Add( Lang.ExportValidationMessageNameLength );
 		}
 
-		if ( await _dataService.NameExistsAsync( storagelocation.StorageName, storagelocation.ParentId ) )
+		if ( await _dataService.NameExistsAsync( storagelocation.StorageName, storagelocation.ParentId, cancellationToken ) )
 		{
 			result.Errors.Add( Lang.ExportValidationStorageNameExists );
 		}

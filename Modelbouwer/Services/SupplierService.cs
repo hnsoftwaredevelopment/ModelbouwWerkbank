@@ -5,7 +5,7 @@ namespace Modelbouwer.Services;
 public class SupplierService : ISupplierService
 {
 	private readonly GenericDataService _dataService;
-	public bool SupplierUsed { get; set; } = false;
+	public bool SupplierUsed { get; set; }
 
 	public SupplierService( GenericDataService dataService )
 	{
@@ -200,7 +200,9 @@ public class SupplierService : ISupplierService
 		$"AS SupplierInUse;";
 	#endregion
 
-	public Task<List<SupplierModel>> GetAllSuppliersAsync()
+	public Task<List<SupplierModel>> GetAllSuppliersAsync() => GetAllSuppliersAsync( CancellationToken.None );
+
+	public Task<List<SupplierModel>> GetAllSuppliersAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteSupplierList, reader =>
 		{
@@ -220,17 +222,23 @@ public class SupplierService : ISupplierService
 				MinOrderCosts = DatabaseValueConverter.GetDouble( reader [ $"{DBNames.SupplierFieldNameMinOrderCosts}" ] ),
 				CurrencyId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.SupplierFieldNameCurrencyId}" ] ),
 				CountryId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.SupplierFieldNameCountryId}" ] ),
+				Mail = DatabaseValueConverter.GetString( reader [ $"{DBNames.SupplierFieldNameGeneralEmail}" ] ),
+				Phone = DatabaseValueConverter.GetString( reader [ $"{DBNames.SupplierFieldNameGeneralPhone}" ] ),
 				Memo = DatabaseValueConverter.GetString( reader [ $"{DBNames.SupplierFieldNameMemo}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public Task<List<ProductSupplierModel>> GetAllProductSuppliersAsync()
+	public Task<List<ProductSupplierModel>> GetAllProductSuppliersAsync() => GetAllProductSuppliersAsync( CancellationToken.None );
+
+	public Task<List<ProductSupplierModel>> GetAllProductSuppliersAsync( CancellationToken cancellationToken )
 	{
-		return _dataService.ExecuteQueryAsync( CompleteProductSupplierList, MapProductSupplier );
+		return _dataService.ExecuteQueryAsync( CompleteProductSupplierList, MapProductSupplier, null, cancellationToken );
 	}
 
-	public async Task<ProductSupplierModel?> GetProductSupplierAsync( int supplierId, int productId )
+	public Task<ProductSupplierModel?> GetProductSupplierAsync( int supplierId, int productId ) => GetProductSupplierAsync( supplierId, productId, CancellationToken.None );
+
+	public async Task<ProductSupplierModel?> GetProductSupplierAsync( int supplierId, int productId, CancellationToken cancellationToken )
 	{
 		var results = await _dataService.ExecuteQueryAsync(
 			ProductSupplierBySupplierAndProductQuery,
@@ -239,12 +247,14 @@ public class SupplierService : ISupplierService
 			{
 				{ "@SupplierId", supplierId },
 				{ "@ProductId", productId }
-			} );
+			}, cancellationToken );
 
 		return results.FirstOrDefault();
 	}
 
-	public async Task<int> UpsertProductSupplierAsync( ProductSupplierModel productSupplier )
+	public Task<int> UpsertProductSupplierAsync( ProductSupplierModel productSupplier ) => UpsertProductSupplierAsync( productSupplier, CancellationToken.None );
+
+	public async Task<int> UpsertProductSupplierAsync( ProductSupplierModel productSupplier, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -259,15 +269,17 @@ public class SupplierService : ISupplierService
 		if ( productSupplier.ProductSupplierId > 0 )
 		{
 			parameters.Add( DBNames.ProductSupplierFieldNameId, productSupplier.ProductSupplierId );
-			await _dataService.ExecuteScalarAsync<uint>( UpdateProductSupplierQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( UpdateProductSupplierQuery, parameters, cancellationToken );
 			return productSupplier.ProductSupplierId;
 		}
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( InsertProductSupplierQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( InsertProductSupplierQuery, parameters, cancellationToken );
 		return ( int ) newId;
 	}
 
-	public Task<List<CountryModel>> GetAllCountriesAsync()
+	public Task<List<CountryModel>> GetAllCountriesAsync() => GetAllCountriesAsync( CancellationToken.None );
+
+	public Task<List<CountryModel>> GetAllCountriesAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteCountryList, reader =>
 		{
@@ -279,10 +291,12 @@ public class SupplierService : ISupplierService
 				CountryCurrencyId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.CountryFieldNameCurrencyId}" ] ),
 				CountryCurrencySymbol = DatabaseValueConverter.GetString( reader [ $"{DBNames.CountryFieldNameCurrencySymbol}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public Task<List<CurrencyModel>> GetAllCurrenciesAsync()
+	public Task<List<CurrencyModel>> GetAllCurrenciesAsync() => GetAllCurrenciesAsync( CancellationToken.None );
+
+	public Task<List<CurrencyModel>> GetAllCurrenciesAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteCurrencyList, reader =>
 		{
@@ -294,62 +308,69 @@ public class SupplierService : ISupplierService
 				CurrencySymbol = DatabaseValueConverter.GetString( reader [ $"{DBNames.CurrencyFieldNameSymbol}" ] ),
 				CurrencyConversionRate = DatabaseValueConverter.GetDouble( reader [ $"{DBNames.CurrencyFieldNameRate}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewSupplierAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewSupplierAsync( Dictionary<string, object?> queryParameters ) => InsertNewSupplierAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewSupplierAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
-			{ $"{DBNames.SupplierFieldNameCode}", queryParameters[$"@{DBNames.SupplierFieldNameCode}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameName}", queryParameters[$"@{DBNames.SupplierFieldNameName}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameAddress1}", queryParameters[$"@{DBNames.SupplierFieldNameAddress1}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameAddress2}", queryParameters[$"@{DBNames.SupplierFieldNameAddress2}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameZip}", queryParameters[$"@{DBNames.SupplierFieldNameZip}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCity}", queryParameters[$"@{DBNames.SupplierFieldNameCity}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameUrl}", queryParameters[$"@{DBNames.SupplierFieldNameUrl}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameShippingCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMinShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinShippingCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameOrderCosts}" , queryParameters[$"@{DBNames.SupplierFieldNameOrderCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMinOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinOrderCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCurrencyId}", queryParameters[$"@{DBNames.SupplierFieldNameCurrencyId}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCountryId}", queryParameters[$"@{DBNames.SupplierFieldNameCountryId}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameGeneralEmail}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralEmail}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameGeneralPhone}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralPhone}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMemo}", queryParameters[$"@{DBNames.SupplierFieldNameMemo}"] ?? DBNull.Value }
+			{ $"@{DBNames.SupplierFieldNameCode}", queryParameters[$"@{DBNames.SupplierFieldNameCode}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameName}", queryParameters[$"@{DBNames.SupplierFieldNameName}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameAddress1}", queryParameters[$"@{DBNames.SupplierFieldNameAddress1}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameAddress2}", queryParameters[$"@{DBNames.SupplierFieldNameAddress2}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameZip}", queryParameters[$"@{DBNames.SupplierFieldNameZip}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCity}", queryParameters[$"@{DBNames.SupplierFieldNameCity}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameUrl}", queryParameters[$"@{DBNames.SupplierFieldNameUrl}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameShippingCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMinShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinShippingCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameOrderCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMinOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinOrderCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCurrencyId}", queryParameters[$"@{DBNames.SupplierFieldNameCurrencyId}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCountryId}", queryParameters[$"@{DBNames.SupplierFieldNameCountryId}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameGeneralEmail}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralEmail}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameGeneralPhone}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralPhone}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMemo}", queryParameters[$"@{DBNames.SupplierFieldNameMemo}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewSupplierQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewSupplierQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateSupplierAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateSupplierAsync( Dictionary<string, object?> queryParameters ) => UpdateSupplierAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateSupplierAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
-			{ $"{DBNames.SupplierFieldNameId}", queryParameters[$"@{DBNames.SupplierFieldNameId}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameName}", queryParameters[$"@{DBNames.SupplierFieldNameName}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameAddress1}", queryParameters[$"@{DBNames.SupplierFieldNameAddress1}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameAddress2}", queryParameters[$"@{DBNames.SupplierFieldNameAddress1}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameZip}", queryParameters[$"@{DBNames.SupplierFieldNameZip}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCity}", queryParameters[$"@{DBNames.SupplierFieldNameCity}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameUrl}", queryParameters[$"@{DBNames.SupplierFieldNameUrl}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameShippingCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMinShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinShippingCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameOrderCosts}" , queryParameters[$"@{DBNames.SupplierFieldNameOrderCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMinOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinOrderCosts}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCurrencyId}", queryParameters[$"@{DBNames.SupplierFieldNameCurrencyId}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameCountryId}", queryParameters[$"@{DBNames.SupplierFieldNameCountryId}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameGeneralEmail}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralEmail}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameGeneralPhone}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralPhone}"] ?? DBNull.Value },
-			{ $"{DBNames.SupplierFieldNameMemo}", queryParameters[$"@{DBNames.SupplierFieldNameMemo}"] ?? DBNull.Value }
+			{ $"@{DBNames.SupplierFieldNameId}", queryParameters[$"@{DBNames.SupplierFieldNameId}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCode}", queryParameters[$"@{DBNames.SupplierFieldNameCode}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameName}", queryParameters[$"@{DBNames.SupplierFieldNameName}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameAddress1}", queryParameters[$"@{DBNames.SupplierFieldNameAddress1}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameAddress2}", queryParameters[$"@{DBNames.SupplierFieldNameAddress2}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameZip}", queryParameters[$"@{DBNames.SupplierFieldNameZip}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCity}", queryParameters[$"@{DBNames.SupplierFieldNameCity}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameUrl}", queryParameters[$"@{DBNames.SupplierFieldNameUrl}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameShippingCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMinShippingCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinShippingCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameOrderCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMinOrderCosts}", queryParameters[$"@{DBNames.SupplierFieldNameMinOrderCosts}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCurrencyId}", queryParameters[$"@{DBNames.SupplierFieldNameCurrencyId}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameCountryId}", queryParameters[$"@{DBNames.SupplierFieldNameCountryId}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameGeneralEmail}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralEmail}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameGeneralPhone}", queryParameters[$"@{DBNames.SupplierFieldNameGeneralPhone}"] ?? DBNull.Value },
+			{ $"@{DBNames.SupplierFieldNameMemo}", queryParameters[$"@{DBNames.SupplierFieldNameMemo}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateSupplierQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateSupplierQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteSupplierAsync( int supplierId )
+	public Task DeleteSupplierAsync( int supplierId ) => DeleteSupplierAsync( supplierId, CancellationToken.None );
+
+	public async Task DeleteSupplierAsync( int supplierId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -358,7 +379,7 @@ public class SupplierService : ISupplierService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteSupplierQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteSupplierQuery, parameters, cancellationToken );
 		}
 		catch ( MySqlException ex ) when ( ex.Number == 1451 )
 		{
@@ -367,7 +388,9 @@ public class SupplierService : ISupplierService
 		}
 	}
 
-	public async Task<bool> IsSupplierUsedAsync( int supplierId )
+	public Task<bool> IsSupplierUsedAsync( int supplierId ) => IsSupplierUsedAsync( supplierId, CancellationToken.None );
+
+	public async Task<bool> IsSupplierUsedAsync( int supplierId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -376,12 +399,14 @@ public class SupplierService : ISupplierService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			SupplierUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? supplierName )
+	public Task<bool> NameExistsAsync( string? supplierName ) => NameExistsAsync( supplierName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? supplierName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( supplierName ) )
 			return false;
@@ -391,7 +416,7 @@ public class SupplierService : ISupplierService
 			{ $"@{DBNames.SupplierFieldNameName}", supplierName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( SupplierNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( SupplierNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 

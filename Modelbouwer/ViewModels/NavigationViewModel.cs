@@ -17,7 +17,6 @@ public class NavigationViewModel : INotifyPropertyChanged
 	readonly ObservableCollection<NavigationModel> ProjectSubItems = [];
 	readonly ObservableCollection<NavigationModel> MetadataSubItems = [];
 	readonly ObservableCollection<NavigationModel> MetadataCountriesSubItems = [];
-	readonly ObservableCollection<NavigationModel> MetadataCurrenciesSubItems = [];
 
 	private object? _currentView;
 	public object? CurrentView
@@ -335,12 +334,12 @@ public class NavigationViewModel : INotifyPropertyChanged
 	{
 		try
 		{
-			var worktypeView = _serviceProvider.GetRequiredService<WorktypeView>();
+			var worktypeView = _serviceProvider.GetRequiredService<WorkTypeView>();
 			CurrentView = worktypeView;
 		}
 		catch ( Exception ex )
 		{
-			Debug.WriteLine( $"Error loading WorktypeView: {ex.Message}" );
+			Debug.WriteLine( $"Error loading WorkTypeView: {ex.Message}" );
 		}
 	}
 
@@ -485,7 +484,6 @@ public class NavigationViewModel : INotifyPropertyChanged
 		ProjectSubItems.Clear();
 		MetadataSubItems.Clear();
 		MetadataCountriesSubItems.Clear();
-		MetadataCurrenciesSubItems.Clear();
 
 		#region Time section
 		#region Subitems
@@ -565,14 +563,6 @@ public class NavigationViewModel : INotifyPropertyChanged
 		#region Subitems
 		MetadataSubItems.Add( new NavigationModel
 		{
-			NavigationItem = "Voorbeeld",
-			NavigationIcon = CreateNavigationImage( "Resources" ),
-			NavigationTooltip = "Een voorbeeld van een menu met sub menu's",
-			SubItems = MetadataCurrenciesSubItems
-		} );
-
-		MetadataSubItems.Add( new NavigationModel
-		{
 			NavigationItem = Language.navigation_Resources_SubItem_Brand_Label,
 			NavigationIcon = CreateNavigationImage( "Brands" ),
 			NavigationTooltip = Language.navigation_Resources_SubItem_Brand_Tooltip,
@@ -649,22 +639,6 @@ public class NavigationViewModel : INotifyPropertyChanged
 			NavigationIcon = CreateNavigationImage( "product" ),
 			NavigationTooltip = Language.navigation_Resources_SubItem_Product_Tooltip,
 			Command = new SimpleCommand( () => LoadProductView() )
-		} );
-		#endregion
-
-		#region CurrencySubitems
-		MetadataCurrenciesSubItems.Add( new NavigationModel
-		{
-			NavigationItem = Language.navigation_Resources_SubItem_Currency_SubItem_Import_Label,
-			NavigationIcon = CreateNavigationImage( "Import" ),
-			NavigationTooltip = Language.navigation_Resources_SubItem_Currency_SubItem_Import_Tooltip
-		} );
-
-		MetadataCurrenciesSubItems.Add( new NavigationModel
-		{
-			NavigationItem = Language.navigation_Resources_SubItem_Currency_SubItem_Export_Label,
-			NavigationIcon = CreateNavigationImage( "Export" ),
-			NavigationTooltip = Language.navigation_Resources_SubItem_Currency_SubItem_Export_Tooltip
 		} );
 		#endregion
 

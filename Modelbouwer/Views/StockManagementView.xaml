@@ -418,7 +418,7 @@
                 <syncfusion:GridNumericColumn
                     MappingName="ProductPrice"
                     HeaderText="{x:Static language:Language.StockManagementDataGridHeaderPrice}"
-                    AllowEditing="False"
+                    AllowEditing="True"
                     AllowFiltering="False"
                     AllowGrouping="False"
                     AllowSorting="True"

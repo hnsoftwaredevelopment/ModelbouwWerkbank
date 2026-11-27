@@ -22,7 +22,7 @@ public class ViewXamlWiringTests
 	[TestMethod]
 	public void WorktypeView_WiresTreeGridLoadedHandler()
 	{
-		var xaml = LoadViewXaml( "WorktypeView.xaml" );
+		var xaml = LoadViewXaml( "WorkTypeView.xaml" );
 
 		StringAssert.Contains( xaml, "Loaded=\"WorktypeDataGrid_Loaded\"" );
 	}

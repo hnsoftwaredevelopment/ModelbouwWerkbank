@@ -13,6 +13,10 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 	public ObservableCollection<CategoryModel> Categories { get; } = [ ];
 	public ObservableCollection<CategoryModel> CategoryTree { get; } = [ ];
 
+	/// <summary>Called around rebuilding the tree, so the view can keep the open branches (a save reloads the list).</summary>
+	public Action? BeforeTreeRebuild { get; set; }
+	public Action? AfterTreeRebuild { get; set; }
+
 	// Commands
 	public IRelayCommand AddCategoryCommand => AddCommand;
 	public IAsyncRelayCommand SaveCategoryCommand => SaveCommand;
@@ -46,12 +50,13 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 	{
 		_dataService = dataService;
 
-		ObserveBackgroundTask( ReloadAsync() );
-
 		AddSubCategoryCommand = new RelayCommand( AddSubCategory, () => SelectedItem != null );
 
 		ExpandCommand = new DelegateCommand<object>( ExpandExecute );
 		CollapseCommand = new DelegateCommand<object>( CollapseExecute );
+
+		// Started last: a load that finishes at once selects an item, which needs the commands above.
+		ObserveBackgroundTask( ReloadAsync() );
 
 	}
 
@@ -85,10 +90,10 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<CategoryModel>> LoadItemsAsync() => _dataService.GetAllCategorysAsync();
-	protected override Task<int> InsertAsync( CategoryModel item ) => _dataService.InsertNewCategoryAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( CategoryModel item ) => _dataService.UpdateCategoryAsync( UpdateParameters( item ) );
-	protected override async Task DeleteAsync( CategoryModel item )
+	protected override Task<List<CategoryModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllCategorysAsync( cancellationToken );
+	protected override Task<int> InsertAsync( CategoryModel item, CancellationToken cancellationToken ) => _dataService.InsertNewCategoryAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( CategoryModel item, CancellationToken cancellationToken ) => _dataService.UpdateCategoryAsync( UpdateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( CategoryModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -104,7 +109,7 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 			return;
 		try
 		{
-			await _dataService.DeleteCategoryAsync( item.CategoryId );
+			await _dataService.DeleteCategoryAsync( item.CategoryId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{
@@ -164,6 +169,7 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 	{
 		base.OnItemsLoaded();
 
+		BeforeTreeRebuild?.Invoke();
 		CategoryTree.Clear();
 
 		var tree = BuildTree( Items );
@@ -171,6 +177,7 @@ public partial class CategoryPageViewModel : EntityPageViewModel<CategoryModel>
 			CategoryTree.Add( root );
 
 		OnPropertyChanged( nameof( CategoryTree ) );
+		AfterTreeRebuild?.Invoke();
 	}
 
 	private void AddSubCategory()

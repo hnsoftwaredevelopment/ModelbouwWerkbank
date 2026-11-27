@@ -8,13 +8,13 @@ public class BrandPageViewModelTests
 	{
 		var brandService = new Mock<IBrandService>();
 		brandService
-			.Setup( service => service.GetAllBrandsAsync() )
+			.Setup( service => service.GetAllBrandsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( brandService.Object );
 
 		await Task.Delay( 100 );
-		brandService.Verify( service => service.GetAllBrandsAsync(), Times.Once );
+		brandService.Verify( service => service.GetAllBrandsAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -23,7 +23,7 @@ public class BrandPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load brands." );
 		var brandService = new Mock<IBrandService>();
 		brandService
-			.Setup( service => service.GetAllBrandsAsync() )
+			.Setup( service => service.GetAllBrandsAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<BrandModel>>( expected ) );
 
 		var viewModel = CreateViewModel( brandService.Object );
@@ -43,7 +43,7 @@ public class BrandPageViewModelTests
 	{
 		var brandService = new Mock<IBrandService>();
 		brandService
-			.Setup( service => service.GetAllBrandsAsync() )
+			.Setup( service => service.GetAllBrandsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 		var viewModel = CreateViewModel( brandService.Object );
 

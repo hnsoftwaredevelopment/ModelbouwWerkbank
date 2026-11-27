@@ -67,10 +67,10 @@ public class BrandPageViewModel : EntityPageViewModel<BrandModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<BrandModel>> LoadItemsAsync() => _dataService.GetAllBrandsAsync();
-	protected override Task<int> InsertAsync( BrandModel item ) => _dataService.InsertNewBrandAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( BrandModel item ) => _dataService.UpdateBrandAsync( CreateParameters( item ) );
-	protected override async Task DeleteAsync( BrandModel item )
+	protected override Task<List<BrandModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllBrandsAsync( cancellationToken );
+	protected override Task<int> InsertAsync( BrandModel item, CancellationToken cancellationToken ) => _dataService.InsertNewBrandAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( BrandModel item, CancellationToken cancellationToken ) => _dataService.UpdateBrandAsync( CreateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( BrandModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -86,7 +86,7 @@ public class BrandPageViewModel : EntityPageViewModel<BrandModel>
 			return;
 		try
 		{
-			await _dataService.DeleteBrandAsync( item.BrandId );
+			await _dataService.DeleteBrandAsync( item.BrandId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{

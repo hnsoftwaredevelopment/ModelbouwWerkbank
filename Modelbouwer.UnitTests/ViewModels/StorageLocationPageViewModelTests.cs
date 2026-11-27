@@ -10,13 +10,13 @@ public class StorageLocationPageViewModelTests
 	{
 		var storageLocationService = new Mock<IStorageLocationService>();
 		storageLocationService
-			.Setup( service => service.GetAllStorageLocationsAsync() )
+			.Setup( service => service.GetAllStorageLocationsAsync( It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( storageLocationService.Object );
 
 		await Task.Delay( 100 );
-		storageLocationService.Verify( service => service.GetAllStorageLocationsAsync(), Times.Once );
+		storageLocationService.Verify( service => service.GetAllStorageLocationsAsync( It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -25,7 +25,7 @@ public class StorageLocationPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load storage locations." );
 		var storageLocationService = new Mock<IStorageLocationService>();
 		storageLocationService
-			.Setup( service => service.GetAllStorageLocationsAsync() )
+			.Setup( service => service.GetAllStorageLocationsAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<StorageLocationModel>>( expected ) );
 
 		var viewModel = CreateViewModel( storageLocationService.Object );

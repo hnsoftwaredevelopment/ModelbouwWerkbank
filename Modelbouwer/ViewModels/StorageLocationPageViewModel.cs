@@ -13,6 +13,10 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 	public ObservableCollection<StorageLocationModel> StorageLocations { get; } = [ ];
 	public ObservableCollection<StorageLocationModel> StorageLocationTree { get; } = [ ];
 
+	/// <summary>Called around rebuilding the tree, so the view can keep the open branches (a save reloads the list).</summary>
+	public Action? BeforeTreeRebuild { get; set; }
+	public Action? AfterTreeRebuild { get; set; }
+
 	// Commands
 	public IRelayCommand AddStorageLocationCommand => AddCommand;
 	public IAsyncRelayCommand SaveStorageLocationCommand => SaveCommand;
@@ -46,12 +50,13 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 	{
 		_dataService = dataService;
 
-		ObserveBackgroundTask( ReloadAsync() );
-
 		AddSubStorageLocationCommand = new RelayCommand( AddSubStorageLocation, () => SelectedItem != null );
 
 		ExpandCommand = new DelegateCommand<object>( ExpandExecute );
 		CollapseCommand = new DelegateCommand<object>( CollapseExecute );
+
+		// Started last: a load that finishes at once selects an item, which needs the commands above.
+		ObserveBackgroundTask( ReloadAsync() );
 	}
 
 	protected override void OnPropertyChanged( System.ComponentModel.PropertyChangedEventArgs e )
@@ -82,10 +87,10 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 		return storagelocation.StorageName?.Contains( base.SearchText, StringComparison.CurrentCultureIgnoreCase ) == true;
 	}
 
-	protected override Task<List<StorageLocationModel>> LoadItemsAsync() => _dataService.GetAllStorageLocationsAsync();
-	protected override Task<int> InsertAsync( StorageLocationModel item ) => _dataService.InsertNewStorageLocationAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( StorageLocationModel item ) => _dataService.UpdateStorageLocationAsync( UpdateParameters( item ) );
-	protected override async Task DeleteAsync( StorageLocationModel item )
+	protected override Task<List<StorageLocationModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllStorageLocationsAsync( cancellationToken );
+	protected override Task<int> InsertAsync( StorageLocationModel item, CancellationToken cancellationToken ) => _dataService.InsertNewStorageLocationAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( StorageLocationModel item, CancellationToken cancellationToken ) => _dataService.UpdateStorageLocationAsync( UpdateParameters( item ), cancellationToken );
+	protected override async Task DeleteAsync( StorageLocationModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -102,7 +107,7 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 
 		try
 		{
-			await _dataService.DeleteStorageLocationAsync( item.StorageId );
+			await _dataService.DeleteStorageLocationAsync( item.StorageId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{
@@ -160,6 +165,7 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 	{
 		base.OnItemsLoaded();
 
+		BeforeTreeRebuild?.Invoke();
 		StorageLocationTree.Clear();
 
 		var tree = BuildTree(Items);
@@ -167,6 +173,7 @@ public partial class StorageLocationPageViewModel : EntityPageViewModel<StorageL
 			StorageLocationTree.Add( root );
 
 		OnPropertyChanged( nameof( StorageLocationTree ) );
+		AfterTreeRebuild?.Invoke();
 	}
 
 	private void AddSubStorageLocation()

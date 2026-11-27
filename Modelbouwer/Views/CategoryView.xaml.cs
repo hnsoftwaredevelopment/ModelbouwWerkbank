@@ -27,6 +27,13 @@ public partial class CategoryView : UserControl
 
 		if ( DataContext is CategoryPageViewModel vm )
 		{
+			// A save reloads the list; keep the branches the user had open.
+			TreeGridExpansionState.KeepExpansion( SfGridTree, item => ( ( CategoryModel ) item ).CategoryId, ( before, after ) =>
+			{
+				vm.BeforeTreeRebuild = before;
+				vm.AfterTreeRebuild = after;
+			} );
+
 			vm._filterChanged += () =>
 			{
 				if ( SfGridTree.View == null )

@@ -61,31 +61,19 @@ public partial class StorageLocationModel : ObservableObject
 			"Lagerort" ]
 	};
 
-	public new event PropertyChangedEventHandler? PropertyChanged;
-
-	protected new virtual void OnPropertyChanged( string propertyName )
+	/// <summary>
+	/// Marks the record as modified when a property changes. Uses the PropertyChanged of ObservableObject: a hiding
+	/// "new" event was not seen through INotifyPropertyChanged, so the screen never noticed a change (Save stayed off).
+	/// </summary>
+	protected override void OnPropertyChanged( PropertyChangedEventArgs e )
 	{
-		PropertyChanged?.Invoke( this, new PropertyChangedEventArgs( propertyName ) );
-	}
+		base.OnPropertyChanged( e );
 
-	protected new bool SetProperty<T>( ref T field, T value, [CallerMemberName] string? propertyName = null )
-	{
-		if ( EqualityComparer<T>.Default.Equals( field, value ) )
+		if ( State == RecordState.Unchanged && e.PropertyName is not ( nameof( State ) or nameof( StatusMarker ) ) )
 		{
-			return false;
+			_state = RecordState.Modified; // avoid recursion through State
+			base.OnPropertyChanged( new PropertyChangedEventArgs( nameof( StatusMarker ) ) );
 		}
-
-		field = value;
-
-		// Mark record as modified when property has been changed
-		if ( State == RecordState.Unchanged && propertyName != nameof( State ) )
-		{
-			_state = RecordState.Modified; // avoid recursion to SetProperty
-			OnPropertyChanged( nameof( StatusMarker ) );
-		}
-
-		OnPropertyChanged( propertyName ?? string.Empty );
-		return true;
 	}
 
 }

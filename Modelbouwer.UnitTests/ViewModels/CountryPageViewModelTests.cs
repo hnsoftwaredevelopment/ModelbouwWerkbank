@@ -8,13 +8,13 @@ public class CountryPageViewModelTests
 	{
 		var countryService = new Mock<ICountryService>();
 		var currencyService = new Mock<ICurrencyService>();
-		countryService.Setup( service => service.GetAllCountriesAsync() ).ReturnsAsync( [ ] );
+		countryService.Setup( service => service.GetAllCountriesAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( [ ] );
 		currencyService.Setup( service => service.GetAllCurrenciesAsync() ).ReturnsAsync( [ ] );
 
 		_ = CreateViewModel( countryService.Object, currencyService.Object );
 
 		await Task.Delay( 100 );
-		countryService.Verify( service => service.GetAllCountriesAsync(), Times.Once );
+		countryService.Verify( service => service.GetAllCountriesAsync( It.IsAny<CancellationToken>() ), Times.Once );
 		currencyService.Verify( service => service.GetAllCurrenciesAsync(), Times.Once );
 	}
 
@@ -39,7 +39,7 @@ public class CountryPageViewModelTests
 		var expected = new InvalidOperationException( "Unable to load countries." );
 		var countryService = new Mock<ICountryService>();
 		countryService
-			.Setup( service => service.GetAllCountriesAsync() )
+			.Setup( service => service.GetAllCountriesAsync( It.IsAny<CancellationToken>() ) )
 			.Returns( Task.FromException<List<CountryModel>>( expected ) );
 
 		var viewModel = CreateViewModel( countryService.Object );
@@ -54,7 +54,7 @@ public class CountryPageViewModelTests
 		var defaultCurrencyService = new Mock<ICurrencyService>();
 		var validator = new Mock<IEntityValidator<CountryModel>>();
 
-		defaultCountryService.Setup( service => service.GetAllCountriesAsync() ).ReturnsAsync( [ ] );
+		defaultCountryService.Setup( service => service.GetAllCountriesAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync( [ ] );
 		defaultCurrencyService.Setup( service => service.GetAllCurrenciesAsync() ).ReturnsAsync( [ ] );
 
 		return new CountryPageViewModel(

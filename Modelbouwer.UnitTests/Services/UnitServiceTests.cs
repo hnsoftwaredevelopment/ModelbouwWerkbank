@@ -26,7 +26,7 @@ public class UnitServiceTests
 		};
 
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( expectedUnits );
 
 		// Act
@@ -45,7 +45,7 @@ public class UnitServiceTests
 	{
 		// Arrange
 		_mockDataService
-			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>() ) )
+			.Setup( s => s.ExecuteQueryAsync( It.IsAny<string>(), It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>(), null, It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( new List<UnitModel>() );
 
 		// Act
@@ -63,7 +63,7 @@ public class UnitServiceTests
 		var parameters = CreateUnitParameters( unitName: "Box" );
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 42u );
 
 		// Act
@@ -80,7 +80,7 @@ public class UnitServiceTests
 		var parameters = CreateUnitParameters( unitName: "Box" );
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1u );
 
 		// Act
@@ -91,7 +91,7 @@ public class UnitServiceTests
 			It.IsAny<string>(),
 			It.Is<Dictionary<string, object>>( d =>
 				d.ContainsKey( $"@{DBNames.UnitFieldNameUnitName}" ) &&
-				Equals( d [ $"@{DBNames.UnitFieldNameUnitName}" ], "Box" ) ) ), Times.Once );
+				Equals( d [ $"@{DBNames.UnitFieldNameUnitName}" ], "Box" ) ), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -101,7 +101,7 @@ public class UnitServiceTests
 		var parameters = CreateUnitParameters( 7, "Updated box" );
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -114,7 +114,7 @@ public class UnitServiceTests
 				d.ContainsKey( $"@{DBNames.UnitFieldNameUnitId}" ) &&
 				Equals( d [ $"@{DBNames.UnitFieldNameUnitId}" ], 7 ) &&
 				d.ContainsKey( $"@{DBNames.UnitFieldNameUnitName}" ) &&
-				Equals( d [ $"@{DBNames.UnitFieldNameUnitName}" ], "Updated box" ) ) ), Times.Once );
+				Equals( d [ $"@{DBNames.UnitFieldNameUnitName}" ], "Updated box" ) ), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -124,7 +124,7 @@ public class UnitServiceTests
 		const int unitId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0u );
 
 		// Act
@@ -135,7 +135,7 @@ public class UnitServiceTests
 			It.IsAny<string>(),
 			It.Is<Dictionary<string, object>>( d =>
 				d.ContainsKey( $"@{DBNames.UnitFieldNameUnitId}" ) &&
-				Equals( d [ $"@{DBNames.UnitFieldNameUnitId}" ], unitId ) ) ), Times.Once );
+				Equals( d [ $"@{DBNames.UnitFieldNameUnitId}" ], unitId ) ), It.IsAny<CancellationToken>() ), Times.Once );
 	}
 
 	[TestMethod]
@@ -145,7 +145,7 @@ public class UnitServiceTests
 		const int unitId = 123;
 
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<uint>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ThrowsAsync( new TestMySqlException( 1451, "Foreign key constraint" ) );
 
 		// Act / Assert
@@ -165,7 +165,7 @@ public class UnitServiceTests
 	{
 		// Arrange
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 2 );
 
 		// Act
@@ -180,7 +180,7 @@ public class UnitServiceTests
 	{
 		// Arrange
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		// Act
@@ -202,7 +202,7 @@ public class UnitServiceTests
 	public async Task NameExistsAsync_WhenUnitNameExists_IgnoresCase()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 1 );
 
 		var result = await _unitService.NameExistsAsync( "piece" );
@@ -210,14 +210,14 @@ public class UnitServiceTests
 		Assert.IsTrue( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	[TestMethod]
 	public async Task NameExistsAsync_WhenUnitNameDoesNotExist_ReturnsFalse()
 	{
 		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>() ) )
+			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
 			.ReturnsAsync( 0 );
 
 		var result = await _unitService.NameExistsAsync( "Meter" );
@@ -225,7 +225,7 @@ public class UnitServiceTests
 		Assert.IsFalse( result );
 		_mockDataService.Verify( s => s.ExecuteQueryAsync(
 			It.IsAny<string>(),
-			It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>() ), Times.Never );
+			It.IsAny<Func<System.Data.Common.DbDataReader, UnitModel>>(), null, It.IsAny<CancellationToken>() ), Times.Never );
 	}
 
 	private static Dictionary<string, object?> CreateUnitParameters( int unitId = 1, string unitName = "Piece" )

@@ -27,6 +27,13 @@ public partial class StorageLocationView : UserControl
 
 		if ( DataContext is StorageLocationPageViewModel vm )
 		{
+			// A save reloads the list; keep the branches the user had open.
+			TreeGridExpansionState.KeepExpansion( SfGridTree, item => ( ( StorageLocationModel ) item ).StorageId, ( before, after ) =>
+			{
+				vm.BeforeTreeRebuild = before;
+				vm.AfterTreeRebuild = after;
+			} );
+
 			vm._filterChanged += () =>
 			{
 				if ( SfGridTree.View == null )

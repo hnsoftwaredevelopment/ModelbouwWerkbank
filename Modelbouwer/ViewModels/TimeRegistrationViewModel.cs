@@ -10,7 +10,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 	private readonly ITimeRegistrationService _timeRegistrationService;
 	private readonly IProjectService _projectService;
 	private readonly IProductService _productService;
-	private readonly IWorktypeService _worktypeService;
+	private readonly IWorkTypeService _worktypeService;
 	private readonly ICategoryService _categoryService;
 	private bool _isSyncingSelectedMaterialUsage;
 	private CancellationTokenSource? _selectedProjectDataCancellationTokenSource;
@@ -18,7 +18,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 
 	[ObservableProperty] private ProjectModel? _selectedProject;
 	[ObservableProperty] private ProductModel? _selectedProduct;
-	[ObservableProperty] private WorktypeModel? _selectedWorktype;
+	[ObservableProperty] private WorkTypeModel? _selectedWorktype;
 	[ObservableProperty] private DateTime _selectedWorkDate = DateTime.Today;
 	[ObservableProperty] private string _startTime = "09:00";
 	[ObservableProperty] private string _endTime = "10:00";
@@ -40,8 +40,8 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 	public ObservableCollection<ProductModel> Products { get; } = [ ];
 	public ObservableCollection<CategoryModel> Categories { get; } = [ ];
 	public ObservableCollection<ProductSelectionNodeModel> ProductTree { get; } = [ ];
-	public ObservableCollection<WorktypeModel> Worktypes { get; } = [ ];
-	public ObservableCollection<WorktypeModel> WorktypeTree { get; } = [ ];
+	public ObservableCollection<WorkTypeModel> Worktypes { get; } = [ ];
+	public ObservableCollection<WorkTypeModel> WorktypeTree { get; } = [ ];
 	public ObservableCollection<TimeEntryModel> TimeEntries { get; } = [ ];
 	public ObservableCollection<MaterialUsageModel> MaterialUsages { get; } = [ ];
 	public ObservableCollection<ProjectCostLineModel> CostLines { get; } = [ ];
@@ -70,7 +70,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 		ITimeRegistrationService timeRegistrationService,
 		IProjectService projectService,
 		IProductService productService,
-		IWorktypeService worktypeService,
+		IWorkTypeService worktypeService,
 		ICategoryService categoryService )
 	{
 		_timeRegistrationService = timeRegistrationService;
@@ -167,7 +167,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 		AddMaterialUsageCommand.NotifyCanExecuteChanged();
 		ApplySelectedProductToMaterialUsage();
 	}
-	partial void OnSelectedWorktypeChanged( WorktypeModel? value )
+	partial void OnSelectedWorktypeChanged( WorkTypeModel? value )
 	{
 		OnPropertyChanged( nameof( SelectedWorktypeName ) );
 		AddTimeEntryCommand.NotifyCanExecuteChanged();
@@ -244,14 +244,6 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 		HasUnsavedTimeChanges = false;
 		HasUnsavedMaterialChanges = false;
 		RebuildCostLines();
-	}
-
-	private async Task LoadTimeEntriesAsync( int projectId, CancellationToken cancellationToken )
-	{
-		var entries = await _timeRegistrationService.GetTimeEntriesByProjectAsync( projectId, cancellationToken );
-		cancellationToken.ThrowIfCancellationRequested();
-
-		ApplyTimeEntries( entries );
 	}
 
 	private void ApplyTimeEntries( IEnumerable<TimeEntryModel> entries )
@@ -450,7 +442,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 		}
 	}
 
-	public void SelectWorktype( WorktypeModel worktype )
+	public void SelectWorktype( WorkTypeModel worktype )
 	{
 		SelectedWorktype = worktype;
 
@@ -790,7 +782,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 		return false;
 	}
 
-	private static ObservableCollection<WorktypeModel> BuildWorktypeTree( IEnumerable<WorktypeModel> flatList )
+	private static ObservableCollection<WorkTypeModel> BuildWorktypeTree( IEnumerable<WorkTypeModel> flatList )
 	{
 		var lookup = flatList.ToDictionary( worktype => worktype.WorktypeId );
 
@@ -803,7 +795,7 @@ public partial class TimeRegistrationViewModel : AsyncObservableObject
 				parent.Children.Add( worktype );
 		}
 
-		return new ObservableCollection<WorktypeModel>(
+		return new ObservableCollection<WorkTypeModel>(
 			lookup.Values
 				.Where( worktype => worktype.ParentId is null or 0 )
 				.OrderBy( worktype => worktype.WorktypeName ) );

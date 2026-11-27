@@ -72,7 +72,7 @@ public class StockOrderServiceTests
 		int openAt = query.IndexOf( $"{open} = 0", StringComparison.Ordinal );
 		Assert.IsTrue( amountAt >= 0 && totalAt > amountAt && openAt > totalAt, query );
 		StringAssert.Contains( query, $"AND {DBNames.OrderLineFieldNameClosed} = 0" );
-		Assert.IsFalse( query.Contains( DBNames.StocklogTable ), "Stock is not touched." );
+		Assert.IsFalse( query.Contains( DBNames.StockLogTable ), "Stock is not touched." );
 	}
 
 	[TestMethod]
@@ -92,7 +92,7 @@ public class StockOrderServiceTests
 		StringAssert.Contains( query, $"{DBNames.OrderFieldNameClosedDate} = NULL" );
 		StringAssert.Contains( query, $"WHERE {DBNames.OrderFieldNameId} = @{DBNames.OrderFieldNameId}" );
 		Assert.IsFalse( query!.Contains( DBNames.OrderLineTable ), "Lines are not touched." );
-		Assert.IsFalse( query.Contains( DBNames.StocklogTable ), "Stock is not touched." );
+		Assert.IsFalse( query.Contains( DBNames.StockLogTable ), "Stock is not touched." );
 		Assert.AreEqual( 25, parameters! [ $"@{DBNames.OrderFieldNameId}" ] );
 	}
 
@@ -285,7 +285,7 @@ public class StockOrderServiceTests
 
 		var source = File.ReadAllText( Path.Combine( root!, "Modelbouwer", "Services", "StockOrderService.cs" ) );
 
-		Assert.IsFalse( source.Contains( "StocklogFieldNameAmountCorrection", StringComparison.Ordinal ),
+		Assert.IsFalse( source.Contains( "StockLogFieldNameAmountCorrection", StringComparison.Ordinal ),
 			"StockOrderService must not write AmountCorrection to the stocklog." );
 	}
 	[TestMethod]
@@ -323,10 +323,10 @@ public class StockOrderServiceTests
 	[TestMethod]
 	public void DeleteOrderQueries_CheckReceiptsAndRemoveEverythingOfTheOrder()
 	{
-		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.StocklogFieldNameAmountReceived} <> 0" );
+		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.StockLogFieldNameAmountReceived} <> 0" );
 		StringAssert.Contains( StockOrderService.CountOrderReceiptsQuery, $"{DBNames.OrderLineFieldNameAmount} - {DBNames.OrderLineFieldNameOpenAmount} > 0" );
-		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderId} = @OrderId" );
-		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StocklogFieldNameSupplyOrderlineId} IN (" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StockLogFieldNameSupplyOrderId} = @OrderId" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"{DBNames.StockLogFieldNameSupplyOrderLineId} IN (" );
 		StringAssert.Contains( StockOrderService.DeleteOrderLinesOfOrderQuery, $"WHERE {DBNames.OrderLineFieldNameSupplierOrderId} = @OrderId" );
 	}
 
@@ -374,7 +374,7 @@ public class StockOrderServiceTests
 	[TestMethod]
 	public void DeleteOrderStocklogQuery_NeverDeletesReceipts()
 	{
-		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StocklogFieldNameAmountReceived}, 0) = 0" );
+		StringAssert.Contains( StockOrderService.DeleteOrderStocklogQuery, $"IFNULL({DBNames.StockLogFieldNameAmountReceived}, 0) = 0" );
 	}
 
 	private static async Task AssertThrowsAsync<TException>( Func<Task> action ) where TException : Exception

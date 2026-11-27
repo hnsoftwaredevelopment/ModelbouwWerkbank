@@ -12,7 +12,7 @@ public class EntityPageViewModelTests
 		StringAssert.Contains( source, "partial void OnIsSavingChanged( bool value ) => NotifySaveCommandsCanExecuteChanged();" );
 		StringAssert.Contains( source, "partial void OnHasUnsavedChangesChanged( bool value ) => NotifySaveCommandsCanExecuteChanged();" );
 		StringAssert.Contains( source, "private bool CanSave() => HasUnsavedChanges && !IsSaving;" );
-		AssertMethodContains( source, "private async Task SaveAsync()", "if ( IsSaving )" );
+		AssertMethodContains( source, "private async Task SaveAsync( CancellationToken cancellationToken )", "if ( IsSaving )" );
 	}
 
 	[TestMethod]
@@ -24,9 +24,9 @@ public class EntityPageViewModelTests
 		StringAssert.Contains( source, "new AsyncRelayCommand( DeleteCommandAsync, CanDelete )" );
 		StringAssert.Contains( source, "partial void OnIsDeletingChanged( bool value ) => NotifyDeleteCommandsCanExecuteChanged();" );
 		StringAssert.Contains( source, "private bool CanDelete() => SelectedItem != null && !IsDeleting;" );
-		AssertMethodContains( source, "private async Task DeleteCommandAsync()", "if ( IsDeleting )" );
-		AssertMethodContains( source, "private async Task DeleteCommandAsync()", "IsDeleting = true;" );
-		AssertMethodContains( source, "private async Task DeleteCommandAsync()", "finally" );
+		AssertMethodContains( source, "private async Task DeleteCommandAsync( CancellationToken cancellationToken )", "if ( IsDeleting )" );
+		AssertMethodContains( source, "private async Task DeleteCommandAsync( CancellationToken cancellationToken )", "IsDeleting = true;" );
+		AssertMethodContains( source, "private async Task DeleteCommandAsync( CancellationToken cancellationToken )", "finally" );
 	}
 
 	[TestMethod]

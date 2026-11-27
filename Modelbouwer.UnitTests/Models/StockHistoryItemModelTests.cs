@@ -84,7 +84,7 @@ public class StockHistoryItemModelTests
 	[TestMethod]
 	public void StockHistoryQuery_FiltersOnProductAndJoinsOrderSupplierAndProject()
 	{
-		StringAssert.Contains( StockService.StockHistoryQuery, $"WHERE sl.{DBNames.StocklogFieldNameProductId} = @ProductId" );
+		StringAssert.Contains( StockService.StockHistoryQuery, $"WHERE sl.{DBNames.StockLogFieldNameProductId} = @ProductId" );
 		StringAssert.Contains( StockService.StockHistoryQuery, $"LEFT JOIN {DBNames.Database}.{DBNames.OrderTable} so" );
 		StringAssert.Contains( StockService.StockHistoryQuery, $"LEFT JOIN {DBNames.Database}.{DBNames.SupplierTable} sup" );
 		StringAssert.Contains( StockService.StockHistoryQuery, $"LEFT JOIN {DBNames.Database}.{DBNames.ProjectTable} prj" );

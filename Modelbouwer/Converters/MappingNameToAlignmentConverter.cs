@@ -6,10 +6,10 @@ public class MappingNameToAlignmentConverter : IValueConverter
 	{
 		if ( value is string mappingName )
 		{
-			if ( mappingName.Contains( "Value" ) ||
-				mappingName.Contains( "Price" ) ||
-				mappingName.Contains( "Inventory" ) ||
-				mappingName.Contains( "Order" ) )
+			if ( mappingName.Contains( "Value", StringComparison.Ordinal ) ||
+				mappingName.Contains( "Price", StringComparison.Ordinal ) ||
+				mappingName.Contains( "Inventory", StringComparison.Ordinal ) ||
+				mappingName.Contains( "Order", StringComparison.Ordinal ) )
 			{
 				return HorizontalAlignment.Right;
 			}

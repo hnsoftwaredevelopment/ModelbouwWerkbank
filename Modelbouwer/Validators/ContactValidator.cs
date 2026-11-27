@@ -6,7 +6,9 @@ public class ContactValidator : IEntityValidator<SupplierContactModel>
 
 	public ContactValidator( IContactService dataService ) => _dataService = dataService;
 
-	public async Task<ValidationResult> ValidateAsync( SupplierContactModel contact )
+	public Task<ValidationResult> ValidateAsync( SupplierContactModel contact ) => ValidateAsync( contact, CancellationToken.None );
+
+	public async Task<ValidationResult> ValidateAsync( SupplierContactModel contact, CancellationToken cancellationToken )
 	{
 		var result = new ValidationResult();
 
@@ -23,7 +25,7 @@ public class ContactValidator : IEntityValidator<SupplierContactModel>
 		// ❗ Duplicate checks
 		if ( contact.ContactId == 0 )
 		{
-			if ( await _dataService.NameExistsAsync( contact.Name ) )
+			if ( await _dataService.NameExistsAsync( contact.Name, cancellationToken ) )
 				result.Errors.Add( Lang.ExportValidationContactNameExists );
 		}
 

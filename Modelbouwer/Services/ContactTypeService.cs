@@ -7,7 +7,7 @@ namespace Modelbouwer.Services;
 public class ContactTypeService : IContactTypeService
 {
 	private readonly GenericDataService _dataService;
-	public bool ContactTypeUsed { get; set; } = false;
+	public bool ContactTypeUsed { get; set; }
 
 	public ContactTypeService( GenericDataService dataService )
 	{
@@ -32,7 +32,7 @@ public class ContactTypeService : IContactTypeService
 		$"UPDATE {DBNames.Database}.{DBNames.ContactTypeTable} " +
 		$"SET " +
 		$"{DBNames.ContactTypeFieldNameName} = @{DBNames.ContactTypeFieldNameName}" +
-		$"WHERE {DBNames.ContactTypeFieldNameId} = @{DBNames.ContactTypeFieldNameId};";
+		$" WHERE {DBNames.ContactTypeFieldNameId} = @{DBNames.ContactTypeFieldNameId};";
 
 	public string DeleteContactTypeQuery =
 		$"DELETE FROM {DBNames.Database}.{DBNames.ContactTypeTable} " +
@@ -46,7 +46,9 @@ public class ContactTypeService : IContactTypeService
 	public string ContactTypeUsedQuery = $"SELECT COUNT({DBNames.SupplierContactFieldNameTypeId}) FROM {DBNames.Database}.{DBNames.SupplierTable} WHERE {DBNames.SupplierContactFieldNameTypeId} = @ContactTypeId";
 	#endregion
 
-	public Task<List<ContactTypeModel>> GetAllContactTypesAsync()
+	public Task<List<ContactTypeModel>> GetAllContactTypesAsync() => GetAllContactTypesAsync( CancellationToken.None );
+
+	public Task<List<ContactTypeModel>> GetAllContactTypesAsync( CancellationToken cancellationToken )
 	{
 		return _dataService.ExecuteQueryAsync( CompleteContactTypeList, reader =>
 		{
@@ -55,22 +57,26 @@ public class ContactTypeService : IContactTypeService
 				ContactTypeId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.ContactTypeFieldNameId}" ] ),
 				ContactTypeName = DatabaseValueConverter.GetString( reader [ $"{DBNames.ContactTypeFieldNameName}" ] )
 			};
-		} );
+		}, null, cancellationToken );
 	}
 
-	public async Task<int> InsertNewContactTypeAsync( Dictionary<string, object?> queryParameters )
+	public Task<int> InsertNewContactTypeAsync( Dictionary<string, object?> queryParameters ) => InsertNewContactTypeAsync( queryParameters, CancellationToken.None );
+
+	public async Task<int> InsertNewContactTypeAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
 			{ $"@{DBNames.ContactTypeFieldNameName}", queryParameters[$"@{DBNames.ContactTypeFieldNameName}"] ?? DBNull.Value }
 		};
 
-		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewContactTypeQuery, parameters );
+		uint newId = await _dataService.ExecuteScalarAsync<uint>( AddNewContactTypeQuery, parameters, cancellationToken );
 
 		return ( int ) newId;
 	}
 
-	public async Task UpdateContactTypeAsync( Dictionary<string, object?> queryParameters )
+	public Task UpdateContactTypeAsync( Dictionary<string, object?> queryParameters ) => UpdateContactTypeAsync( queryParameters, CancellationToken.None );
+
+	public async Task UpdateContactTypeAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken )
 	{
 		Dictionary<string, object> parameters = new()
 		{
@@ -78,10 +84,12 @@ public class ContactTypeService : IContactTypeService
 			{ $"@{DBNames.ContactTypeFieldNameName}", queryParameters[$"@{DBNames.ContactTypeFieldNameName}"] ?? DBNull.Value }
 		};
 
-		await _dataService.ExecuteScalarAsync<uint>( UpdateContactTypeQuery, parameters );
+		await _dataService.ExecuteScalarAsync<uint>( UpdateContactTypeQuery, parameters, cancellationToken );
 	}
 
-	public async Task DeleteContactTypeAsync( int contacttypeId )
+	public Task DeleteContactTypeAsync( int contacttypeId ) => DeleteContactTypeAsync( contacttypeId, CancellationToken.None );
+
+	public async Task DeleteContactTypeAsync( int contacttypeId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -90,7 +98,7 @@ public class ContactTypeService : IContactTypeService
 
 		try
 		{
-			await _dataService.ExecuteScalarAsync<uint>( DeleteContactTypeQuery, parameters );
+			await _dataService.ExecuteScalarAsync<uint>( DeleteContactTypeQuery, parameters, cancellationToken );
 		}
 		catch ( MySqlException ex ) when ( ex.Number == 1451 )
 		{
@@ -99,7 +107,9 @@ public class ContactTypeService : IContactTypeService
 		}
 	}
 
-	public async Task<bool> IsContactTypeUsedAsync( int contacttypeId )
+	public Task<bool> IsContactTypeUsedAsync( int contacttypeId ) => IsContactTypeUsedAsync( contacttypeId, CancellationToken.None );
+
+	public async Task<bool> IsContactTypeUsedAsync( int contacttypeId, CancellationToken cancellationToken )
 	{
 		var parameters = new Dictionary<string, object>
 		{
@@ -108,12 +118,14 @@ public class ContactTypeService : IContactTypeService
 
 		var usedCount = await _dataService.ExecuteScalarAsync<int>(
 			ContactTypeUsedQuery,
-			parameters);
+			parameters, cancellationToken);
 
 		return usedCount > 0;
 	}
 
-	public async Task<bool> NameExistsAsync( string? contacttypeName )
+	public Task<bool> NameExistsAsync( string? contacttypeName ) => NameExistsAsync( contacttypeName, CancellationToken.None );
+
+	public async Task<bool> NameExistsAsync( string? contacttypeName, CancellationToken cancellationToken )
 	{
 		if ( string.IsNullOrWhiteSpace( contacttypeName ) )
 			return false;
@@ -123,7 +135,7 @@ public class ContactTypeService : IContactTypeService
 			{ $"@{DBNames.ContactTypeFieldNameName}", contacttypeName.Trim() }
 		};
 
-		var count = await _dataService.ExecuteScalarAsync<int>( ContactTypeNameExistsQuery, parameters );
+		var count = await _dataService.ExecuteScalarAsync<int>( ContactTypeNameExistsQuery, parameters, cancellationToken );
 		return count > 0;
 	}
 }

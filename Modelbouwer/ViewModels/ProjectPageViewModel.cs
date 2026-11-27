@@ -189,18 +189,18 @@ public partial class ProjectPageViewModel : EntityPageViewModel<ProjectModel>
 	}
 
 	// Abstract overrides voor CRUD
-	protected override Task<List<ProjectModel>> LoadItemsAsync() => _dataService.GetAllProjectsAsync();
-	protected override Task<int> InsertAsync( ProjectModel item ) => _dataService.InsertNewProjectAsync( CreateParameters( item ) );
-	protected override Task UpdateAsync( ProjectModel item )
+	protected override Task<List<ProjectModel>> LoadItemsAsync( CancellationToken cancellationToken ) => _dataService.GetAllProjectsAsync( cancellationToken );
+	protected override Task<int> InsertAsync( ProjectModel item, CancellationToken cancellationToken ) => _dataService.InsertNewProjectAsync( CreateParameters( item ), cancellationToken );
+	protected override Task UpdateAsync( ProjectModel item, CancellationToken cancellationToken )
 	{
 		if ( SelectedItem == null )
 			return Task.CompletedTask;
 
 		_lastSelectedProjectId = SelectedItem.ProjectId;
 
-		return _dataService.UpdateProjectAsync( CreateParameters( SelectedItem ) );
+		return _dataService.UpdateProjectAsync( CreateParameters( SelectedItem ), cancellationToken );
 	}
-	protected override async Task DeleteAsync( ProjectModel item )
+	protected override async Task DeleteAsync( ProjectModel item, CancellationToken cancellationToken )
 	{
 		if ( item == null )
 			return;
@@ -216,7 +216,7 @@ public partial class ProjectPageViewModel : EntityPageViewModel<ProjectModel>
 			return;
 		try
 		{
-			await _dataService.DeleteProjectAsync( item.ProjectId );
+			await _dataService.DeleteProjectAsync( item.ProjectId, cancellationToken );
 		}
 		catch ( EntityInUseException ex )
 		{
