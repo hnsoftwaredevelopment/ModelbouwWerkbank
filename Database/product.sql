@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS `product` (
   KEY `Brand_Id` (`Brand_Id`),
   KEY `Category_Id` (`Category_Id`),
   KEY `Unit_Id` (`Unit_Id`),
-  KEY `Storage_Id` (`Storage_Id`)
+  KEY `Storage_Id` (`Storage_Id`),
+  CONSTRAINT `product_brand_FK` FOREIGN KEY (`Brand_Id`) REFERENCES `brand` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `product_category_FK` FOREIGN KEY (`Category_Id`) REFERENCES `category` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `product_storage_FK` FOREIGN KEY (`Storage_Id`) REFERENCES `storage` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `product_unit_FK` FOREIGN KEY (`Unit_Id`) REFERENCES `unit` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

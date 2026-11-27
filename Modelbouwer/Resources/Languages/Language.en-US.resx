@@ -1603,7 +1603,7 @@
     <value>Parent ID</value>
   </data>
   <data name="metadataCategoryDeleteError">
-    <value>This category is still in use and cannot be deleted</value>
+    <value>This category still has subcategories or is still used by a product and cannot be deleted</value>
   </data>
   <data name="metadataCategoryEntryFieldCategory">
     <value>Category</value>
@@ -2626,7 +2626,7 @@
     <value>Stock location</value>
   </data>
   <data name="metadataStorageLocationDeleteError">
-    <value>This stock location is still in use and cannot be deleted</value>
+    <value>This stock location still has sub-locations or is still used by a product and cannot be deleted</value>
   </data>
   <data name="metadataStorageLocationEntryFieldName">
     <value>Stock location</value>
@@ -2989,7 +2989,7 @@
     <value>Units</value>
   </data>
   <data name="metadataWorkTypeDeleteError">
-    <value>This work type is still used for at least 1 time registration and cannot be deleted</value>
+    <value>This work type still has sub-types or is still used in a time registration and cannot be deleted</value>
   </data>
   <data name="metadataWorkTypeEntryFieldName">
     <value>Work type</value>
@@ -3935,19 +3935,19 @@ In order to be able to add a new time registration, a date and project must firs
     <value>Remove</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>and want to delete any underlying categories?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Are you sure you</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>and want to delete any underlying storagelocations?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>and want to delete any underlying work types?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Expand all categories</value>

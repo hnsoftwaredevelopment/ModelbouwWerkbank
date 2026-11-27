@@ -1603,7 +1603,7 @@
     <value>Eltern-ID</value>
   </data>
   <data name="metadataCategoryDeleteError">
-    <value>Diese Kategorie wird noch verwendet und kann nicht gelöscht werden</value>
+    <value>Diese Kategorie hat noch Unterkategorien oder wird noch von einem Produkt verwendet und kann nicht gelöscht werden</value>
   </data>
   <data name="metadataCategoryEntryFieldCategory">
     <value>Kategorie</value>
@@ -2626,7 +2626,7 @@
     <value>Lagerort</value>
   </data>
   <data name="metadataStorageLocationDeleteError">
-    <value>Dieser Lagerort wird noch verwendet und kann nicht gelöscht werden</value>
+    <value>Dieser Lagerort hat noch untergeordnete Lagerorte oder wird noch von einem Produkt verwendet und kann nicht gelöscht werden</value>
   </data>
   <data name="metadataStorageLocationEntryFieldName">
     <value>Lagerstandort</value>
@@ -2989,7 +2989,7 @@
     <value>Einheiten</value>
   </data>
   <data name="metadataWorkTypeDeleteError">
-    <value>Dieser Arbeitstyp wird noch für mindestens eine einmalige Registrierung verwendet und kann nicht gelöscht werden</value>
+    <value>Dieser Arbeitstyp hat noch untergeordnete Arbeitstypen oder wird noch in einer Zeiterfassung verwendet und kann nicht gelöscht werden</value>
   </data>
   <data name="metadataWorkTypeEntryFieldName">
     <value>Arbeitstyp</value>
@@ -3935,19 +3935,19 @@ Um eine neue Zeitregistrierung hinzufügen zu können, muss zuerst ein Datum und
     <value>Entfernen</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>und möchten alle zugrunde liegenden Kategorien löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Bist du dir sicher du möchtest</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>und möchten alle zugrunde liegenden Lagerorte löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>und möchten alle zugrunde liegenden Arbeitstypen löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Erweitern Sie alle Kategorien</value>

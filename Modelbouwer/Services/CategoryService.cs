@@ -3,7 +3,6 @@
 public class CategoryService : ICategoryService
 {
 	private readonly GenericDataService _dataService;
-	public bool CategoryUsed { get; set; }
 
 	public CategoryService( GenericDataService dataService )
 	{
@@ -44,8 +43,6 @@ public class CategoryService : ICategoryService
 		$"( {DBNames.CategoryFieldNameParentId} = @{DBNames.CategoryFieldNameParentId} ) " +
 		$"OR ( {DBNames.CategoryFieldNameParentId} IS NULL AND @{DBNames.CategoryFieldNameParentId} IS NULL ) );";
 
-	public string CategoryUsedQuery =
-		$"SELECT COUNT(*){DBNames.ProductFieldNameCategoryId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameCategoryId} = @CategoryId";
 	#endregion
 
 	public Task<List<CategoryModel>> GetAllCategorysAsync() => GetAllCategorysAsync( CancellationToken.None );
@@ -105,27 +102,11 @@ public class CategoryService : ICategoryService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteCategoryQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataCategoryDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsCategoryUsedAsync( int categoryId ) => IsCategoryUsedAsync( categoryId, CancellationToken.None );
-
-	public async Task<bool> IsCategoryUsedAsync( int categoryId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.ProductFieldNameCategoryId}", categoryId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			CategoryUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? categoryName, int? parentId ) => NameExistsAsync( categoryName, parentId, CancellationToken.None );
@@ -143,7 +124,6 @@ public class CategoryService : ICategoryService
 			{ $"@{DBNames.CategoryFieldNameParentId}", ( object? ) parentId ?? DBNull.Value },
 			{ $"@{DBNames.CategoryFieldNameName}", categoryName }
 		};
-
 
 		var count = await _dataService.ExecuteScalarAsync<int>( CategoryNameExistsQuery, parameters, cancellationToken );
 		return count > 0;

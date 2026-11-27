@@ -273,40 +273,6 @@ public class ProductServiceTests
 	}
 
 	[TestMethod]
-	public async Task IsProductUsedAsync_WhenProductIsUsed_ReturnsTrue()
-	{
-		// Arrange
-		var productId = 123;
-
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 1 );
-
-		// Act
-		var result = await _productService.IsProductUsedAsync(productId);
-
-		// Assert
-		Assert.IsTrue( result );
-	}
-
-	[TestMethod]
-	public async Task IsProductUsedAsync_WhenProductIsNotUsed_ReturnsFalse()
-	{
-		// Arrange
-		var productId = 123;
-
-		_mockDataService
-			.Setup( s => s.ExecuteScalarAsync<int>( It.IsAny<string>(), It.IsAny<Dictionary<string, object>>(), It.IsAny<CancellationToken>() ) )
-			.ReturnsAsync( 0 );
-
-		// Act
-		var result = await _productService.IsProductUsedAsync(productId);
-
-		// Assert
-		Assert.IsFalse( result );
-	}
-
-	[TestMethod]
 	public async Task NameExistsAsync_WithNullName_ReturnsFalse()
 	{
 		// Act
@@ -366,19 +332,6 @@ public class ProductServiceTests
 		var result = await _productService.NameExistsAsync("TEST PRODUCT");
 
 		Assert.IsTrue( result );
-	}
-
-	[TestMethod]
-	public void ProductUsed_Property_CanBeSetAndRetrieved()
-	{
-		// Arrange
-		var service = new ProductService(_mockDataService.Object);
-
-		// Act
-		service.ProductUsed = true;
-
-		// Assert
-		Assert.IsTrue( service.ProductUsed );
 	}
 
 	private static Dictionary<string, object?> CreateValidProductParameters(

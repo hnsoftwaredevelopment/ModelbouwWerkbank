@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS `time` (
   `Modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`),
   KEY `FK_TimeProject_Id` (`project_Id`),
-  KEY `FK_TimeWorktype_Id` (`worktype_Id`)
+  KEY `FK_TimeWorktype_Id` (`worktype_Id`),
+  CONSTRAINT `FK_TimeProject_Id` FOREIGN KEY (`project_Id`) REFERENCES `project` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_TimeWorktype_Id` FOREIGN KEY (`worktype_Id`) REFERENCES `worktype` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Store the working time as entered in the Time Management page';
 /*!40101 SET character_set_client = @saved_cs_client */;

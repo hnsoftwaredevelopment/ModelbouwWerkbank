@@ -17,6 +17,8 @@ CREATE TABLE IF NOT EXISTS `supplyorderline` (
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `FK_OrderRow_Supplyorder_Id` (`Supplyorder_Id`),
-  KEY `FK_OrderRow_Product_Id` (`Product_Id`) USING BTREE
+  KEY `FK_OrderRow_Product_Id` (`Product_Id`) USING BTREE,
+  CONSTRAINT `FK_OrderRow_Product_Id` FOREIGN KEY (`Product_Id`) REFERENCES `product` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `FK_OrderRow_Supplyorder_Id` FOREIGN KEY (`Supplyorder_Id`) REFERENCES `supplyorder` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;

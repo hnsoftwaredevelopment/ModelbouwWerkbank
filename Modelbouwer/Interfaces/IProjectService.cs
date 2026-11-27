@@ -10,8 +10,7 @@ public interface IProjectService
 	Task UpdateProjectAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteProjectAsync( int projectId );
 	Task DeleteProjectAsync( int projectId, CancellationToken cancellationToken );
-	Task<bool> IsProjectUsedAsync( int projectId );
-	Task<bool> IsProjectUsedAsync( int projectId, CancellationToken cancellationToken );
+
 	Task<bool> NameExistsAsync( string? projectName );
 	Task<bool> NameExistsAsync( string? projectName, CancellationToken cancellationToken );
 	//Task<DateOnly?> GetExpectedEndDateAsync( int projectId );

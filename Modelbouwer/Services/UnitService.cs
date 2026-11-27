@@ -7,7 +7,6 @@ namespace Modelbouwer.Services;
 public class UnitService : IUnitService
 {
 	private readonly GenericDataService _dataService;
-	public bool UnitUsed { get; set; }
 
 	public UnitService( GenericDataService dataService )
 	{
@@ -43,7 +42,6 @@ public class UnitService : IUnitService
 		$"FROM {DBNames.Database}.{DBNames.UnitTable} " +
 		$"WHERE LOWER({DBNames.UnitFieldNameUnitName}) = LOWER(@{DBNames.UnitFieldNameUnitName})";
 
-	public string UnitUsedQuery = $"SELECT COUNT({DBNames.ProductFieldNameUnitId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameUnitId} = @UnitId";
 	#endregion
 
 	public Task<List<UnitModel>> GetAllUnitsAsync() => GetAllUnitsAsync( CancellationToken.None );
@@ -100,41 +98,10 @@ public class UnitService : IUnitService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteUnitQuery, parameters, cancellationToken );
 		}
-		catch ( Exception ex )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
-			int? number = null;
-			try
-			{
-				var prop = ex.GetType().GetProperty( "Number" );
-				if ( prop != null && prop.PropertyType == typeof( int ) )
-					number = ( int? ) prop.GetValue( ex );
-			}
-			catch { /* ignore reflection issues */ }
-
-			if ( number == 1451 )
-			{
-				throw new EntityInUseException(
-					$"{Lang.metadataUnitDeleteError}." );
-			}
-
-			throw;
+			throw new EntityInUseException( $"{Lang.metadataUnitDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsUnitUsedAsync( int unitId ) => IsUnitUsedAsync( unitId, CancellationToken.None );
-
-	public async Task<bool> IsUnitUsedAsync( int unitId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.ProductFieldNameUnitId}", unitId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			UnitUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? unitName ) => NameExistsAsync( unitName, CancellationToken.None );

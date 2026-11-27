@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS `category` (
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `Name` (`Name`),
-  KEY `category_category_FK` (`ParentId`)
+  KEY `category_category_FK` (`ParentId`),
+  CONSTRAINT `category_category_FK` FOREIGN KEY (`ParentId`) REFERENCES `category` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

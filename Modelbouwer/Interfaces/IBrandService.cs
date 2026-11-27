@@ -14,8 +14,7 @@ public interface IBrandService
 	Task UpdateBrandAsync( Dictionary<string, object?> queryParameters, CancellationToken cancellationToken );
 	Task DeleteBrandAsync( int brandId );
 	Task DeleteBrandAsync( int brandId, CancellationToken cancellationToken );
-	Task<bool> IsBrandUsedAsync( int brandId );
-	Task<bool> IsBrandUsedAsync( int brandId, CancellationToken cancellationToken );
+
 	Task<bool> NameExistsAsync( string? brandName );
 	Task<bool> NameExistsAsync( string? brandName, CancellationToken cancellationToken );
 }

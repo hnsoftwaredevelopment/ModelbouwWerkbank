@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS `country` (
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`Id`) USING BTREE,
   UNIQUE KEY `country_Code_UNIQUE` (`Code`) USING BTREE,
-  KEY `FK_Country_Currency_Id` (`Defaultcurrency_Id`)
+  KEY `FK_Country_Currency_Id` (`Defaultcurrency_Id`),
+  CONSTRAINT `FK_Country_Currency_Id` FOREIGN KEY (`Defaultcurrency_Id`) REFERENCES `currency` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

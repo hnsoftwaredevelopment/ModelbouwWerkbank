@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS `supplyorder` (
   PRIMARY KEY (`Id`) USING BTREE,
   KEY `OrderNumber` (`OrderNumber`),
   KEY `FK_Order_Supplier_Id` (`Supplier_Id`),
-  KEY `supplyorder_currency_FK` (`Currency_Id`)
+  KEY `supplyorder_currency_FK` (`Currency_Id`),
+  CONSTRAINT `FK_Order_Supplier_Id` FOREIGN KEY (`Supplier_Id`) REFERENCES `supplier` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `supplyorder_currency_FK` FOREIGN KEY (`Currency_Id`) REFERENCES `currency` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;

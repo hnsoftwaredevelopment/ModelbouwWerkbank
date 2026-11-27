@@ -3,7 +3,6 @@
 public class StorageLocationService : IStorageLocationService
 {
 	private readonly GenericDataService _dataService;
-	public bool StorageLocationUsed { get; set; }
 
 	public StorageLocationService( GenericDataService dataService )
 	{
@@ -44,8 +43,6 @@ public class StorageLocationService : IStorageLocationService
 		$"( {DBNames.StorageFieldNameParentId} = @{DBNames.StorageFieldNameParentId} ) " +
 		$"OR ( {DBNames.StorageFieldNameParentId} IS NULL AND @{DBNames.StorageFieldNameParentId} IS NULL ) );";
 
-	public string StorageLocationUsedQuery =
-		$"SELECT COUNT(*){DBNames.ProductFieldNameStorageId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameStorageId} = @StorageLocationId";
 	#endregion
 
 	public Task<List<StorageLocationModel>> GetAllStorageLocationsAsync() => GetAllStorageLocationsAsync( CancellationToken.None );
@@ -107,27 +104,11 @@ public class StorageLocationService : IStorageLocationService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteStorageLocationQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataStorageLocationDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsStorageLocationUsedAsync( int storagelocationId ) => IsStorageLocationUsedAsync( storagelocationId, CancellationToken.None );
-
-	public async Task<bool> IsStorageLocationUsedAsync( int storagelocationId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.ProductFieldNameStorageId}", storagelocationId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			StorageLocationUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? StorageName, int? parentId ) => NameExistsAsync( StorageName, parentId, CancellationToken.None );
@@ -145,7 +126,6 @@ public class StorageLocationService : IStorageLocationService
 			{ $"@{DBNames.StorageFieldNameParentId}", ( object? ) parentId ?? DBNull.Value },
 			{ $"@{DBNames.StorageFieldNameName}", StorageName }
 		};
-
 
 		var count = await _dataService.ExecuteScalarAsync<int>( StorageNameExistsQuery, parameters, cancellationToken );
 		return count > 0;

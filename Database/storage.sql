@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS `storage` (
   `Name` varchar(150) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `Created` datetime DEFAULT CURRENT_TIMESTAMP,
   `Modified` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`Id`) USING BTREE
+  PRIMARY KEY (`Id`) USING BTREE,
+  KEY `storage_storage_FK` (`ParentId`),
+  CONSTRAINT `storage_storage_FK` FOREIGN KEY (`ParentId`) REFERENCES `storage` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

@@ -3,7 +3,6 @@
 public class WorkTypeService : IWorkTypeService
 {
 	private readonly GenericDataService _dataService;
-	public bool WorkTypeUsed { get; set; }
 
 	public WorkTypeService( GenericDataService dataService )
 	{
@@ -44,8 +43,6 @@ public class WorkTypeService : IWorkTypeService
 		$"( {DBNames.WorkTypeFieldNameParentId} = @{DBNames.WorkTypeFieldNameParentId} ) " +
 		$"OR ( {DBNames.WorkTypeFieldNameParentId} IS NULL AND @{DBNames.WorkTypeFieldNameParentId} IS NULL ) );";
 
-	public string WorkTypeUsedQuery =
-		$"SELECT COUNT(*){DBNames.TimeFieldNameWorkTypeId}) FROM {DBNames.Database}.{DBNames.TimeTable} WHERE {DBNames.TimeFieldNameWorkTypeId} = @WorktypeId";
 	#endregion
 
 	public Task<List<WorkTypeModel>> GetAllWorkTypesAsync() => GetAllWorkTypesAsync( CancellationToken.None );
@@ -105,27 +102,11 @@ public class WorkTypeService : IWorkTypeService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteWorkTypeQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataWorkTypeDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsWorkTypeUsedAsync( int worktypeId ) => IsWorkTypeUsedAsync( worktypeId, CancellationToken.None );
-
-	public async Task<bool> IsWorkTypeUsedAsync( int worktypeId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.TimeFieldNameWorkTypeId}", worktypeId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			WorkTypeUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? worktypeName, int? parentId ) => NameExistsAsync( worktypeName, parentId, CancellationToken.None );
@@ -143,7 +124,6 @@ public class WorkTypeService : IWorkTypeService
 			{ $"@{DBNames.WorkTypeFieldNameParentId}", ( object? ) parentId ?? DBNull.Value },
 			{ $"@{DBNames.WorkTypeFieldNameName}", worktypeName }
 		};
-
 
 		var count = await _dataService.ExecuteScalarAsync<int>( WorkTypeNameExistsQuery, parameters, cancellationToken );
 		return count > 0;

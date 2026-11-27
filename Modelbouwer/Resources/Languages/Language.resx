@@ -1603,7 +1603,7 @@
     <value>Parent Id</value>
   </data>
   <data name="metadataCategoryDeleteError">
-    <value>Deze categorie wordt nog gebruikt en kan niet worden verwijderd</value>
+    <value>Deze categorie heeft nog subcategorieën of wordt nog gebruikt bij een product en kan niet worden verwijderd</value>
   </data>
   <data name="metadataCategoryEntryFieldCategory">
     <value>Categorie</value>
@@ -2626,7 +2626,7 @@
     <value>Voorraad locatie</value>
   </data>
   <data name="metadataStorageLocationDeleteError">
-    <value>Deze voorraad locatie wordt nog gebruikt en kan niet worden verwijderd</value>
+    <value>Deze voorraadlocatie heeft nog onderliggende locaties of wordt nog gebruikt bij een product en kan niet worden verwijderd</value>
   </data>
   <data name="metadataStorageLocationEntryFieldName">
     <value>Voorraadlocatie</value>
@@ -2989,7 +2989,7 @@
     <value>Eenheden</value>
   </data>
   <data name="metadataWorkTypeDeleteError">
-    <value>Deze werksoort wordt nog gebruikt bij minimaal 1 tijdsregistratie en kan niet worden verwijderd</value>
+    <value>Deze werksoort heeft nog onderliggende werksoorten of wordt nog gebruikt bij een tijdsregistratie en kan niet worden verwijderd</value>
   </data>
   <data name="metadataWorkTypeEntryFieldName">
     <value>Werksoort</value>
@@ -3935,19 +3935,19 @@ Om een nieuwe tijdsregistratie toe te kunnen voegen moet eerst een Datum en proj
     <value>Verwijder</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>en alle eventueel onderliggende categorieën wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Weet je zeker dat je</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>en alle eventueel onderliggende locaties wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>en alle eventueel onderliggende werksoorten wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Klap alle categorieën open</value>

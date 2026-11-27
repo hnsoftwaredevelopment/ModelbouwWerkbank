@@ -7,7 +7,6 @@ namespace Modelbouwer.Services;
 public class BrandService : IBrandService
 {
 	private readonly GenericDataService _dataService;
-	public bool BrandUsed { get; set; }
 
 	public BrandService( GenericDataService dataService )
 	{
@@ -43,7 +42,6 @@ public class BrandService : IBrandService
 		$"FROM {DBNames.Database}.{DBNames.BrandTable} " +
 		$"WHERE LOWER({DBNames.BrandFieldNameName}) = LOWER(@{DBNames.BrandFieldNameName})";
 
-	public string BrandUsedQuery = $"SELECT COUNT({DBNames.ProductFieldNameBrandId}) FROM {DBNames.Database}.{DBNames.ProductTable} WHERE {DBNames.ProductFieldNameBrandId} = @BrandId";
 	#endregion
 
 	public Task<List<BrandModel>> GetAllBrandsAsync() => GetAllBrandsAsync( CancellationToken.None );
@@ -100,27 +98,11 @@ public class BrandService : IBrandService
 		{
 			await _dataService.ExecuteScalarAsync<uint>( DeleteBrandQuery, parameters, cancellationToken );
 		}
-		catch ( MySqlException ex ) when ( ex.Number == 1451 )
+		catch ( Exception ex ) when ( DatabaseErrors.IsRowStillReferenced( ex ) )
 		{
 			throw new EntityInUseException(
 				$"{Lang.metadataBrandDeleteError}." );
 		}
-	}
-
-	public Task<bool> IsBrandUsedAsync( int brandId ) => IsBrandUsedAsync( brandId, CancellationToken.None );
-
-	public async Task<bool> IsBrandUsedAsync( int brandId, CancellationToken cancellationToken )
-	{
-		var parameters = new Dictionary<string, object>
-		{
-			{ $"@{DBNames.ProductFieldNameBrandId}", brandId }
-		};
-
-		var usedCount = await _dataService.ExecuteScalarAsync<int>(
-			BrandUsedQuery,
-			parameters, cancellationToken);
-
-		return usedCount > 0;
 	}
 
 	public Task<bool> NameExistsAsync( string? brandName ) => NameExistsAsync( brandName, CancellationToken.None );

@@ -18,6 +18,10 @@ CREATE TABLE IF NOT EXISTS `stocklog` (
   KEY `FK_StockLog_Product_Id` (`product_Id`) USING BTREE,
   KEY `stocklog_productusage_FK` (`productusage_Id`),
   KEY `stocklog_supplyorder_FK` (`supplyorder_Id`),
-  KEY `stocklog_supplyorderline_FK` (`supplyorderline_Id`)
+  KEY `stocklog_supplyorderline_FK` (`supplyorderline_Id`),
+  CONSTRAINT `FK_StockLog_Product_Id` FOREIGN KEY (`product_Id`) REFERENCES `product` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `stocklog_productusage_FK` FOREIGN KEY (`productusage_Id`) REFERENCES `productusage` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `stocklog_supplyorder_FK` FOREIGN KEY (`supplyorder_Id`) REFERENCES `supplyorder` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `stocklog_supplyorderline_FK` FOREIGN KEY (`supplyorderline_Id`) REFERENCES `supplyorderline` (`Id`) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Registartion of ordered and received goods';
 /*!40101 SET character_set_client = @saved_cs_client */;
