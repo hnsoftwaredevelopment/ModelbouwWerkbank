@@ -58,7 +58,9 @@ public class StorageLocationService : IStorageLocationService
 			{
 				StorageId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.StorageFieldNameId}" ] ),
 				ParentId = DatabaseValueConverter.GetInt( reader [ $"{DBNames.StorageFieldNameParentId}" ] ),
-				StorageName = DatabaseValueConverter.GetString( reader [ $"{DBNames.StorageFieldNameName}" ] )
+				StorageName = DatabaseValueConverter.GetString( reader [ $"{DBNames.StorageFieldNameName}" ] ),
+				// Set last: the setters above mark the record as modified, but a freshly loaded record is unchanged.
+				State = StorageLocationModel.RecordState.Unchanged
 			};
 		}, null, cancellationToken );
 	}

@@ -24,7 +24,7 @@ public partial class ProjectReportsViewModel : AsyncObservableObject
 	[ObservableProperty] private bool _monthShowsTable;
 	[ObservableProperty] private bool _yearShowsTable;
 	[ObservableProperty] private bool _monthYearShowsTable;
-	[ObservableProperty] private bool _worktypeShowsTable;
+	[ObservableProperty] private bool _workTypeShowsTable;
 	[ObservableProperty] private bool _costAllocationShowsTable;
 	[ObservableProperty] private bool _costDeclarationsShowsTable;
 	[ObservableProperty] private ChartSeriesCollection _monthYearStackedSeries = [];

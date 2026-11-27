@@ -52,6 +52,28 @@ public class ViewCommandBindingTests
 		Assert.AreEqual( "*", location.StatusMarker );
 	}
 
+	[TestMethod]
+	public void ProjectReportsToggles_ExistOnTheViewModel()
+	{
+		// The Worktype -> WorkType rename changed the binding but not the backing field, so the toggle did nothing.
+		var xaml = LoadView( "ProjectReportsView" );
+		var toggles = Regex.Matches( xaml, @"\{Binding\s+(?:Path=)?(\w+ShowsTable)\b" ).Select( m => m.Groups [ 1 ].Value ).Distinct().ToList();
+
+		Assert.IsTrue( toggles.Count > 0 );
+		foreach ( var toggle in toggles )
+			Assert.IsNotNull( typeof( ProjectReportsViewModel ).GetProperty( toggle ), $"ProjectReportsView binds {toggle}, which ProjectReportsViewModel does not have." );
+	}
+
+	[TestMethod]
+	public void StorageLocation_LoadedWithStateLast_IsUnchanged()
+	{
+		// The same initializer as StorageLocationService: the setters mark the record modified, State resets it.
+		var location = new StorageLocationModel { StorageId = 1, StorageName = "Kast A", State = StorageLocationModel.RecordState.Unchanged };
+
+		Assert.AreEqual( StorageLocationModel.RecordState.Unchanged, location.State );
+		Assert.AreEqual( string.Empty, location.StatusMarker );
+	}
+
 	private static string LoadView( string name )
 	{
 		var directory = AppContext.BaseDirectory;
