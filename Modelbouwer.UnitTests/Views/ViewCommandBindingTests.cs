@@ -74,12 +74,30 @@ public class ViewCommandBindingTests
 		Assert.AreEqual( string.Empty, location.StatusMarker );
 	}
 
-	private static string LoadView( string name )
+	[TestMethod]
+	public void ExcelAndCsvExport_UseTheSameRowType()
+	{
+		// KAN-148: the country screen exported CurrencyModel to Excel, so no country matched and the file stayed empty.
+		var views = Path.Combine( RepoRoot(), "Modelbouwer", "Views" );
+		foreach ( var file in Directory.GetFiles( views, "*View.xaml.cs" ) )
+		{
+			var code = File.ReadAllText( file );
+			var csv = Regex.Matches( code, @"ExportToCsvAsync<(\w+)>" ).Select( m => m.Groups [ 1 ].Value ).Distinct().ToList();
+			var excel = Regex.Matches( code, @"ExportToExcelAsync<(\w+)>" ).Select( m => m.Groups [ 1 ].Value ).Distinct().ToList();
+			if ( csv.Count == 0 || excel.Count == 0 )
+				continue;
+
+			CollectionAssert.AreEquivalent( csv, excel, $"{Path.GetFileName( file )} exports other rows to Excel than to CSV." );
+		}
+	}
+
+	private static string RepoRoot()
 	{
 		var directory = AppContext.BaseDirectory;
 		while ( directory != null && !File.Exists( Path.Combine( directory, "ModelbouwWerkbank.slnx" ) ) )
 			directory = Directory.GetParent( directory )?.FullName;
-
-		return File.ReadAllText( Path.Combine( directory ?? throw new DirectoryNotFoundException(), "Modelbouwer", "Views", name + ".xaml" ) );
+		return directory ?? throw new DirectoryNotFoundException();
 	}
+
+	private static string LoadView( string name ) => File.ReadAllText( Path.Combine( RepoRoot(), "Modelbouwer", "Views", name + ".xaml" ) );
 }
