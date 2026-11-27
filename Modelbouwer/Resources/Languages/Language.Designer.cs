@@ -11257,7 +11257,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Artikelnummer.
+        ///   Looks up a localized string similar to Zoeknaam.
         /// </summary>
         public static string ProjectMaterialsHeaderArticle {
             get {

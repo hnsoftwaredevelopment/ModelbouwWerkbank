@@ -159,6 +159,30 @@ public class ProjectDetailsTabsTests
 	}
 
 	[TestMethod]
+	public async Task FailedLoadOfThePreviousProject_IsIgnored()
+	{
+		// Found by CodeRabbit in PR #62: the error of a project that is no longer selected must not surface.
+		var slow = new TaskCompletionSource<List<TimeEntryModel>>();
+		_time.Setup( s => s.GetTimeEntriesByProjectAsync( 1 ) ).Returns( slow.Task );
+		var vm = Create();
+
+		var first = vm.LoadProjectDetailsAsync( new ProjectModel { ProjectId = 1 } );
+		await vm.LoadProjectDetailsAsync( new ProjectModel { ProjectId = 2 } );
+		slow.SetException( new InvalidOperationException( "database gone" ) );
+
+		await first;
+	}
+
+	[TestMethod]
+	public async Task FailedLoadOfTheCurrentProject_IsReported()
+	{
+		_time.Setup( s => s.GetTimeEntriesByProjectAsync( 1 ) ).ThrowsAsync( new InvalidOperationException( "database gone" ) );
+		var vm = Create();
+
+		await Assert.ThrowsExactlyAsync<InvalidOperationException>( () => vm.LoadProjectDetailsAsync( new ProjectModel { ProjectId = 1 } ) );
+	}
+
+	[TestMethod]
 	public async Task NewProject_IsNotLoaded()
 	{
 		_time.Setup( s => s.GetTimeEntriesByProjectAsync( 7 ) ).ReturnsAsync( [ Entry( "2026-11-05", "Verf", "10:00", "11:00" ) ] );

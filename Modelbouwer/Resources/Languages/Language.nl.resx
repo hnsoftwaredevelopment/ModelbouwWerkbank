@@ -4981,7 +4981,7 @@ PowerShell:
     <value>Datum</value>
   </data>
   <data name="ProjectMaterialsHeaderArticle" xml:space="preserve">
-    <value>Artikelnummer</value>
+    <value>Zoeknaam</value>
   </data>
   <data name="ProjectMaterialsHeaderDescription" xml:space="preserve">
     <value>Omschrijving</value>

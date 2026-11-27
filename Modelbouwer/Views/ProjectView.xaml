@@ -77,6 +77,8 @@
                 Image="{StaticResource project}"
                 ImageWidth="17"
                 ImageHeight="17">
+        <!-- Scrolls when the window is too narrow for the fields and the cost overview side by side -->
+        <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
         <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
@@ -316,6 +318,7 @@
         </Grid>
         <!--#endregion-->
         </Grid>
+        </ScrollViewer>
 
             </syncfusion:TabItemExt>
             <!--#endregion-->

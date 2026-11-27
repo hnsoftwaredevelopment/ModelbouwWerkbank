@@ -132,7 +132,15 @@ public partial class ProjectPageViewModel : EntityPageViewModel<ProjectModel>
 		var usagesTask = _timeRegistrationService.GetMaterialUsageByProjectAsync( project.ProjectId );
 		var hourRateTask = _timeRegistrationService.GetHourRateAsync();
 		var cultureTask = _timeRegistrationService.GetCultureAsync();
-		await Task.WhenAll( entriesTask, usagesTask, hourRateTask, cultureTask );
+		try
+		{
+			await Task.WhenAll( entriesTask, usagesTask, hourRateTask, cultureTask );
+		}
+		catch ( Exception ) when ( version != _projectDetailsVersion )
+		{
+			// A failed load of a project that is no longer selected is not the current project's error.
+			return;
+		}
 
 		if ( version != _projectDetailsVersion )
 			return;

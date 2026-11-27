@@ -86,12 +86,14 @@ public class RtfEditorTests
 	public void TypingInTheEditor_ReachesTheModelAtOnce() => RunOnSta( () =>
 	{
 		var (editor, memo) = Bound();
+		var firstBlock = editor.RtbEditor.Document.Blocks.FirstBlock;
 
 		editor.RtbEditor.Document.ContentEnd.InsertTextInRun( " en lijm" );
 
 		Assert.IsTrue( memo.Writes > 1, "The edit was written without the focus leaving the editor." );
 		StringAssert.Contains( memo.Text, "en lijm" );
-		StringAssert.Contains( DocumentText( editor ), "Lindehout bestellen", "The document is not reloaded while typing." );
+		StringAssert.Contains( DocumentText( editor ), "Lindehout bestellen" );
+		Assert.AreSame( firstBlock, editor.RtbEditor.Document.Blocks.FirstBlock, "The document is not reloaded while typing, so the caret stays." );
 	} );
 
 	[TestMethod]
