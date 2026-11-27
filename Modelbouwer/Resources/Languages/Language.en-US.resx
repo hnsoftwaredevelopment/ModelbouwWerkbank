@@ -3935,19 +3935,19 @@ In order to be able to add a new time registration, a date and project must firs
     <value>Remove</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>and want to delete any underlying categories?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Are you sure you</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>and want to delete any underlying storagelocations?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>and want to delete any underlying work types?</value>
+    <value>want to delete?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Expand all categories</value>

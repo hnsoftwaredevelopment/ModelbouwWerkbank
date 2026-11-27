@@ -3935,19 +3935,19 @@ Om een nieuwe tijdsregistratie toe te kunnen voegen moet eerst een Datum en proj
     <value>Verwijder</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>en alle eventueel onderliggende categorieën wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Weet je zeker dat je</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>en alle eventueel onderliggende locaties wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>en alle eventueel onderliggende werksoorten wilt verwijderen?</value>
+    <value>wilt verwijderen?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Klap alle categorieën open</value>

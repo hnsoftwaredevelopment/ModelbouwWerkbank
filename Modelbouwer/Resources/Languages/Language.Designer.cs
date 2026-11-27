@@ -4984,7 +4984,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Deze categorie wordt nog gebruikt en kan niet worden verwijderd.
+        ///   Looks up a localized string similar to Deze categorie heeft nog subcategorieën of wordt nog gebruikt bij een product en kan niet worden verwijderd.
         /// </summary>
         public static string metadataCategoryDeleteError {
             get {
@@ -8089,7 +8089,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Deze voorraad locatie wordt nog gebruikt en kan niet worden verwijderd.
+        ///   Looks up a localized string similar to Deze voorraadlocatie heeft nog onderliggende locaties of wordt nog gebruikt bij een product en kan niet worden verwijderd.
         /// </summary>
         public static string metadataStorageLocationDeleteError {
             get {
@@ -9187,7 +9187,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Deze werksoort wordt nog gebruikt bij minimaal 1 tijdsregistratie en kan niet worden verwijderd.
+        ///   Looks up a localized string similar to Deze werksoort heeft nog onderliggende werksoorten of wordt nog gebruikt bij een tijdsregistratie en kan niet worden verwijderd.
         /// </summary>
         public static string metadataWorkTypeDeleteError {
             get {
@@ -14359,7 +14359,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to en alle eventueel onderliggende categorieën wilt verwijderen?.
+        ///   Looks up a localized string similar to wilt verwijderen?.
         /// </summary>
         public static string toolbarButtonActionDeleteMessageQuestionCategorySuffix {
             get {
@@ -14377,7 +14377,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to en alle eventueel onderliggende locaties wilt verwijderen?.
+        ///   Looks up a localized string similar to wilt verwijderen?.
         /// </summary>
         public static string toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix {
             get {
@@ -14395,7 +14395,7 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to en alle eventueel onderliggende werksoorten wilt verwijderen?.
+        ///   Looks up a localized string similar to wilt verwijderen?.
         /// </summary>
         public static string toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix {
             get {

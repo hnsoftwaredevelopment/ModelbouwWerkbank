@@ -3935,19 +3935,19 @@ Um eine neue Zeitregistrierung hinzufügen zu können, muss zuerst ein Datum und
     <value>Entfernen</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionCategorySuffix">
-    <value>und möchten alle zugrunde liegenden Kategorien löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionPrefix">
     <value>Bist du dir sicher du möchtest</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionStorageLocationSuffix">
-    <value>und möchten alle zugrunde liegenden Lagerorte löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionSuffix">
     <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionDeleteMessageQuestionWorkTypeSuffix">
-    <value>und möchten alle zugrunde liegenden Arbeitstypen löschen?</value>
+    <value>löschen?</value>
   </data>
   <data name="toolbarButtonActionExpand">
     <value>Erweitern Sie alle Kategorien</value>
