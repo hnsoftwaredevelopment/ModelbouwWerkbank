@@ -2,33 +2,38 @@
 
 public partial class RtfEditor : UserControl
 {
+	/// <summary>True while the document is filled from <see cref="RtfText"/>: that is a load, not an edit.</summary>
+	private bool _loadingDocument;
+
+	/// <summary>True while <see cref="RtfText"/> is set from the document, so the document is not reloaded (caret stays).</summary>
+	private bool _writingFromEditor;
+
 	public RtfEditor()
 	{
 		InitializeComponent();
 
-		RtbEditor.PreviewLostKeyboardFocus += ( sender, e ) =>
+		// Every edit goes to the bound memo at once (KAN-147). Before, the memo was only written when the focus left
+		// the editor; the toolbar buttons take no focus, so Save stayed off until the user switched tab.
+		RtbEditor.TextChanged += ( _, _ ) =>
 		{
-			// Controleer of de nieuwe focus binnen hetzelfde UserControl is
-			if ( e.NewFocus is DependencyObject newFocus )
-			{
-				// Als de nieuwe focus nog steeds binnen onze RtfEditor is, update dan niet
-				var ancestor = VisualTreeHelper.GetParent(newFocus);
-				while ( ancestor != null )
-				{
-					if ( ancestor == this )
-					{
-						// Focus blijft binnen de RtfEditor, dus geen update
-						return;
-					}
-					ancestor = VisualTreeHelper.GetParent( ancestor );
-				}
-			}
-
-			// Focus verlaat de RtfEditor, update de binding
-			UpdateRtfTextFromEditor();
-			var bindingExpression = BindingOperations.GetBindingExpression(this, RtfTextProperty);
-			bindingExpression?.UpdateSource();
+			if ( !_loadingDocument )
+				WriteToSource();
 		};
+	}
+
+	/// <summary>Writes the document to <see cref="RtfText"/> and pushes it to the bound property.</summary>
+	internal void WriteToSource()
+	{
+		_writingFromEditor = true;
+		try
+		{
+			UpdateRtfTextFromEditor();
+			BindingOperations.GetBindingExpression( this, RtfTextProperty )?.UpdateSource();
+		}
+		finally
+		{
+			_writingFromEditor = false;
+		}
 	}
 
 	public static readonly DependencyProperty RtfTextProperty =
@@ -46,18 +51,26 @@ public partial class RtfEditor : UserControl
 
 	private static void OnRtfTextChanged( DependencyObject d, DependencyPropertyChangedEventArgs e )
 	{
-		if ( d is not RtfEditor editor )
+		if ( d is not RtfEditor editor || editor._writingFromEditor )
 			return;
 
 		var rtb = editor.RtbEditor;
 		var rtf = e.NewValue as string;
 
-		rtb.Document.Blocks.Clear();
-		if ( !string.IsNullOrEmpty( rtf ) )
+		editor._loadingDocument = true;
+		try
 		{
-			using var stream = new MemoryStream(Encoding.UTF8.GetBytes(rtf));
-			var range = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
-			range.Load( stream, DataFormats.Rtf );
+			rtb.Document.Blocks.Clear();
+			if ( !string.IsNullOrEmpty( rtf ) )
+			{
+				using var stream = new MemoryStream(Encoding.UTF8.GetBytes(rtf));
+				var range = new TextRange(rtb.Document.ContentStart, rtb.Document.ContentEnd);
+				range.Load( stream, DataFormats.Rtf );
+			}
+		}
+		finally
+		{
+			editor._loadingDocument = false;
 		}
 	}
 

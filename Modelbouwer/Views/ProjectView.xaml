@@ -21,24 +21,21 @@
         <converters:ByteToImageConverter x:Key="ByteToImageConverter" DefaultImage="{StaticResource noimage}" />
         <converters:ByteToImageConverter x:Key="NullOrEmptyImageConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <helpers:WorkTimeAggregate x:Key="WorkTimeAggregate" />
     </UserControl.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
+            <!-- 0. Header -->
             <RowDefinition Height="85" />
-            <!-- Header -->
-            <RowDefinition Height="190" />
-            <!-- Detail fields -->
-            <RowDefinition Height="2" />
-            <!-- Spacer -->
-            <RowDefinition Height="250" />
-            <!-- Rtf Editor -->
-            <RowDefinition Height="40" />
-            <!-- Toolbar -->
-            <RowDefinition Height="*" />
-            <!-- DataGrid -->
+            <!-- 1. Detail tabs (KAN-147) -->
+            <RowDefinition Height="300" MinHeight="150" />
+            <!-- 2. Splitter: makes the detail tabs taller or shorter -->
+            <RowDefinition Height="Auto" />
+            <!-- 3. Toolbar and project list -->
+            <RowDefinition Height="*" MinHeight="150" />
+            <!-- 4. Footer -->
             <RowDefinition Height="25" />
-            <!-- Footer -->
         </Grid.RowDefinitions>
 
         <!--#region Page header-->
@@ -65,11 +62,31 @@
         </StackPanel>
         <!--#endregion-->
 
-        <!--#region Detail fields-->
-        <Grid
+        <!--#region Details (KAN-147: tabs at the bottom, as on the supplier and product screens)-->
+        <syncfusion:TabControlExt
+            Name="tabControl"
             Grid.Row="1"
+            TabStripPlacement="Bottom" CloseButtonType="Hide"
+            TabItemHeaderStyle="Curve"
+            Height="Auto"
+            Width="Auto">
+
+            <!--#region General-->
+            <syncfusion:TabItemExt
+                Header="{x:Static language:Language.metadataProjectDetailTabGeneralTitle}"
+                Image="{StaticResource project}"
+                ImageWidth="17"
+                ImageHeight="17">
+        <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid
+            Grid.Column="0"
+            Margin="5,8,5,0"
             HorizontalAlignment="Left"
-            VerticalAlignment="Center">
+            VerticalAlignment="Top">
 
             <Grid.RowDefinitions>
                 <RowDefinition Height="20" />
@@ -256,18 +273,212 @@
             <!--#endregion-->
         </Grid>
 
-        <!--#region Memo field section -->
-        <controls:RtfEditor
-            x:Name="ProjectMemoEditor"
-            Grid.Row="3"
-            Grid.Column="1"
-            Margin="5"
-            RtfText="{Binding SelectedItem.ProjectMemo, Mode=TwoWay, UpdateSourceTrigger=Explicit}" />
+        <!--#region Cost overview: material, hours at the hour rate, total (KAN-147)-->
+        <Grid Grid.Column="1" Margin="25,8,15,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" MinWidth="200" />
+                <ColumnDefinition Width="Auto" MinWidth="80" />
+                <ColumnDefinition Width="Auto" MinWidth="110" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.ColumnSpan="3" Margin="0,0,0,6" FontSize="14" FontWeight="Bold" Text="{x:Static language:Language.ProjectCostsTitle}" />
+
+            <Border Grid.Row="1" Grid.ColumnSpan="3" BorderBrush="Gray" BorderThickness="0,0,0,1" />
+            <TextBlock Grid.Row="1" Grid.Column="0" Margin="0,0,10,3" FontWeight="Bold" Text="{x:Static language:Language.ProjectCostsHeaderType}" />
+            <TextBlock Grid.Row="1" Grid.Column="1" Margin="10,0,0,3" FontWeight="Bold" TextAlignment="Right" Text="{x:Static language:Language.ProjectCostsHeaderAmount}" />
+            <TextBlock Grid.Row="1" Grid.Column="2" Margin="10,0,0,3" FontWeight="Bold" TextAlignment="Right" Text="{x:Static language:Language.ProjectCostsHeaderTotal}" />
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Margin="0,4,10,0" Text="{x:Static language:Language.ProjectCostsMaterial}" />
+            <TextBlock Grid.Row="2" Grid.Column="1" Margin="10,4,0,0" TextAlignment="Right" Text="{Binding ProjectMaterialUsageCount, Mode=OneWay}" />
+            <TextBlock Grid.Row="2" Grid.Column="2" Margin="10,4,0,0" TextAlignment="Right" Text="{Binding ProjectMaterialCostsText, Mode=OneWay}" />
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,4,10,4" Text="{Binding ProjectHoursCostsLabel, Mode=OneWay}" />
+            <TextBlock Grid.Row="3" Grid.Column="1" Margin="10,4,0,4" TextAlignment="Right" Text="{Binding ProjectTotalTime, Mode=OneWay}" />
+            <TextBlock Grid.Row="3" Grid.Column="2" Margin="10,4,0,4" TextAlignment="Right" Text="{Binding ProjectHoursCostsText, Mode=OneWay}" />
+
+            <!-- A single (sum) line above the grand total, a double line below it -->
+            <TextBlock Grid.Row="4" Grid.Column="0" Margin="0,3,10,0" FontWeight="Bold" Text="{x:Static language:Language.ProjectCostsGrandTotal}" />
+            <Border Grid.Row="4" Grid.Column="2" Margin="10,0,0,0" BorderBrush="Black" BorderThickness="0,1,0,0">
+                <TextBlock Margin="0,3,0,2" FontWeight="Bold" TextAlignment="Right" Text="{Binding ProjectGrandTotalText, Mode=OneWay}" />
+            </Border>
+            <StackPanel Grid.Row="5" Grid.Column="2" Margin="10,0,0,0">
+                <Rectangle Height="1" Fill="Black" />
+                <Rectangle Height="1" Margin="0,2,0,0" Fill="Black" />
+            </StackPanel>
+        </Grid>
         <!--#endregion-->
+        </Grid>
+
+            </syncfusion:TabItemExt>
+            <!--#endregion-->
+
+            <!--#region Memo -->
+            <syncfusion:TabItemExt
+                Header="{x:Static language:Language.metadataProjectDetailTabMemoTitle}"
+                Image="{StaticResource memo}"
+                ImageWidth="17"
+                ImageHeight="17">
+                <controls:RtfEditor
+                    x:Name="ProjectMemoEditor"
+                    Margin="5"
+                    RtfText="{Binding SelectedItem.ProjectMemo, Mode=TwoWay, UpdateSourceTrigger=Explicit}" />
+            </syncfusion:TabItemExt>
+            <!--#endregion-->
+
+            <!--#region Hours worked (read only: hours are booked in time registration)-->
+            <syncfusion:TabItemExt
+                Header="{x:Static language:Language.metadataProjectDetailTabHoursTitle}"
+                Image="{StaticResource Time}"
+                ImageWidth="17"
+                ImageHeight="17">
+                <Grid Margin="15,8,15,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock Grid.Row="0" Margin="0,0,0,6" FontSize="14" FontWeight="Bold">
+                        <Run Text="{x:Static language:Language.ProjectHoursEntryCount}" />
+                        <Run Text=": " />
+                        <Run Text="{Binding ProjectTimeEntryCount, Mode=OneWay}" />
+                        <Run Text="   " />
+                        <Run Text="{x:Static language:Language.ProjectHoursTotal}" />
+                        <Run Text=": " />
+                        <Run Text="{Binding ProjectTotalTime, Mode=OneWay}" />
+                    </TextBlock>
+
+                    <TextBlock Grid.Row="1"
+                               Margin="5"
+                               Foreground="Gray"
+                               FontStyle="Italic"
+                               Text="{x:Static language:Language.ProjectHoursEmpty}"
+                               Visibility="{Binding HasProjectTimeEntries, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}" />
+
+                    <!-- Grouped per work type, collapsed: each group header shows the work type, its worked time and its number of entries -->
+                    <syncfusion:SfDataGrid
+                        x:Name="ProjectHoursGrid"
+                        Grid.Row="1"
+                        AllowEditing="False"
+                        AllowSorting="True"
+                        AllowGrouping="False"
+                        AutoExpandGroups="False"
+                        ShowColumnWhenGrouped="False"
+                        AutoGenerateColumns="False"
+                        ColumnSizer="Star"
+                        ItemsSource="{Binding ProjectTimeEntries}"
+                        Visibility="{Binding HasProjectTimeEntries, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <syncfusion:SfDataGrid.GroupColumnDescriptions>
+                            <syncfusion:GroupColumnDescription ColumnName="WorktypeName" />
+                        </syncfusion:SfDataGrid.GroupColumnDescriptions>
+                        <syncfusion:SfDataGrid.SortColumnDescriptions>
+                            <syncfusion:SortColumnDescription ColumnName="WorkDate" SortDirection="Descending" />
+                        </syncfusion:SfDataGrid.SortColumnDescriptions>
+                        <syncfusion:SfDataGrid.CaptionSummaryRow>
+                            <syncfusion:GridSummaryRow ShowSummaryInRow="True" Title="{x:Static language:Language.ProjectHoursGroupCaption}">
+                                <syncfusion:GridSummaryRow.SummaryColumns>
+                                    <syncfusion:GridSummaryColumn Name="Time" MappingName="WorkedMinutes" SummaryType="Custom" CustomAggregate="{StaticResource WorkTimeAggregate}" Format="'{Time}'" />
+                                    <syncfusion:GridSummaryColumn Name="Count" MappingName="WorkedMinutes" SummaryType="CountAggregate" Format="'{Count}'" />
+                                </syncfusion:GridSummaryRow.SummaryColumns>
+                            </syncfusion:GridSummaryRow>
+                        </syncfusion:SfDataGrid.CaptionSummaryRow>
+                        <syncfusion:SfDataGrid.Columns>
+                            <syncfusion:GridDateTimeColumn MappingName="WorkDate" HeaderText="{x:Static language:Language.ProjectHoursHeaderDate}" Pattern="ShortDate" Width="100" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="WorktypeName" HeaderText="{x:Static language:Language.ProjectHoursHeaderWorkType}" />
+                            <syncfusion:GridTextColumn MappingName="StartTime" HeaderText="{x:Static language:Language.ProjectHoursHeaderStart}" Width="70" ColumnSizer="Auto" TextAlignment="Center" />
+                            <syncfusion:GridTextColumn MappingName="EndTime" HeaderText="{x:Static language:Language.ProjectHoursHeaderEnd}" Width="70" ColumnSizer="Auto" TextAlignment="Center" />
+                            <syncfusion:GridNumericColumn MappingName="WorkedHours" HeaderText="{x:Static language:Language.ProjectHoursHeaderDuration}" NumberDecimalDigits="2" Width="70" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="Comment" HeaderText="{x:Static language:Language.ProjectHoursHeaderComment}" />
+                        </syncfusion:SfDataGrid.Columns>
+                    </syncfusion:SfDataGrid>
+                </Grid>
+            </syncfusion:TabItemExt>
+            <!--#endregion-->
+
+            <!--#region Materials used (read only: usage is booked in time registration)-->
+            <syncfusion:TabItemExt
+                Header="{x:Static language:Language.metadataProjectDetailTabMaterialsTitle}"
+                Image="{StaticResource product}"
+                ImageWidth="17"
+                ImageHeight="17">
+                <Grid Margin="15,8,15,5">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,6">
+                        <TextBlock FontSize="14" FontWeight="Bold">
+                            <Run Text="{x:Static language:Language.ProjectMaterialsLineCount}" />
+                            <Run Text=": " />
+                            <Run Text="{Binding ProjectMaterialUsageCount, Mode=OneWay}" />
+                            <Run Text="   " />
+                            <Run Text="{x:Static language:Language.ProjectMaterialsTotal}" />
+                            <Run Text=": " />
+                            <Run Text="{Binding ProjectMaterialCosts, Mode=OneWay, StringFormat={}{0:N2}}" />
+                        </TextBlock>
+                        <TextBlock Margin="15,0,0,0" VerticalAlignment="Bottom" Foreground="Gray" FontStyle="Italic"
+                                   Text="{x:Static language:Language.ProjectMaterialsPriceNote}" />
+                    </StackPanel>
+
+                    <TextBlock Grid.Row="1"
+                               Margin="5"
+                               Foreground="Gray"
+                               FontStyle="Italic"
+                               Text="{x:Static language:Language.ProjectMaterialsEmpty}"
+                               Visibility="{Binding HasProjectMaterialUsages, Converter={StaticResource BooleanToVisibilityConverter}, ConverterParameter=invert}" />
+
+                    <syncfusion:SfDataGrid
+                        x:Name="ProjectMaterialsGrid"
+                        Grid.Row="1"
+                        AllowEditing="False"
+                        AllowSorting="True"
+                        AutoGenerateColumns="False"
+                        ColumnSizer="Star"
+                        ItemsSource="{Binding ProjectMaterialUsages}"
+                        Visibility="{Binding HasProjectMaterialUsages, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <syncfusion:SfDataGrid.Columns>
+                            <syncfusion:GridDateTimeColumn MappingName="UsageDate" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderDate}" Pattern="ShortDate" Width="100" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="ProductCode" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderArticle}" Width="120" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="ProductName" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderDescription}" />
+                            <syncfusion:GridNumericColumn MappingName="Amount" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderAmount}" NumberDecimalDigits="2" Width="80" ColumnSizer="Auto" />
+                            <syncfusion:GridTextColumn MappingName="UnitName" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderUnit}" Width="90" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="Price" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderPrice}" NumberDecimalDigits="2" Width="90" ColumnSizer="Auto" />
+                            <syncfusion:GridNumericColumn MappingName="Costs" HeaderText="{x:Static language:Language.ProjectMaterialsHeaderCosts}" NumberDecimalDigits="2" Width="90" ColumnSizer="Auto" />
+                        </syncfusion:SfDataGrid.Columns>
+                    </syncfusion:SfDataGrid>
+                </Grid>
+            </syncfusion:TabItemExt>
+            <!--#endregion-->
+        </syncfusion:TabControlExt>
         <!--#endregion-->
 
+        <GridSplitter
+            Grid.Row="2"
+            Height="6"
+            Margin="0,1"
+            HorizontalAlignment="Stretch"
+            ResizeDirection="Rows"
+            ResizeBehavior="PreviousAndNext"
+            Background="LightGray"
+            ToolTip="{x:Static language:Language.ProjectDetailSplitterTooltip}" />
+
+        <Grid Grid.Row="3">
+        <Grid.RowDefinitions>
+            <!-- 0. Toolbar -->
+            <RowDefinition Height="40" />
+            <!-- 1. Project list -->
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
         <!--#region Toolbar section-->
-        <Grid Grid.Row="4"
+        <Grid Grid.Row="0"
               Margin="15,2,15,2"
               VerticalAlignment="Center">
 
@@ -409,7 +620,7 @@
         <!--#region Datagrid-->
         <syncfusion:SfDataGrid
             x:Name="SfDataGrid"
-            Grid.Row="5"
+            Grid.Row="1"
             Margin="15,3,15,5"
             HorizontalAlignment="Stretch"
             VerticalAlignment="Top"
@@ -511,7 +722,7 @@
             </syncfusion:SfDataGrid.Columns>
         </syncfusion:SfDataGrid>
         <!--#endregion-->
-
+        </Grid>
 
     </Grid>
 </UserControl>

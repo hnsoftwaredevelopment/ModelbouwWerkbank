@@ -7072,6 +7072,42 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Algemeen.
+        /// </summary>
+        public static string metadataProjectDetailTabGeneralTitle {
+            get {
+                return ResourceManager.GetString("metadataProjectDetailTabGeneralTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gewerkte uren.
+        /// </summary>
+        public static string metadataProjectDetailTabHoursTitle {
+            get {
+                return ResourceManager.GetString("metadataProjectDetailTabHoursTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Verbruikte materialen.
+        /// </summary>
+        public static string metadataProjectDetailTabMaterialsTitle {
+            get {
+                return ResourceManager.GetString("metadataProjectDetailTabMaterialsTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Memo.
+        /// </summary>
+        public static string metadataProjectDetailTabMemoTitle {
+            get {
+                return ResourceManager.GetString("metadataProjectDetailTabMemoTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Projecten beheren.
         /// </summary>
         public static string metadataProjectHeaderSubtitle {
@@ -10969,6 +11005,60 @@ namespace Modelbouwer.Resources.Languages {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to TOTAAL.
+        /// </summary>
+        public static string ProjectCostsGrandTotal {
+            get {
+                return ResourceManager.GetString("ProjectCostsGrandTotal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Aantal.
+        /// </summary>
+        public static string ProjectCostsHeaderAmount {
+            get {
+                return ResourceManager.GetString("ProjectCostsHeaderAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Totaal.
+        /// </summary>
+        public static string ProjectCostsHeaderTotal {
+            get {
+                return ResourceManager.GetString("ProjectCostsHeaderTotal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kostensoort.
+        /// </summary>
+        public static string ProjectCostsHeaderType {
+            get {
+                return ResourceManager.GetString("ProjectCostsHeaderType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Gewerkte uren tegen {0} per uur.
+        /// </summary>
+        public static string ProjectCostsHours {
+            get {
+                return ResourceManager.GetString("ProjectCostsHours", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Verbruikt materiaal.
+        /// </summary>
+        public static string ProjectCostsMaterial {
+            get {
+                return ResourceManager.GetString("ProjectCostsMaterial", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Op categorie.
         /// </summary>
         public static string ProjectCostsReportButtonGroupCategory {
@@ -10992,6 +11082,24 @@ namespace Modelbouwer.Resources.Languages {
         public static string ProjectCostsReportButtonNoGroup {
             get {
                 return ResourceManager.GetString("ProjectCostsReportButtonNoGroup", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kostenoverzicht.
+        /// </summary>
+        public static string ProjectCostsTitle {
+            get {
+                return ResourceManager.GetString("ProjectCostsTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Sleep om het detailgedeelte hoger of lager te maken.
+        /// </summary>
+        public static string ProjectDetailSplitterTooltip {
+            get {
+                return ResourceManager.GetString("ProjectDetailSplitterTooltip", resourceCulture);
             }
         }
         
@@ -11037,6 +11145,195 @@ namespace Modelbouwer.Resources.Languages {
         public static string ProjectEntryStatus {
             get {
                 return ResourceManager.GetString("ProjectEntryStatus", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Op dit project zijn nog geen uren geboekt..
+        /// </summary>
+        public static string ProjectHoursEmpty {
+            get {
+                return ResourceManager.GetString("ProjectHoursEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Urenregels.
+        /// </summary>
+        public static string ProjectHoursEntryCount {
+            get {
+                return ResourceManager.GetString("ProjectHoursEntryCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to {Key}: {Time} uur in {Count} regels.
+        /// </summary>
+        public static string ProjectHoursGroupCaption {
+            get {
+                return ResourceManager.GetString("ProjectHoursGroupCaption", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Opmerking.
+        /// </summary>
+        public static string ProjectHoursHeaderComment {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderComment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Datum.
+        /// </summary>
+        public static string ProjectHoursHeaderDate {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Duur.
+        /// </summary>
+        public static string ProjectHoursHeaderDuration {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderDuration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Einde.
+        /// </summary>
+        public static string ProjectHoursHeaderEnd {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderEnd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Begin.
+        /// </summary>
+        public static string ProjectHoursHeaderStart {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderStart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Werksoort.
+        /// </summary>
+        public static string ProjectHoursHeaderWorkType {
+            get {
+                return ResourceManager.GetString("ProjectHoursHeaderWorkType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Totaal uren.
+        /// </summary>
+        public static string ProjectHoursTotal {
+            get {
+                return ResourceManager.GetString("ProjectHoursTotal", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Op dit project is nog geen materiaal geboekt..
+        /// </summary>
+        public static string ProjectMaterialsEmpty {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsEmpty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Aantal.
+        /// </summary>
+        public static string ProjectMaterialsHeaderAmount {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderAmount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Artikelnummer.
+        /// </summary>
+        public static string ProjectMaterialsHeaderArticle {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderArticle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kosten.
+        /// </summary>
+        public static string ProjectMaterialsHeaderCosts {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderCosts", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Datum.
+        /// </summary>
+        public static string ProjectMaterialsHeaderDate {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderDate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Omschrijving.
+        /// </summary>
+        public static string ProjectMaterialsHeaderDescription {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Prijs per stuk.
+        /// </summary>
+        public static string ProjectMaterialsHeaderPrice {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderPrice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Eenheid.
+        /// </summary>
+        public static string ProjectMaterialsHeaderUnit {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsHeaderUnit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Verbruiksregels.
+        /// </summary>
+        public static string ProjectMaterialsLineCount {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsLineCount", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Kosten tegen de huidige productprijs.
+        /// </summary>
+        public static string ProjectMaterialsPriceNote {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsPriceNote", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Totale materiaalkosten.
+        /// </summary>
+        public static string ProjectMaterialsTotal {
+            get {
+                return ResourceManager.GetString("ProjectMaterialsTotal", resourceCulture);
             }
         }
         

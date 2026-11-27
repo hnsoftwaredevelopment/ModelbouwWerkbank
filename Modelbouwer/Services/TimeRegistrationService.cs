@@ -692,9 +692,12 @@ public class TimeRegistrationService : ITimeRegistrationService
 			$"SELECT product.{DBNames.ProductFieldNameId} AS ProductId, " +
 			$"product.{DBNames.ProductFieldNamePrice} AS Price, " +
 			$"product.{DBNames.ProductFieldNameCategoryId} AS CategoryId, " +
-			$"category.{DBNames.CategoryFieldNameName} AS CategoryName " +
+			$"category.{DBNames.CategoryFieldNameName} AS CategoryName, " +
+			$"product.{DBNames.ProductFieldNameCode} AS ProductCode, " +
+			$"unit.{DBNames.UnitFieldNameUnitName} AS UnitName " +
 			$"FROM {DBNames.Database}.{DBNames.ProductTable} product " +
 			$"LEFT JOIN {DBNames.Database}.{DBNames.CategoryTable} category ON category.{DBNames.CategoryFieldNameId} = product.{DBNames.ProductFieldNameCategoryId} " +
+			$"LEFT JOIN {DBNames.Database}.{DBNames.UnitTable} unit ON unit.{DBNames.UnitFieldNameUnitId} = product.{DBNames.ProductFieldNameUnitId} " +
 			$"WHERE product.{DBNames.ProductFieldNameId} IN ({string.Join( ", ", parameterNames )});";
 
 		Dictionary<string, object> parameters = [];
@@ -706,7 +709,9 @@ public class TimeRegistrationService : ITimeRegistrationService
 			ProductId = DatabaseValueConverter.GetInt( reader["ProductId"] ),
 			Price = DatabaseValueConverter.GetDouble( reader["Price"] ),
 			CategoryId = DatabaseValueConverter.GetInt( reader["CategoryId"] ),
-			CategoryName = DatabaseValueConverter.GetString( reader["CategoryName"] )
+			CategoryName = DatabaseValueConverter.GetString( reader["CategoryName"] ),
+			ProductCode = DatabaseValueConverter.GetString( reader["ProductCode"] ),
+			UnitName = DatabaseValueConverter.GetString( reader["UnitName"] )
 		}, parameters, cancellationToken );
 
 		var metadataByProductId = metadata.ToDictionary( item => item.ProductId );
@@ -718,6 +723,8 @@ public class TimeRegistrationService : ITimeRegistrationService
 			usage.Price = product.Price;
 			usage.CategoryId = product.CategoryId;
 			usage.CategoryName = product.CategoryName;
+			usage.ProductCode = product.ProductCode;
+			usage.UnitName = product.UnitName;
 			usage.Costs = usage.Amount * product.Price;
 		}
 	}

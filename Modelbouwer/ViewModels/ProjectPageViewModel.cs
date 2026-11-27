@@ -43,12 +43,125 @@ public partial class ProjectPageViewModel : EntityPageViewModel<ProjectModel>
 	private IRelayCommand? _clearSearchCommand;
 
 	// Constructor
-	public ProjectPageViewModel( IProjectService dataService, IEntityValidator<ProjectModel> validator ) : base( validator )
+	public ProjectPageViewModel( IProjectService dataService, IEntityValidator<ProjectModel> validator, ITimeRegistrationService timeRegistrationService ) : base( validator )
 	{
 		_dataService = dataService;
+		_timeRegistrationService = timeRegistrationService;
 
 		ObserveBackgroundTask( ReloadAsync() );
 	}
+
+	#region Hours and materials tabs (KAN-147)
+	private readonly ITimeRegistrationService _timeRegistrationService;
+	private int _projectDetailsVersion;
+
+	/// <summary>
+	/// Time entries of the selected project, newest first. Read only: hours are booked in time registration. The view
+	/// groups them per work type, with the worked time of each group in its header (<see cref="WorkTimeAggregate"/>).
+	/// </summary>
+	public ObservableCollection<TimeEntryModel> ProjectTimeEntries { get; } = [ ];
+
+	/// <summary>Material used on the selected project, newest first. Costs use the current product price.</summary>
+	public ObservableCollection<MaterialUsageModel> ProjectMaterialUsages { get; } = [ ];
+
+	[ObservableProperty] private bool _hasProjectTimeEntries;
+	[ObservableProperty] private bool _hasProjectMaterialUsages;
+	[ObservableProperty] private int _projectTimeEntryCount;
+	[ObservableProperty] private double _projectTotalMinutes;
+	[ObservableProperty] private int _projectMaterialUsageCount;
+	[ObservableProperty] private double _projectMaterialCosts;
+	[ObservableProperty] private double _projectHourRate;
+
+	/// <summary>Culture of the settings, for the amounts in the cost overview.</summary>
+	private CultureInfo _costCulture = CultureInfo.CurrentCulture;
+
+	/// <summary>Total worked time in decimal hours, for example 37,75 for 37 hours and 45 minutes.</summary>
+	public string ProjectTotalTime => ProjectTime.Format( ProjectTotalMinutes );
+
+	#region Cost overview on the general tab
+	/// <summary>Worked hours times the hour rate of the settings.</summary>
+	public double ProjectHoursCosts => Math.Round( ProjectTotalMinutes / 60d * ProjectHourRate, 2, MidpointRounding.AwayFromZero );
+	public double ProjectGrandTotal => ProjectMaterialCosts + ProjectHoursCosts;
+
+	public string ProjectHoursCostsLabel => string.Format( CultureInfo.CurrentCulture, Lang.ProjectCostsHours, ProjectHourRate.ToString( "C", _costCulture ) );
+	public string ProjectMaterialCostsText => ProjectMaterialCosts.ToString( "C", _costCulture );
+	public string ProjectHoursCostsText => ProjectHoursCosts.ToString( "C", _costCulture );
+	public string ProjectGrandTotalText => ProjectGrandTotal.ToString( "C", _costCulture );
+
+	partial void OnProjectTotalMinutesChanged( double value )
+	{
+		OnPropertyChanged( nameof( ProjectTotalTime ) );
+		RaiseCostOverview();
+	}
+
+	partial void OnProjectMaterialCostsChanged( double value ) => RaiseCostOverview();
+	partial void OnProjectHourRateChanged( double value ) => RaiseCostOverview();
+
+	private void RaiseCostOverview()
+	{
+		OnPropertyChanged( nameof( ProjectHoursCosts ) );
+		OnPropertyChanged( nameof( ProjectGrandTotal ) );
+		OnPropertyChanged( nameof( ProjectHoursCostsLabel ) );
+		OnPropertyChanged( nameof( ProjectMaterialCostsText ) );
+		OnPropertyChanged( nameof( ProjectHoursCostsText ) );
+		OnPropertyChanged( nameof( ProjectGrandTotalText ) );
+	}
+	#endregion
+
+	/// <summary>
+	/// Loads the hours and material of <paramref name="project"/>. The lists are emptied first, so the previous
+	/// project's rows are never shown as this project's; a load that is overtaken by a newer selection is dropped.
+	/// </summary>
+	internal async Task LoadProjectDetailsAsync( ProjectModel? project )
+	{
+		int version = ++_projectDetailsVersion;
+
+		ProjectTimeEntries.Clear();
+		ProjectMaterialUsages.Clear();
+		HasProjectTimeEntries = false;
+		HasProjectMaterialUsages = false;
+		ProjectTimeEntryCount = 0;
+		ProjectTotalMinutes = 0d;
+		ProjectMaterialUsageCount = 0;
+		ProjectMaterialCosts = 0d;
+
+		if ( project == null || project.ProjectId <= 0 )
+			return;
+
+		var entriesTask = _timeRegistrationService.GetTimeEntriesByProjectAsync( project.ProjectId );
+		var usagesTask = _timeRegistrationService.GetMaterialUsageByProjectAsync( project.ProjectId );
+		var hourRateTask = _timeRegistrationService.GetHourRateAsync();
+		var cultureTask = _timeRegistrationService.GetCultureAsync();
+		await Task.WhenAll( entriesTask, usagesTask, hourRateTask, cultureTask );
+
+		if ( version != _projectDetailsVersion )
+			return;
+
+		_costCulture = cultureTask.Result ?? CultureInfo.CurrentCulture;
+		ProjectHourRate = hourRateTask.Result;
+
+		var entries = ( entriesTask.Result ?? [ ] )
+			.OrderByDescending( entry => entry.WorkDate )
+			.ThenBy( entry => entry.StartTime, StringComparer.Ordinal )
+			.ToList();
+		foreach ( var entry in entries )
+			ProjectTimeEntries.Add( entry );
+
+		foreach ( var usage in ( usagesTask.Result ?? [ ] ).OrderByDescending( usage => usage.UsageDate ) )
+			ProjectMaterialUsages.Add( usage );
+
+		ProjectTimeEntryCount = ProjectTimeEntries.Count;
+		HasProjectTimeEntries = ProjectTimeEntryCount > 0;
+		ProjectTotalMinutes = entries.Sum( entry => entry.WorkedMinutes );
+
+		ProjectMaterialUsageCount = ProjectMaterialUsages.Count;
+		HasProjectMaterialUsages = ProjectMaterialUsageCount > 0;
+		ProjectMaterialCosts = Math.Round( ProjectMaterialUsages.Sum( usage => usage.Costs ), 2, MidpointRounding.AwayFromZero );
+
+		// The culture may have changed without any amount changing.
+		RaiseCostOverview();
+	}
+	#endregion
 
 	// Override SelectedItem changed om DefaultProject te zetten
 	protected override void OnSelectedItemChanged( ProjectModel? oldValue, ProjectModel? newValue )
@@ -77,6 +190,9 @@ public partial class ProjectPageViewModel : EntityPageViewModel<ProjectModel>
 			var loadVersion = ++_workStatsLoadVersion;
 			ObserveBackgroundTask( LoadWorkStatsAsync( newValue, loadVersion ) );
 		}
+
+		// Hours and material tabs (KAN-147)
+		ObserveBackgroundTask( LoadProjectDetailsAsync( newValue ) );
 	}
 
 	private void SelectedProject_PropertyChanged( object? sender, PropertyChangedEventArgs e )

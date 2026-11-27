@@ -4923,4 +4923,103 @@ PowerShell:
   <data name="StockOrderCloseOrderSaveFirst" xml:space="preserve">
     <value>Speichern Sie zuerst die Änderungen dieser Bestellung, danach können Sie sie schließen.</value>
   </data>
+  <data name="metadataProjectDetailTabGeneralTitle" xml:space="preserve">
+    <value>Allgemein</value>
+  </data>
+  <data name="metadataProjectDetailTabMemoTitle" xml:space="preserve">
+    <value>Memo</value>
+  </data>
+  <data name="metadataProjectDetailTabHoursTitle" xml:space="preserve">
+    <value>Geleistete Stunden</value>
+  </data>
+  <data name="metadataProjectDetailTabMaterialsTitle" xml:space="preserve">
+    <value>Verbrauchte Materialien</value>
+  </data>
+  <data name="ProjectDetailSplitterTooltip" xml:space="preserve">
+    <value>Ziehen, um den Detailbereich höher oder niedriger zu machen</value>
+  </data>
+  <data name="ProjectHoursEntryCount" xml:space="preserve">
+    <value>Zeiteinträge</value>
+  </data>
+  <data name="ProjectHoursTotal" xml:space="preserve">
+    <value>Stunden gesamt</value>
+  </data>
+  <data name="ProjectHoursEmpty" xml:space="preserve">
+    <value>Auf diesem Projekt wurden noch keine Stunden gebucht.</value>
+  </data>
+  <data name="ProjectHoursHeaderDate" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="ProjectHoursHeaderWorkType" xml:space="preserve">
+    <value>Arbeitstyp</value>
+  </data>
+  <data name="ProjectHoursHeaderStart" xml:space="preserve">
+    <value>Beginn</value>
+  </data>
+  <data name="ProjectHoursHeaderEnd" xml:space="preserve">
+    <value>Ende</value>
+  </data>
+  <data name="ProjectHoursHeaderDuration" xml:space="preserve">
+    <value>Dauer</value>
+  </data>
+  <data name="ProjectHoursHeaderComment" xml:space="preserve">
+    <value>Bemerkung</value>
+  </data>
+  <data name="ProjectMaterialsLineCount" xml:space="preserve">
+    <value>Verbrauchszeilen</value>
+  </data>
+  <data name="ProjectMaterialsTotal" xml:space="preserve">
+    <value>Materialkosten gesamt</value>
+  </data>
+  <data name="ProjectMaterialsPriceNote" xml:space="preserve">
+    <value>Kosten zum aktuellen Produktpreis</value>
+  </data>
+  <data name="ProjectMaterialsEmpty" xml:space="preserve">
+    <value>Auf diesem Projekt wurde noch kein Material gebucht.</value>
+  </data>
+  <data name="ProjectMaterialsHeaderDate" xml:space="preserve">
+    <value>Datum</value>
+  </data>
+  <data name="ProjectMaterialsHeaderArticle" xml:space="preserve">
+    <value>Artikelnummer</value>
+  </data>
+  <data name="ProjectMaterialsHeaderDescription" xml:space="preserve">
+    <value>Beschreibung</value>
+  </data>
+  <data name="ProjectMaterialsHeaderAmount" xml:space="preserve">
+    <value>Menge</value>
+  </data>
+  <data name="ProjectMaterialsHeaderUnit" xml:space="preserve">
+    <value>Einheit</value>
+  </data>
+  <data name="ProjectMaterialsHeaderPrice" xml:space="preserve">
+    <value>Stückpreis</value>
+  </data>
+  <data name="ProjectMaterialsHeaderCosts" xml:space="preserve">
+    <value>Kosten</value>
+  </data>
+  <data name="ProjectHoursGroupCaption" xml:space="preserve">
+    <value>{Key}: {Time} Stunden in {Count} Einträgen</value>
+  </data>
+  <data name="ProjectCostsTitle" xml:space="preserve">
+    <value>Kostenübersicht</value>
+  </data>
+  <data name="ProjectCostsHeaderType" xml:space="preserve">
+    <value>Kostenart</value>
+  </data>
+  <data name="ProjectCostsHeaderAmount" xml:space="preserve">
+    <value>Menge</value>
+  </data>
+  <data name="ProjectCostsHeaderTotal" xml:space="preserve">
+    <value>Gesamt</value>
+  </data>
+  <data name="ProjectCostsMaterial" xml:space="preserve">
+    <value>Verbrauchtes Material</value>
+  </data>
+  <data name="ProjectCostsHours" xml:space="preserve">
+    <value>Geleistete Stunden zu {0} pro Stunde</value>
+  </data>
+  <data name="ProjectCostsGrandTotal" xml:space="preserve">
+    <value>GESAMT</value>
+  </data>
 </root>

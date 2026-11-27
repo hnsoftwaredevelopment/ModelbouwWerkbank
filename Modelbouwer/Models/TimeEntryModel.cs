@@ -44,7 +44,8 @@ public partial class TimeEntryModel : ObservableObject
 		}
 	}
 
-	public string WorkedTime => TimeSpan.FromMinutes( WorkedMinutes ).ToString( @"hh\:mm", CultureInfo.CurrentCulture );
+	/// <summary>Worked time in decimal hours, for example 1,25 for 1 hour and 15 minutes (KAN-147).</summary>
+	public double WorkedHours => WorkedMinutes / 60d;
 
 	public TimeEntryModel()
 	{
@@ -56,13 +57,13 @@ public partial class TimeEntryModel : ObservableObject
 		if ( e.PropertyName == nameof( State ) ||
 			e.PropertyName == nameof( StatusMarker ) ||
 			e.PropertyName == nameof( WorkedMinutes ) ||
-			e.PropertyName == nameof( WorkedTime ) )
+			e.PropertyName == nameof( WorkedHours ) )
 			return;
 
 		if ( e.PropertyName == nameof( StartTime ) || e.PropertyName == nameof( EndTime ) )
 		{
 			OnPropertyChanged( nameof( WorkedMinutes ) );
-			OnPropertyChanged( nameof( WorkedTime ) );
+			OnPropertyChanged( nameof( WorkedHours ) );
 		}
 
 		if ( State == RecordState.Unchanged )

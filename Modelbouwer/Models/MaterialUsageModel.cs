@@ -17,6 +17,8 @@ public partial class MaterialUsageModel : ObservableObject
 	[ObservableProperty] private string? _projectName;
 	[ObservableProperty] private int _productId;
 	[ObservableProperty] private string? _productName;
+	[ObservableProperty] private string? _productCode;
+	[ObservableProperty] private string? _unitName;
 	[ObservableProperty] private int _categoryId;
 	[ObservableProperty] private string? _categoryName;
 	[ObservableProperty] private DateTime _usageDate = DateTime.Today;

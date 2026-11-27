@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Windows.Markup;
+
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 using Modelbouwer.Validators;
@@ -200,8 +202,49 @@ public partial class App : Application
 		return service;
 	}
 
-	public static void ApplyCulture( string? cultureName, string? language = null ) =>
+	public static void ApplyCulture( string? cultureName, string? language = null )
+	{
 		SetCurrentCulture( cultureName, language );
+		UseCultureForWpfFormatting( CultureInfo.CurrentCulture );
+	}
+
+	#region Number and date format in bindings (KAN-147)
+	private static XmlLanguage _wpfLanguage = XmlLanguage.GetLanguage( "nl-NL" );
+	private static bool _wpfLanguageHooked;
+
+	/// <summary>
+	/// Makes WPF format numbers and dates in bindings (StringFormat) with the culture of the settings. WPF does not
+	/// use CurrentCulture for that but the Language of each element, which is en-US unless set, so totals showed
+	/// 376.25 instead of 376,25. Every window gets the Language as its own value, so all its elements inherit it,
+	/// including the Runs inside a TextBlock. Open windows are updated too, so a culture chosen in the settings
+	/// applies at once.
+	/// </summary>
+	/// <remarks>
+	/// Do not also change the default with LanguageProperty.OverrideMetadata: a TextBlock then already has the
+	/// language by default, the window's value changes nothing for it, and the Runs inside it keep formatting with
+	/// en-US (tried and seen in the app, KAN-147).
+	/// </remarks>
+	internal static void UseCultureForWpfFormatting( CultureInfo culture )
+	{
+		_wpfLanguage = XmlLanguage.GetLanguage( culture.IetfLanguageTag );
+
+		if ( !_wpfLanguageHooked )
+		{
+			_wpfLanguageHooked = true;
+			EventManager.RegisterClassHandler( typeof( Window ), FrameworkElement.LoadedEvent, new RoutedEventHandler( ( sender, _ ) =>
+			{
+				if ( sender is Window window )
+					window.Language = _wpfLanguage;
+			} ) );
+		}
+
+		if ( Current == null )
+			return;
+
+		foreach ( Window window in Current.Windows )
+			window.Language = _wpfLanguage;
+	}
+	#endregion
 
 	private static void SetCurrentCulture( string? cultureName, string? language = null )
 	{

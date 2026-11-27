@@ -66,7 +66,7 @@ public class ProjectPageViewModelTests
 	{
 		var validator = new Mock<IEntityValidator<ProjectModel>>();
 
-		return new ProjectPageViewModel( projectService, validator.Object );
+		return new ProjectPageViewModel( projectService, validator.Object, new Mock<ITimeRegistrationService>().Object );
 	}
 
 	private static string LoadSource( params string [ ] relativeSegments )
