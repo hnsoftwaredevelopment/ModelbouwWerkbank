@@ -75,6 +75,28 @@ public class CountryPageViewModelTests
 		Assert.IsTrue( viewModel.HasUnsavedChanges, "A change by the user still counts." );
 	}
 
+	[TestMethod]
+	public async Task CountryWithoutCurrency_ProposedCurrencyShowsAsUnsavedChange()
+	{
+		// Found by CodeRabbit in PR #61: a currency chosen for a country without one must not count as stored.
+		var countryService = new Mock<ICountryService>();
+		var currencyService = new Mock<ICurrencyService>();
+		countryService.Setup( service => service.GetAllCountriesAsync( It.IsAny<CancellationToken>() ) ).ReturnsAsync(
+		[
+			new CountryModel { CountryId = 1, CountryCode = "XX", CountryName = "Zonder valuta", CountryCurrencyId = 0 }
+		] );
+		currencyService.Setup( service => service.GetAllCurrenciesAsync() ).ReturnsAsync(
+		[
+			new CurrencyModel { CurrencyId = 1, CurrencySymbol = "$" }
+		] );
+
+		var viewModel = CreateViewModel( countryService.Object, currencyService.Object );
+		await WaitUntilAsync( () => viewModel.SelectedCountry != null );
+
+		Assert.AreEqual( 1, viewModel.SelectedCountry!.CountryCurrencyId, "The first currency is proposed." );
+		Assert.IsTrue( viewModel.HasUnsavedChanges, "The proposal changed the record, so it can be saved or reloaded." );
+	}
+
 	private static CountryPageViewModel CreateViewModel( ICountryService? countryService = null, ICurrencyService? currencyService = null )
 	{
 		var defaultCountryService = new Mock<ICountryService>();

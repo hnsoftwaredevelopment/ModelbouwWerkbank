@@ -195,7 +195,7 @@ public class CsvExportService : IExportService
 			csvBuilder.Append( '\uFEFF' );
 
 		if ( IncludeHeaders )
-			csvBuilder.AppendLine( string.Join( Separator, exportData.Headers ) );
+			csvBuilder.AppendLine( string.Join( Separator, exportData.Headers.Select( FormatValueForCsv ) ) );
 
 		foreach ( var item in exportData.Items )
 		{

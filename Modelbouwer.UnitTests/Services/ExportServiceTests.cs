@@ -56,6 +56,21 @@ public class ExportServiceTests
 	}
 
 	[TestMethod]
+	public void Csv_HeaderWithSeparatorOrQuoteIsQuoted()
+	{
+		// Found by CodeRabbit in PR #61: a grid header such as "Code;omschrijving" split into two header fields.
+		var data = new ExportData<Row>();
+		data.ColumnInfos.Add( new ColumnInfo { MappingName = "Name", Column = new object() } );
+		data.Headers.Add( "Code;omschrijving" );
+		data.ColumnInfos.Add( new ColumnInfo { MappingName = "Memo", Column = new object() } );
+		data.Headers.Add( "12 \"inch\"" );
+
+		var csv = new CsvExportService { IncludeBom = false }.GenerateCsvContent<Row, object>( data, null );
+
+		Assert.AreEqual( "\"Code;omschrijving\";\"12 \"\"inch\"\"\"" + Environment.NewLine, csv );
+	}
+
+	[TestMethod]
 	public void Csv_EmptyDataSetGivesHeaderOnly()
 	{
 		var service = new CsvExportService { IncludeBom = false };
