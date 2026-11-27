@@ -245,37 +245,11 @@ public class CsvExportService : IExportService
 
 	#region Column Headers
 
-	private string GetColumnHeader( sfGridColumn column, Dictionary<string, string>? columnHeaderOverrides )
-	{
-		var name = column.MappingName;
-		if ( columnHeaderOverrides?.ContainsKey( name ) == true )
-			return columnHeaderOverrides [ name ];
+	private string GetColumnHeader( sfGridColumn column, Dictionary<string, string>? columnHeaderOverrides ) =>
+		ExportHeaders.Resolve( column.MappingName, column.HeaderText, columnHeaderOverrides, _languageProvider );
 
-		if ( _languageProvider != null )
-		{
-			var translated = _languageProvider.GetTranslation($"ExportHeader_{name}");
-			if ( !string.IsNullOrEmpty( translated ) )
-				return translated;
-		}
-
-		return !string.IsNullOrWhiteSpace( column.HeaderText ) ? column.HeaderText : name ?? string.Empty;
-	}
-
-	private string GetColumnHeader( TreeGridColumn column, Dictionary<string, string>? columnHeaderOverrides )
-	{
-		var name = column.MappingName;
-		if ( columnHeaderOverrides?.ContainsKey( name ) == true )
-			return columnHeaderOverrides [ name ];
-
-		if ( _languageProvider != null )
-		{
-			var translated = _languageProvider.GetTranslation($"ExportHeader_{name}");
-			if ( !string.IsNullOrEmpty( translated ) )
-				return translated;
-		}
-
-		return !string.IsNullOrWhiteSpace( column.HeaderText ) ? column.HeaderText : name ?? string.Empty;
-	}
+	private string GetColumnHeader( TreeGridColumn column, Dictionary<string, string>? columnHeaderOverrides ) =>
+		ExportHeaders.Resolve( column.MappingName, column.HeaderText, columnHeaderOverrides, _languageProvider );
 
 	#endregion
 

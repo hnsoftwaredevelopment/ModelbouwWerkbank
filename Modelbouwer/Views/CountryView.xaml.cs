@@ -159,7 +159,7 @@ public partial class CountryView : UserControl
 
 			using ( new UiBusyScope( CustomCursors.Exporting ) )
 			{
-				await _excelExportService.ExportToExcelAsync<CurrencyModel>(
+				await _excelExportService.ExportToExcelAsync<CountryModel>(
 				SfDataGrid,
 				dialog.FileName,
 				columnHeaders );

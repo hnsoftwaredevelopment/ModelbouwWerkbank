@@ -47,17 +47,19 @@ public partial class CountryPageViewModel : EntityPageViewModel<CountryModel>
 	// Override SelectedItem changed om DefaultCurrency te zetten
 	protected override void OnSelectedItemChanged( CountryModel? oldValue, CountryModel? newValue )
 	{
-		base.OnSelectedItemChanged( oldValue, newValue );
-
-		if ( newValue == null )
-			return;
-
-		if ( Currencies.Any() )
+		// Linked before the base class starts watching the country: filling in its stored currency is not a change
+		// by the user, so it must not show "changes not saved" when the screen opens (KAN-148).
+		if ( newValue != null && Currencies.Any() )
 		{
 			newValue.DefaultCurrency = Currencies
 				.FirstOrDefault( c => c.CurrencyId == newValue.CountryCurrencyId )
 				?? Currencies.First();
 		}
+
+		base.OnSelectedItemChanged( oldValue, newValue );
+
+		if ( newValue == null )
+			return;
 
 		OnPropertyChanged( nameof( SelectedCountry ) );
 		OnPropertyChanged( nameof( SelectedCountry.CountryCode ) );
